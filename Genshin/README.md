@@ -5,26 +5,25 @@ This folder contains scripts to extract your wish history URL and calculate your
 ## 📂 File List
 | File Name | Description |
 | :--- | :--- |
-| **1_GetLink.bat** | 🔑 **STEP 1:** Finds the wish history link from game cache and copies it to Clipboard. |
+| **1_GetLink.bat** | 🔑 **STEP 1:** Finds the wish history link from the local file and copies it to Clipboard. |
 | **2_Calc_Character.bat** | 🧮 **STEP 2 (Option A):** Calculates pity for **Character Event Banner** only. |
 | **2_Calc_All.bat** | 📊 **STEP 2 (Option B):** Calculates pity for **ALL Banners** (Standard, Weapon, Character). |
 
 ---
 
-## 🚀 How to use (Step-by-Step)
+## 🚀 Usage Guide
 
-## 📂 How to find the `data_2` file
-This tool reads the **cache file** directly from your computer. It's safer because no password or API key is needed.
+Since this tool runs in **Safe Mode** (local file reading), you need to manually provide the cache file.
 
-### 1️⃣ Step 1: Open History in Game
+### 📌 PHASE 1: Find the `data_2` file
+
+#### 1️⃣ Open History in Game
 Go to the Wish menu and click the **History** button. Wait for it to load completely.
 *(This action generates a fresh key in your storage).*
 
 ![Open History](./screenshots/Find_data_2_Step1.png)
 
----
-
-### 2️⃣ Step 2: Find the Cache Folder
+#### 2️⃣ Find the Cache Folder
 Go to your Genshin Installation folder:
 `Genshin Impact Game` ➔ `GenshinImpact_Data` ➔ `webCaches`
 
@@ -32,9 +31,7 @@ Look for the folder with the **Latest Version Number** (or latest Date Modified)
 
 ![Select Version](./screenshots/Find_data_2_Step2.png)
 
----
-
-### 3️⃣ Step 3: Get 'data_2' & Check Date ⚠️
+#### 3️⃣ Get 'data_2' & Check Date ⚠️
 Go deeper into: `.../Cache/Cache_Data/`
 Find the file named **`data_2`**.
 
@@ -43,41 +40,30 @@ Find the file named **`data_2`**.
 
 ![Check Date Modified](./screenshots/Find_data_2_Step3.png)
 
+#### 4️⃣ Place the File
+Copy the `data_2` file and paste it into this **Genshin** folder (where the scripts are).
+**Make sure your folder looks like this:**
+
+![Folder Setup](./screenshots/Setup_Place_file.png)
+
 ---
 
-### ✅ Final Step
-Copy `data_2` to your desktop, then run **`1_GetLink.bat`**.
+### ⚡ PHASE 2: Run the Tool
 
+#### Step 1: Get the Link 🔑
+Run **`1_GetLink.bat`**. It will ask for the path (or just drag `data_2` file onto the window).
 
-### Step 1: Get the Link 🔑
 ![Get Link Console Output](./screenshots/step1_getlink.png)
-*Script will ask for the path to 'data_2' file.*
+*Once found, it will say **"Link copied to clipboard"**.*
 
-1. Open **Genshin Impact** on your PC.
-2. Open the **Wish (Gacha)** page in-game.
-3. Click on the **History** button (at the bottom of the wish screen) and wait for it to load.
-4. Minimize the game.
-5. Run `1_GetLink.bat`.
-   - It will scan for the link.
-   - Once found, it will say **"Link copied to clipboard"**.
-
-### Step 2: Calculate Pity 🧮
-*Make sure you have run Step 1 successfully.*
+#### Step 2: Calculate Pity 🧮
+Run **`2_Calc_All.bat`** (Recommended). The script will automatically read the link from your clipboard and fetch data.
 
 **Option A: Character Banner Only**
 ![Character Banner Result](./screenshots/step2_result.png)
 
 **Option B: All Banners (Timeline)**
 ![All Banners Result](./screenshots/step2_all.png)
-
-1. Run `2_Calc_All.bat` (Recommended).
-2. The script will automatically read the link from your clipboard.
-3. It will start fetching data from Hoyoverse servers.
-   - ⚠️ **Note:** The script runs in **Safe Mode** (slow speed) to prevent API errors. Please be patient.
-4. Once finished, it will show your:
-   - 5-Star History
-   - Current Pity Count
-   - Total Pulls
 
 ---
 
