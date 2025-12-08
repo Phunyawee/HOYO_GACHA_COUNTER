@@ -1,9 +1,10 @@
-HOYO_GACHA_COUNTER/
-├── README.md           <-- (1) หน้าบ้านหลัก: บอกภาพรวมว่าโปรเจกต์นี้คืออะไร
-├── .gitignore
-├── Genshin/
-│   ├── extract_link.ps1
-│   └── README.md       <-- (2) หน้าบ้านเกนชิน: วิธีหาไฟล์ data_2 ของเกนชิน
-└── StarRail/
-    ├── extract_link.ps1
-    └── README.md       <-- (3) หน้าบ้านรางดาว: วิธีหาไฟล์ data_2 ของรางดาว
+HOYO Gacha Link Extractor
+Simple tool to extract Gacha History Link for Genshin Impact & Honkai: Star Rail.
+Features
+🔒 Safe: Works with local files. No Admin permission required.
+🚀 Simple: Just point to the cache file.
+Supported Games
+📂 Genshin Impact (Click to view instructions)
+📂 Honkai: Star Rail (Click to view instructions)
+Credits
+Parsing logic inspired by paimon.moe
