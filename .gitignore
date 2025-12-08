@@ -1,0 +1,19 @@
+# 1. ไฟล์เก็บความลับ (ต้องแก้ชื่อให้ตรงกับไฟล์ที่คุณเก็บ Key)
+config.txt
+secrets.json
+.env
+*.key
+auth.dat
+
+# 2. ไฟล์ขยะของ Windows และ Mac (เผื่อคนอื่นมาเปิด)
+Thumbs.db
+.DS_Store
+
+# 3. ไฟล์ Setting ของ Editor (เช่น VS Code)
+.vscode/
+*.swp
+
+# 4. ไฟล์ Log หรือไฟล์ขยะจากการรันสคริปต์
+*.log
+*.tmp
+output/
