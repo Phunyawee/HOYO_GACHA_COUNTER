@@ -14,35 +14,39 @@ This folder contains scripts to extract your wish history URL and calculate your
 ## 🚀 How to use (Step-by-Step)
 
 ## 📂 How to find the `data_2` file
-Since this tool runs in **Safe Mode** (local file reading), you need to manually provide the cache file.
+This tool reads the **cache file** directly from your computer. It's safer because no password or API key is needed.
 
-### Step A: Generate the Key 🔑
-1. Open **Genshin Impact** on your PC.
-2. Go to the **Wish (Gacha)** menu.
-3. Click on the **History** button (bottom of the screen).
-4. **Wait until the list loads completely.** (This action writes the key to your hard drive).
-5. You can now minimize or close the game.
+### 1️⃣ Step 1: Open History in Game
+Go to the Wish menu and click the **History** button. Wait for it to load completely.
+*(This action generates a fresh key in your storage).*
 
-### Step B: Locate the File 🔍
-1. Navigate to your Genshin Impact installation folder.
-   - Default is usually: `C:\Program Files\Genshin Impact\Genshin Impact Game\`
-2. Go deep into these folders:
-   `GenshinImpact_Data` ➔ `webCaches` ➔ `(Version Number)` ➔ `Cache` ➔ `Cache_Data`
-   
-   > 💡 **Note:** The `(Version Number)` folder changes with game updates (e.g., `2.28.0.0`). Always pick the folder with the **highest number** or **latest date**.
+![Open History](./screenshots/Find_data_2_Step1.png)
 
-3. Inside `Cache_Data`, look for a file named **`data_2`**.
+---
 
-### Step C: ⚠️ CRITICAL CHECK (Date Modified) ⚠️
-Before copying, look at the **"Date Modified"** column in Windows Explorer.
-*   ✅ **CORRECT:** The time matches **RIGHT NOW** (when you opened the History page).
-*   ❌ **WRONG:** The time is from yesterday or hours ago. (If so, go back to Step A and open History again).
+### 2️⃣ Step 2: Find the Cache Folder
+Go to your Genshin Installation folder:
+`Genshin Impact Game` ➔ `GenshinImpact_Data` ➔ `webCaches`
 
-### Step D: Copy & Run
-1. Copy `data_2` to your Desktop or a folder easy to find.
-2. Run `1_GetLink.bat` and drag the file into the window.
+Look for the folder with the **Latest Version Number** (or latest Date Modified).
 
+![Select Version](./screenshots/Find_data_2_Step2.png)
 
+---
+
+### 3️⃣ Step 3: Get 'data_2' & Check Date ⚠️
+Go deeper into: `.../Cache/Cache_Data/`
+Find the file named **`data_2`**.
+
+**🚨 CRITICAL CHECK:** Look at the **"Date Modified"**. It must match **RIGHT NOW**.
+*(If the time is old, go back to Step 1 and open History again).*
+
+![Check Date Modified](./screenshots/Find_data_2_Step3.png)
+
+---
+
+### ✅ Final Step
+Copy `data_2` to your desktop, then run **`1_GetLink.bat`**.
 
 
 ### Step 1: Get the Link 🔑
