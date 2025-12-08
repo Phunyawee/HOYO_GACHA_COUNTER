@@ -77,3 +77,11 @@ A: The Hoyoverse API is temporary blocking requests because of speed. Wait 15-30
 
 **Q: Pity count seems wrong?**
 A: The tool counts from your *last* 5-star item. Ensure the history loaded completely (Game history only keeps data for 6-12 months).
+
+
+
+---
+
+## 📜 Credits
+* **AuthKey Extraction:** The logic for parsing the local `data_2` cache file is inspired by [paimon.moe](https://paimon.moe).
+* **Script Development:** The PowerShell scripts for calculation and documentation were developed, refactored, and reviewed with the assistance of AI.
