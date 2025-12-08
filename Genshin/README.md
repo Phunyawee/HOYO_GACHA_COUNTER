@@ -14,6 +14,9 @@ This folder contains scripts to extract your wish history URL and calculate your
 ## 🚀 How to use (Step-by-Step)
 
 ### Step 1: Get the Link 🔑
+![Get Link Console Output](./screenshots/step1_getlink.png)
+*Script will ask for the path to 'data_2' file.*
+
 1. Open **Genshin Impact** on your PC.
 2. Open the **Wish (Gacha)** page in-game.
 3. Click on the **History** button (at the bottom of the wish screen) and wait for it to load.
@@ -24,6 +27,12 @@ This folder contains scripts to extract your wish history URL and calculate your
 
 ### Step 2: Calculate Pity 🧮
 *Make sure you have run Step 1 successfully.*
+
+**Option A: Character Banner Only**
+![Character Banner Result](./screenshots/step2_result.png)
+
+**Option B: All Banners (Timeline)**
+![All Banners Result](./screenshots/step2_all.png)
 
 1. Run `2_Calc_All.bat` (Recommended).
 2. The script will automatically read the link from your clipboard.
