@@ -13,6 +13,38 @@ This folder contains scripts to extract your wish history URL and calculate your
 
 ## 🚀 How to use (Step-by-Step)
 
+## 📂 How to find the `data_2` file
+Since this tool runs in **Safe Mode** (local file reading), you need to manually provide the cache file.
+
+### Step A: Generate the Key 🔑
+1. Open **Genshin Impact** on your PC.
+2. Go to the **Wish (Gacha)** menu.
+3. Click on the **History** button (bottom of the screen).
+4. **Wait until the list loads completely.** (This action writes the key to your hard drive).
+5. You can now minimize or close the game.
+
+### Step B: Locate the File 🔍
+1. Navigate to your Genshin Impact installation folder.
+   - Default is usually: `C:\Program Files\Genshin Impact\Genshin Impact Game\`
+2. Go deep into these folders:
+   `GenshinImpact_Data` ➔ `webCaches` ➔ `(Version Number)` ➔ `Cache` ➔ `Cache_Data`
+   
+   > 💡 **Note:** The `(Version Number)` folder changes with game updates (e.g., `2.28.0.0`). Always pick the folder with the **highest number** or **latest date**.
+
+3. Inside `Cache_Data`, look for a file named **`data_2`**.
+
+### Step C: ⚠️ CRITICAL CHECK (Date Modified) ⚠️
+Before copying, look at the **"Date Modified"** column in Windows Explorer.
+*   ✅ **CORRECT:** The time matches **RIGHT NOW** (when you opened the History page).
+*   ❌ **WRONG:** The time is from yesterday or hours ago. (If so, go back to Step A and open History again).
+
+### Step D: Copy & Run
+1. Copy `data_2` to your Desktop or a folder easy to find.
+2. Run `1_GetLink.bat` and drag the file into the window.
+
+
+
+
 ### Step 1: Get the Link 🔑
 ![Get Link Console Output](./screenshots/step1_getlink.png)
 *Script will ask for the path to 'data_2' file.*
