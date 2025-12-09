@@ -1,4 +1,11 @@
+<div align="center">
+
 # 🌠 HOYO Gacha Counter & Tool
+
+[![Thai Badge](https://img.shields.io/badge/Lang-Thai-blue)](./README_TH.md)
+[![English Badge](https://img.shields.io/badge/Lang-English-red)](./README.md)
+
+</div>
 
 A simple, safe, and lightweight tool to **extract Gacha Link** and **calculate Pity History** for **Genshin Impact** & **Honkai: Star Rail**.
 

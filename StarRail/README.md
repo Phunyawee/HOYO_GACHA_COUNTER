@@ -1,3 +1,12 @@
+<div align="center">
+
+# 🌠 HOYO Gacha Counter & Tool
+
+[![Thai Badge](https://img.shields.io/badge/Lang-Thai-blue)](./README_TH.md)
+[![English Badge](https://img.shields.io/badge/Lang-English-red)](./README.md)
+
+</div>
+
 # 🌠 Honkai: Star Rail Warp Tool
 
 This folder contains scripts to extract your Warp (Gacha) history URL and calculate your pity counter.
