@@ -1,13 +1,18 @@
-# 🌠 HOYO Gacha Link Extractor
+# 🌠 HOYO Gacha Counter & Tool
 
-A simple, safe, and lightweight tool to extract Gacha History Link for **Genshin Impact** & **Honkai: Star Rail**.
+A simple, safe, and lightweight tool to **extract Gacha Link** and **calculate Pity History** for **Genshin Impact** & **Honkai: Star Rail**.
 
-> 💡 **Why use this?** Unlike other tools, this script reads local cache files directly. **No Admin permission required** and **No external API calls** for extracting keys.
+> 💡 **Why use this?** Unlike other tools, this script reads local cache files directly. **No Admin permission required** and **No external API calls** for extracting keys. Everything runs locally on your machine.
 
 ## ✨ Features
-- 🔒 **Safe:** Works with local files on your machine.
+- 📊 **Pity Tracker:** View your 5-Star history, current pity count, and timeline.
+- 🔒 **Safe & Local:** Logic reads directly from game cache files. No password needed.
 - 🚀 **Simple:** Just point to the cache file. No complex setup.
 - 🛡️ **No Admin Needed:** Runs safely without elevated privileges.
+
+## 📸 Preview
+![Result Preview](./Genshin/screenshots/step2_all.png)
+*(Example output showing 5-star timeline and pity count)*
 
 ## ⚠️ Limitation
 Please note that game servers only keep your wish history for the last **6 months** (or 1 year for some banners).
@@ -18,10 +23,10 @@ Please note that game servers only keep your wish history for the last **6 month
 Please click on the game folder below to see how to use:
 
 - 📂 **[Genshin Impact](./Genshin)**
-- 📂 **[Honkai: Star Rail](./StarRail)**
+- 📂 **[Honkai: Star Rail](./StarRail)** *(Coming Soon)*
 
 ---
 
 ### 🤝 Credits
 - Parsing logic inspired by [paimon.moe](https://paimon.moe)
-- Refactored for simplicity and local file reading.
+- Refactored for simplicity, safety, and local file reading.
