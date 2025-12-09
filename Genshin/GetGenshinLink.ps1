@@ -23,8 +23,6 @@ if (-not (Test-Path $filePath)) {
     return 
 }
 
-if (-not (Test-Path $filePath)) { Write-Host "File not found" -ForegroundColor Red; return }
-
 Write-Host "Scanning for the LATEST link..." -ForegroundColor Cyan
 
 $content = Get-Content -Path $filePath -Encoding UTF8 -Raw
