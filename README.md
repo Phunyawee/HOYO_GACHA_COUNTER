@@ -23,7 +23,8 @@ Please note that game servers only keep your wish history for the last **6 month
 Please click on the game folder below to see how to use:
 
 - 📂 **[Genshin Impact](./Genshin)**
-- 📂 **[Honkai: Star Rail](./StarRail)** *(Coming Soon)*
+- 📂 **[Honkai: Star Rail](./StarRail)**
+- 📂 **[Zenless Zone Zero](./)** *(Coming Soon)*
 
 ---
 
