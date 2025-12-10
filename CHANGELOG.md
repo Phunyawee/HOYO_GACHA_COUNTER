@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2025-12-10 (Today)
+## [1.1.0] - 2025-12-10
 ### Added
 - 🐻 **Zenless Zone Zero (ZZZ) Support:**
     - Added **Brute Force Extractor**: Automatically scans corrupt/mixed `data_2` files to find the working AuthKey.
