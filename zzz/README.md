@@ -16,15 +16,7 @@ This folder contains scripts to extract your Signal Search (Gacha) history URL a
 | **2_Calc_ZZZ_Character.bat** | 🧮 **STEP 2 (Select Mode):** Interactive menu. You can choose to fetch **Specific Banners** (Character, Weapon, Bangboo) or ALL. |
 | **2_Calc_ZZZ_All.bat** | 📊 **STEP 2 (Auto All):** Automatically fetches and calculates pity for **ALL Channels** in one go. |
 
----
 
-## ⚠️ Important Limitation (Must Read!)
-**Zenless Zone Zero's API has a delay of approx. 1 hour.**
-* If you just pulled a new agent/w-engine, it will show up in-game immediately.
-* However, **it will NOT show up in this tool yet.**
-* Please wait at least **1 hour** for the server to update the data.
-
----
 
 ## 🚀 Usage Guide
 
