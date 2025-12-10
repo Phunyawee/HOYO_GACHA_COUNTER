@@ -31,7 +31,7 @@ Please click on the game folder below to see how to use:
 
 - 📂 **[Genshin Impact](./Genshin)**
 - 📂 **[Honkai: Star Rail](./StarRail)**
-- 📂 **[Zenless Zone Zero](./)** *(Coming Soon)*
+- 📂 **[Zenless Zone Zero](./zzz)**
 
 ---
 

@@ -30,9 +30,9 @@
 ## 🎮 เกมที่รองรับ & คู่มือการใช้
 คลิกที่ชื่อเกมด้านล่างเพื่อดูวิธีใช้งาน:
 
-- 📂 **[Genshin Impact (เกนชิน)](./Genshin/README_TH.md)**
-- 📂 **[Honkai: Star Rail (รางดาว)](./StarRail/README_TH.md)**
-- 📂 **Zenless Zone Zero** *(เร็วๆ นี้)*
+- 📂 **[Genshin Impact](./Genshin/README_TH.md)**
+- 📂 **[Honkai: Star Rail](./StarRail/README_TH.md)**
+- 📂 **[Zenless Zone Zero](./zzz/README_TH.md)** 
 
 ---
 
