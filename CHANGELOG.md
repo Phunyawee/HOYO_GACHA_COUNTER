@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2025-12-12
+### 🌟 Universal Update (Major Overhaul)
+- 🏗️ **Unified Architecture:**
+    - Consolidated all game logic (Genshin, HSR, ZZZ) into a single core script: `HoyoWish.ps1`.
+    - Introduced lightweight `.bat` launchers (`Run_Genshin`, `Run_HSR`, `Run_ZZZ`) for easy access.
+- 🎮 **Universal Logic Improvements:**
+    - **Honkai: Star Rail:** Fixed AuthKey extraction regex to handle hybrid URL formats and updated API host to `public-operation-hkrpg`.
+    - **Zenless Zone Zero:** Integrated "Brute Force" link scanning and "Real Gacha Type" override into the universal core.
+    - **Genshin Impact:** Ported existing logic to the new universal structure.
+
+### ✨ New Features
+- 💬 **Enhanced Discord Integration:**
+    - **Universal Webhook:** One `config.json` handles reports for all 3 games.
+    - **Smart Timestamp:** Automatically switches between "Full Date" and "Short Date" formats based on message length to prevent Discord API errors (4096 char limit).
+    - **Visual Upgrades:** Added game-specific thumbnails, theme colors, and clean text-based emoji indicators (🟢/🔴).
+- 🔢 **Dynamic Menu System:**
+    - Added interactive menu to fetch specific banners based on the selected game.
+    - Added **"0 : FETCH ALL"** option (default) for one-click convenience.
+- 🛠️ **Quality of Life:**
+    - **Auto-Discovery:** Automatically builds banner lists based on the game profile.
+    - **Safety Delays:** Added intelligent sleep timers (0.5s - 1s) to prevent API "Visit too frequently" errors.
+
 ## [1.1.0] - 2025-12-10
 ### Added
 - 🐻 **Zenless Zone Zero (ZZZ) Support:**
