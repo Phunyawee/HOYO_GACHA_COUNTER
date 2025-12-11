@@ -1,4 +1,3 @@
-
 <#
 .SYNOPSIS
     Script to extract Gacha AuthKey from local cache file.
@@ -10,6 +9,7 @@
 .NOTES
     Original Concept: paimon.moe
     Refactored by: Phunyawee
+    Modified: Added Auto-Copy to Clipboard
 #>
 
 # 1. Path เดิมของคุณ
@@ -25,6 +25,8 @@ if (-not (Test-Path $filePath)) {
 
 Write-Host "Scanning for the LATEST link..." -ForegroundColor Cyan
 
+# บางครั้ง PowerShell อ่านไฟล์ใหญ่ๆ ช้า การใช้ -Encoding Default หรือ Byte อาจช่วยได้หากไฟล์มี Encoding แปลกๆ 
+# แต่ UTF8 ตามโค้ดเดิมก็น่าจะโอเคสำหรับไฟล์ log ทั่วไป
 $content = Get-Content -Path $filePath -Encoding UTF8 -Raw
 $chunks = $content -split "1/0/"
 $validLinks = @() # สร้างถุงเก็บลิงก์
@@ -43,11 +45,23 @@ foreach ($chunk in $chunks) {
 if ($validLinks.Count -gt 0) {
     $latestLink = $validLinks[-1] # [-1] แปลว่าตัวสุดท้ายใน Array
 
+    # --- ส่วนที่เพิ่มเข้ามา (Copy to Clipboard) ---
+    Set-Clipboard -Value $latestLink
+    # ----------------------------------------
+
     Write-Host "`n[SUCCESS] Found $($validLinks.Count) links." -ForegroundColor Green
     Write-Host "Picking the LATEST one (Bottom of file):" -ForegroundColor Cyan
     Write-Host "-----------------------------------------------------------" -ForegroundColor Gray
     Write-Host $latestLink -ForegroundColor Yellow
     Write-Host "-----------------------------------------------------------" -ForegroundColor Gray
+    
+    # --- ข้อความแจ้งเตือนที่เพิ่มเข้ามา ---
+    Write-Host " >> Link copied to clipboard <<" -ForegroundColor Green
+    # ---------------------------------
+
 } else {
     Write-Host "No link found." -ForegroundColor Red
 }
+
+# Pause เพื่อให้หน้าจอไม่ปิดทันทีหากรันผ่านการดับเบิ้ลคลิก
+Read-Host -Prompt "Press Enter to exit"
