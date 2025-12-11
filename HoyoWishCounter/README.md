@@ -41,7 +41,7 @@ Wait for the list to load fully, then **close the menu**.
 Navigate to your game's cache folder and copy the file named **`data_2`**.
 
 > **Where is it?** (Check your game installation folder):
-> *   **Genshin:** `.../Genshin Impact Game/YuanShen_Data/webCaches/.../Cache/Cache_Data/`
+> *   **Genshin:** `.../Genshin Impact Game/GenshinImpact_Data(or YuanShen_Data) /webCaches/.../Cache/Cache_Data/`
 > *   **Star Rail:** `.../Star Rail Game/StarRail_Data/webCaches/.../Cache/Cache_Data/`
 > *   **ZZZ:** `.../ZenlessZoneZero Game/ZenlessZoneZero_Data/webCaches/.../Cache/Cache_Data/`
 
@@ -79,10 +79,12 @@ To enable Discord notifications:
 1.  Create a file named `config.json` in the same folder.
 2.  Paste your Webhook URL inside like this:
 
+```
 json
 {
     "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE"
 }
+```
 Note: If you don't use Discord, you can skip this step.
 
 ---

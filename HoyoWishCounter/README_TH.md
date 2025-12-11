@@ -41,7 +41,7 @@
 เข้าไปที่โฟลเดอร์ติดตั้งเกมของคุณ เพื่อก๊อปปี้ไฟล์ที่ชื่อ **`data_2`**
 
 > **ไฟล์อยู่ที่ไหน?** (ลองเช็คตาม Path นี้):
-> *   **Genshin:** `.../Genshin Impact Game/YuanShen_Data/webCaches/.../Cache/Cache_Data/`
+> *   **Genshin:** `.../Genshin Impact Game/GenshinImpact_Data(or YuanShen_Data) /webCaches/.../Cache/Cache_Data/`
 > *   **Star Rail:** `.../Star Rail Game/StarRail_Data/webCaches/.../Cache/Cache_Data/`
 > *   **ZZZ:** `.../ZenlessZoneZero Game/ZenlessZoneZero_Data/webCaches/.../Cache/Cache_Data/`
 
@@ -81,10 +81,12 @@
 1.  สร้างไฟล์ชื่อ `config.json` ในโฟลเดอร์เดียวกัน
 2.  วาง Webhook URL ของคุณลงไปตามรูปแบบนี้:
 
+```
 json
 {
     "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE"
 }
+```
 หมายเหตุ: ถ้าไม่ต้องการใช้ Discord สามารถข้ามขั้นตอนนี้ได้เลย
 
 ---
