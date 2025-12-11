@@ -1,5 +1,5 @@
 # 1. ไฟล์เก็บความลับ (ต้องแก้ชื่อให้ตรงกับไฟล์ที่คุณเก็บ Key)
-config*
+config.json
 secrets.json
 .env
 *.key
