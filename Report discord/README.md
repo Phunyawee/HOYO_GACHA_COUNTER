@@ -79,7 +79,7 @@ To enable Discord notifications:
 1.  Create a file named `config.json` in the same folder.
 2.  Paste your Webhook URL inside like this:
 
-```json
+json
 {
     "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE"
 }

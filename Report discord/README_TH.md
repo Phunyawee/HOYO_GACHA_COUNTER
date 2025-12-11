@@ -81,7 +81,7 @@
 1.  สร้างไฟล์ชื่อ `config.json` ในโฟลเดอร์เดียวกัน
 2.  วาง Webhook URL ของคุณลงไปตามรูปแบบนี้:
 
-```json
+json
 {
     "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE"
 }
