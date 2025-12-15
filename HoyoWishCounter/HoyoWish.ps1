@@ -261,7 +261,7 @@ try {
             $fields += @{ name = "$($b.Name) Pity"; value = "**$val**"; inline = $true }
         }
 
-        $DiscordLimit = 15 
+        $DiscordLimit = 30
         $MaxChars = 3800
         
         function Build-Description ($UseFullTime) {
