@@ -102,11 +102,14 @@ Note: The Discord report format syncs with your selected Display Mode. If you to
 
 ## 🛠️ Troubleshooting
 **Q: "No valid link found or AuthKey expired"**
-A: The key in data_2 has expired. Open the History menu in-game again to refresh it, then run the script immediately.
+A: The key in data_2 has expired. Open the **History menu in-game** again to refresh it, then run the script immediately.
+
 **Q: "Visit too frequently" error.**
 A: The script includes a built-in delay (600ms) to prevent this. If it still happens, wait 1-2 minutes and try again.
+
 **Q: Script closes immediately or shows red errors.**
-A: Make sure you run the .bat file, NOT the .ps1 file directly (unless you know how to execute PS scripts). Also, ensure you have dragged the correct data_2 file.
+A: Make sure you run the **`.bat`** file, NOT the .ps1 file directly (unless you know how to execute PS scripts). Also, ensure you have dragged the correct data_2 file.
+
 **Q: My Discord message shows "No history found".**
 A: Ensure you selected the correct banner (or "FETCH ALL") and that your in-game history actually has records (records older than 6 months are deleted by the game server).
 
