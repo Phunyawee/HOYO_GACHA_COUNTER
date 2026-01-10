@@ -1,7 +1,7 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
-## [2.1.0] - 2025-12-25
+## [2.1.0] - 2026-01-11
 ### 🔄 Workflow & Menu Upgrades
 - **Persistent Session Loop:** The script no longer exits after fetching data.
     - **Resume/Retry:** At the end of a run, simply press `ENTER` to check the same game again (perfect for updating history while playing).
