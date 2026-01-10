@@ -96,18 +96,20 @@ json
     "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE"
 }
 ```
+
+---
 Note: The Discord report format syncs with your selected Display Mode. If you toggled "No." mode in the console, Discord will also show [No. XX] instead of the date.
 
-🛠️ Troubleshooting
-Q: "No valid link found or AuthKey expired"
+## 🛠️ Troubleshooting
+**Q: "No valid link found or AuthKey expired"**
 A: The key in data_2 has expired. Open the History menu in-game again to refresh it, then run the script immediately.
-Q: "Visit too frequently" error.
+**Q: "Visit too frequently" error.**
 A: The script includes a built-in delay (600ms) to prevent this. If it still happens, wait 1-2 minutes and try again.
-Q: Script closes immediately or shows red errors.
+**Q: Script closes immediately or shows red errors.**
 A: Make sure you run the .bat file, NOT the .ps1 file directly (unless you know how to execute PS scripts). Also, ensure you have dragged the correct data_2 file.
-Q: My Discord message shows "No history found".
+**Q: My Discord message shows "No history found".**
 A: Ensure you selected the correct banner (or "FETCH ALL") and that your in-game history actually has records (records older than 6 months are deleted by the game server).
 
-📜 Credits
-AuthKey Extraction: The logic for parsing the local data_2 cache file is inspired by community methods used by paimon.moe.
-Script Development: The Universal PowerShell scripts for calculation, API handling, and documentation were developed, refactored, and optimized with the assistance of AI.
+## 📜 Credits
+**AuthKey Extraction:** The logic for parsing the local data_2 cache file is inspired by community methods used by paimon.moe.
+**Script Development:** The Universal PowerShell scripts for calculation, API handling, and documentation were developed, refactored, and optimized with the assistance of AI.
