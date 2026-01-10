@@ -1,6 +1,17 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [2.1.1] - 2026-01-11
+### 🎨 Visual & Assets Fixes
+- **GitHub Hosted Assets:** Changed the source of Discord Bot Icons (Paimon, Pom-Pom, Bangboo) to use **GitHub Raw Links** (`raw.githubusercontent.com`).
+    - This fixes the issue where bot avatars would revert to the default Discord logo due to hotlinking protection or expired URLs.
+    - Icons are now permanently hosted within the repository for 100% uptime reliability.
+- **Link Logic Update:** Updated `HoyoWish.ps1` to dynamically construct image URLs based on the `main` branch, ensuring users always see the latest assets without needing script updates.
+
+### 🐛 Bug Fixes
+- Fixed a syntax error in the image URL path construction.
+- Minor adjustments to the `Start-Sleep` timing for better stability during sequential fetches.
+
 ## [2.1.0] - 2026-01-11
 ### 🔄 Workflow & Menu Upgrades
 - **Persistent Session Loop:** The script no longer exits after fetching data.
