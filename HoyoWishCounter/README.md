@@ -115,4 +115,5 @@ A: Ensure you selected the correct banner (or "FETCH ALL") and that your in-game
 
 ## 📜 Credits
 **AuthKey Extraction:** The logic for parsing the local data_2 cache file is inspired by community methods used by paimon.moe.
+
 **Script Development:** The Universal PowerShell scripts for calculation, API handling, and documentation were developed, refactored, and optimized with the assistance of AI.
