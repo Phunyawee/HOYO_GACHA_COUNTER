@@ -1,6 +1,23 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [2.1.0] - 2025-12-25
+### 🔄 Workflow & Menu Upgrades
+- **Persistent Session Loop:** The script no longer exits after fetching data.
+    - **Resume/Retry:** At the end of a run, simply press `ENTER` to check the same game again (perfect for updating history while playing).
+    - **Menu Navigation:** Press `M` to return to the main game selection menu to switch games without restarting the script.
+- **Legacy Compatibility:** Fully supports the existing `.bat` shortcuts. The script will auto-start the specified game on the first run, then fall back to the interactive menu loop.
+
+### 🎨 Visual & Display Options
+- **Display Mode Toggle (Press 'T'):** added a new toggle in the main menu to switch the history format:
+    - **Date/Time Mode (Default):** Shows the full timestamp (e.g., `2025-12-24 23:56:04`).
+    - **Sequence Mode (No.):** Shows the pull count order (e.g., `[No. 45]`) for cleaner tracking.
+- **Synchronized Discord Report:** The Discord embed now respects the selected Display Mode. If "No." mode is active, the Discord report will also list items by number instead of date.
+- **Full Timestamp Fix:** Fixed an issue where Discord timestamps were truncating the time. Now displays the full date and time (Seconds included).
+
+### 🐛 Bug Fixes & Stability
+- **API Rate Limiting Fix:** Re-tuned the `Start-Sleep` delay (600ms) between pages to strictly prevent the "Visit too frequently" error from Hoyoverse servers.
+- **Variable Scope Fix:** Fixed a bug where toggled settings (like Display Mode) would reset after the first loop.
 
 ## [2.0.0] - 2025-12-12
 ### 🌟 Universal Update (Major Overhaul)
