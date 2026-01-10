@@ -55,32 +55,29 @@ Paste the `data_2` file into this **Hoyo Gacha Counter** folder (where the `.bat
 
 ### ⚡ PHASE 2: Run the Tool
 
-#### Step 1: Launch & Drag 🖱️
-Double-click the **`.bat`** file for your game (e.g., `Run_ZZZ.bat`) OR right-click `HoyoWish.ps1` -> Run with PowerShell.
-The console window will appear. **Drag and drop the `data_2` file** (that you just pasted) into this window and press **Enter**.
+#### Step 1: Launch & Main Menu 🎮
+Double-click the **`.bat`** file or run the script via PowerShell. You will see the **Main Menu**:
+*   **Select Game:** Type `1`, `2`, or `3`.
+*   **Toggle Display (Optional):** Type **`T`** to switch between **Date** or **Sequence [No.]** mode.
 
-![Console Drag Drop](./screenshots/Console_DragDrop.png)
+![Main Menu](./screenshots/Console_MainMenu.png)
 
-#### Step 2: Main Menu & Configuration 🔢
-You will see the Game Selection Menu.
-*   **Select Game:** Type `1`, `2`, or `3` to choose your game.
-*   **Toggle Display Mode (Optional):** Type **`T`** and press Enter to switch between **Date/Time** display (default) and **Sequence No.** display (e.g. `[No. 50]`).
-*   **Quit:** Type `Q`.
+#### Step 2: Drag & Drop 🖱️
+The console will ask for the cache file. **Drag and drop the `data_2` file** into the window and press **Enter**.
 
-#### Step 3: Select Banner
-The tool will ask which banner you want to check.
-*   Type **`0`** to fetch **EVERYTHING** (Recommended).
-*   Or type a specific number (e.g., `1`) for a specific banner.
+![Drag Drop](./screenshots/Console_DragDrop.png)
 
-![Console Menu](./screenshots/Console_Menu.png)
+#### Step 3: Select Banner 🔢
+Choose which banner to fetch. Type **`0`** for **FETCH ALL** (Recommended).
 
-#### Step 4: Done! 🎉
-The script will calculate your pity, display it in the console, and send a report to Discord (if configured).
+![Banner Menu](./screenshots/Console_Menu.png)
 
-**After finishing:**
-*   Press **ENTER**: To check the **Same Game** again immediately (Useful if you just pulled more gacha).
-*   Type **`M`**: To go back to the **Main Menu** and switch games.
-*   Type **`Q`**: To Quit.
+#### Step 4: Results & Loop 🔄
+After the report is sent, you don't need to close the app!
+*   **[ENTER]**: Check the **same game again** (Instant refresh).
+*   **[M]**: Go back to **Main Menu**.
+
+![Result Screen](./screenshots/Console_Result.png)
 
 ---
 
