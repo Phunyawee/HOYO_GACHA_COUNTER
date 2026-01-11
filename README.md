@@ -20,6 +20,7 @@ A simple, safe, and lightweight tool to extract Gacha Links and calculate Pity H
 
 ## 📸 Preview
 ![GUI Preview](./HoyoWishCounter/screenshots/GUI_Result.png)
+
 *(New Graphical User Interface with instant calculation and Discord reporting)*
 
 ## 🚀 Choose Your Version
