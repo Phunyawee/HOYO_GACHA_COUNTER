@@ -3,26 +3,29 @@
 All notable changes to this project will be documented in this file.
 ## [3.1.0] - 2026-01-11
 ### 🎨 Visual & UI Updates
+- **Luck Analysis Dashboard (New):**
+    - Added a dedicated stats panel showing **Total Pulls**, **Average Pity**, and **Estimated Cost** (in Primogems/Jades).
+    - **Dynamic Coloring:** The "Avg. Pity" text changes color based on your luck (Lime=Lucky, Gold=Average, Red=Salty).
 - **Visual Pity Meter:**
-    - Introduced a dynamic **Pity Gauge** that fills up based on your current progress towards 90 pulls.
-    - **Color-Coded Status:** The bar changes color to indicate safety: **Green** (Safe), **Gold** (Approaching), and **Red** (Soft Pity/High Risk).
-    - **Live Counter:** Added a prominent text display (e.g., *"Current Pity: 76 / 90"*) above the gauge for instant readability.
+    - Introduced a progress bar that visualizes your current pity status towards the 90-pull hard pity.
+    - Includes a **"Current Pity"** counter positioned clearly above the gauge.
 - **Menu Bar Integration:**
-    - Added a standard Windows **Menu Bar** at the top.
-    - **Reset Function:** Added **"Reset / Clear All"** (Shortcut: `F5`) to instantly clear logs, reset the pity counter, and wipe temporary data without restarting the app.
-- **Layout Refinements:**
-    - Redesigned the "Settings" area into a clean GroupBox structure.
-    - Adjusted window height and component spacing to accommodate the new visual elements without clutter.
+    - Added `File > Reset / Clear All` (F5) to instantly wipe data, reset stats, and clear logs without restarting the app.
 
 ### ⚙️ Core Logic Upgrades
-- **Smart Auto-Detect 2.0 (SRS Logic):**
-    - **Log-Based Detection:** Replaced the legacy file scanning method with **Unity Log Parsing** (inspired by Star Rail Station).
-    - **True Universal Support:** Now correctly locates game installations on **ANY drive** (e.g., Drive M:, External SSDs, Network Drives) by reading the game's official `Player.log`.
-    - **Real-time Feedback:** The Auto-Detect process now reports specific steps (Finding Log > Reading Path > Copying) directly to the application status log.
+- **"Trinity" Auto-Detect Logic:**
+    - Implemented a robust hybrid detection system handling all 3 games uniquely:
+        - **Genshin Impact:** Uses Legacy Regex parsing on `output_log.txt`.
+        - **Zenless Zone Zero:** Uses specific `[Subsystems]` parsing on `Player.log`.
+        - **Honkai: Star Rail:** Uses standard SRS logic on `Player.log`.
+- **Universal Drive Support:**
+    - Now correctly locates game installations on **ANY drive** (C:, D:, M:, Network Drives) by reading the official logs.
+- **Recursive Cache Search:**
+    - Replaced version-number guessing with a **Recursive Sort-by-Date** method. This ensures the script always grabs the latest `data_2` file, regardless of folder structure changes or ZZZ's version padding.
 
 ### 🐛 Bug Fixes
-- **Critical Path Fixes:** Resolved "Empty String" and "Illegal Path Form" errors caused by PowerShell's path handling on custom drive letters.
-- **Stability:** Implemented robust .NET fallback methods for file copying to ensure 100% success rate on non-standard environment setups.
+- **Console Cleanliness:** Suppressed output noise (e.g., `0`, `1` list indexes) in the background console.
+- **Path Handling:** Fixed "Illegal Path Form" errors when copying files to custom staging directories.
 
 ## [3.0.0] - 2026-01-11
 ### 🚀 Major Overhaul: GUI Edition

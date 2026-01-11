@@ -1,52 +1,54 @@
 # 🎨 Visual Update Log: Version 3.1.0
 
 > **"From Simple Console to Modern Dashboard"**
-> This update brings a massive overhaul to the user interface, making tracking your pity easier, safer, and more beautiful.
+> This update brings a massive overhaul to the user interface, introducing Luck Analysis, Pity Meters, and a robust Auto-Detect system.
 
 ---
 
 ## 🆚 The Evolution (เปรียบเทียบความเปลี่ยนแปลง)
 
-### 1. The Main Dashboard (หน้าจอหลัก)
-We moved away from the basic interface to a structured, feature-rich dashboard.
+### The Dashboard
+From a command-line script to a full-featured Windows application.
 
 | Previous Versions (Legacy) | ✨ New Version 3.1.0 |
 | :---: | :---: |
-| **1. The Console Era**<br>![Console](../screenshots/Console_MainMenu.png)<br><br>**2. Early GUI (Beta)**<br>![Old GUI](../screenshots/UI_Old.png) | **3. Modern Dashboard**<br><br>![New UI](../screenshots/UI_New_Main.png) |
-| *Evolution from command line > Simple Form > Full Dashboard* | *Added Top Menu Bar, Grouped Settings, and clear visual hierarchy.* |
+| **1. The Console Era**<br>![Console](../screenshots/Console_MainMenu.png)<br><br>**2. Early GUI (Beta)**<br>![Old GUI](../screenshots/UI_Old.png) | **3. Final Dashboard**<br><br>![New UI](../screenshots/UI_New_Main.png) |
+| *Command Line > Simple Form* | *Full Dashboard with Menu Bar, Stats, and Pity Meter.* |
+
 ---
 
-## 🌟 Key Visual Features (ฟีเจอร์เด่น)
+## 🌟 Feature Spotlight (ฟีเจอร์เด่น)
 
-### 📊 1. Dynamic Pity Meter (หลอดวัดความเกลือ)
-No more guessing! The new progress bar visualizes your pity status in real-time.
+### 📊 1. Luck Analysis Dashboard (วิเคราะห์ดวง)
+Are you lucky or salty? The tool now calculates your account's performance instantly.
+
+![Luck Stats](../screenshots/UI_Luck_Stats.png)
+
+*   **Total Pulls:** How many wishes fetched in this session.
+*   **Avg. Pity:** Color-coded average! (e.g., **Green** = Lucky, **Red** = Salty).
+*   **Est. Cost:** Calculates how many Primogems/Jades/Polychromes you spent.
+
+### 🌡️ 2. Dynamic Pity Meter
+Visualizes your progress towards the Hard Pity (90).
 
 ![Pity Meter](../screenshots/UI_Pity_Meter.png)
 
-*   **Real-time Tracking:** Shows exactly how many pulls you've made since the last 5-Star.
-*   **Color Coded:**
-    *   🟢 **Green:** Safe Zone (Early pulls)
-    *   🟡 **Gold:** Approaching Soft Pity
-    *   🔴 **Red:** **Soft Pity / High Risk** (74+ Pulls)
-*   **Live Counter:** Displays `Current Pity: XX / 90` clearly above the bar.
+*   **Color Coded:** Changes from **Green** -> **Gold** -> **Red** as you approach 90.
+*   **Current Pity:** Shows the exact count since your last 5-star.
 
-### 🔍 2. Smart Log Feedback (ระบบแจ้งสถานะอัจฉริยะ)
-The log window now tells you exactly what the "Auto-Detect" system is doing.
+### 🔍 3. Transparent Auto-Detect
+No more guessing. The log window tells you exactly what the tool is doing.
 
 ![Auto Detect Log](../screenshots/UI_AutoDetect_Log.png)
 
-*   **Transparency:** Shows step-by-step process: `Reading Player.log` -> `Found Game Path` -> `Copying File`.
-*   **Universal Detection:** You can now see confirmation that the tool found your game on **Drive M:** (or any custom drive) instantly.
-
-### 🛠️ 3. Menu Bar & Controls
-*   **Menu Bar:** Added `File > Reset / Clear All` (F5) to wipe data instantly without restarting.
-*   **Stop Button:** Added a safety stop button to halt operations gracefully.
+*   **Smart Parsing:** Identifies the game path via `Player.log` or `output_log.txt`.
+*   **Drive Detection:** Confirms discovery on custom drives (e.g., `M:\Games\...`).
 
 ---
 
 ## 🚀 Why upgrade to 3.1.0?
-- **Better UX:** Easier to read, easier to use.
-- **Safer:** "Auto-Detect" logic is now visible and transparent.
-- **Prettier:** The dark theme with color-coded alerts matches the gaming vibe.
+- **Smarter:** Handles Genshin, HSR, and ZZZ with specific logic for each.
+- **Deeper:** Gives you stats (Avg Pity, Cost) not found in the in-game history.
+- **Cleaner:** Fixed all console spam and path errors.
 
 [🔙 Back to Main README](./README.md)

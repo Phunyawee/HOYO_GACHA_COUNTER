@@ -40,28 +40,44 @@ $form.MainMenuStrip = $menuStrip
 
 # เมนู File
 $menuFile = New-Object System.Windows.Forms.ToolStripMenuItem("File")
-$menuStrip.Items.Add($menuFile)
+[void]$menuStrip.Items.Add($menuFile)
 
 # เมนูย่อย Reset
 $itemClear = New-Object System.Windows.Forms.ToolStripMenuItem("Reset / Clear All")
 $itemClear.ShortcutKeys = [System.Windows.Forms.Keys]::F5
 $itemClear.Add_Click({
+    # 1. เคลียร์หน้าจอ Log
     $txtLog.Clear()
+    
+    # 2. รีเซ็ตหลอด Pity
     $script:pnlPityFill.Width = 0
     $script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"
     $script:lblPityTitle.ForeColor = "White"
     $script:pnlPityFill.BackColor = "LimeGreen"
+    
+    # 3. รีเซ็ตตัวแปรข้อมูล
     $script:LastFetchedData = @()
     $script:progressBar.Value = 0
+    
+    # 4. ปิดปุ่ม Export
     $btnExport.Enabled = $false
     $btnExport.BackColor = "DimGray"
+
+    # 5. [เพิ่มใหม่] รีเซ็ต Stats Dashboard
+    # เช็คก่อนว่าตัวแปร UI ถูกสร้างหรือยัง (กัน Error ตอนเปิดโปรแกรมแรกๆ)
+    if ($lblStat1) { $lblStat1.Text = "Total Pulls: 0" }
+    if ($script:lblStatAvg) { 
+        $script:lblStatAvg.Text = "Avg. Pity: -" 
+        $script:lblStatAvg.ForeColor = "White"
+    }
+    if ($script:lblStatCost) { $script:lblStatCost.Text = "Est. Cost: 0" }
 })
-$menuFile.DropDownItems.Add($itemClear)
+[void]$menuFile.DropDownItems.Add($itemClear)
 
 # เมนูย่อย Exit
 $itemExit = New-Object System.Windows.Forms.ToolStripMenuItem("Exit")
 $itemExit.Add_Click({ $form.Close() })
-$menuFile.DropDownItems.Add($itemExit)
+[void]$menuFile.DropDownItems.Add($itemExit)
 
 # --- ROW 1: GAME BUTTONS (Y=40) ---
 # ขยับลงมาเพื่อให้พ้นเมนูบาร์
@@ -161,9 +177,37 @@ $btnStop.BackColor = "Firebrick"; $btnStop.ForeColor = "White"; $btnStop.Font = 
 $btnStop.Enabled = $false
 $form.Controls.Add($btnStop)
 
-# --- ROW 5: LOG WINDOW (Y=365) ---
+# --- ROW 4.5: STATS DASHBOARD (Y=360) [NEW!] ---
+$grpStats = New-Object System.Windows.Forms.GroupBox
+$grpStats.Text = " Luck Analysis (Based on fetched data) "
+$grpStats.Location = New-Object System.Drawing.Point(20, 360); $grpStats.Size = New-Object System.Drawing.Size(550, 60)
+$grpStats.ForeColor = "Silver"
+$form.Controls.Add($grpStats)
+
+# Label 1: Total Pulls
+$lblStat1 = New-Object System.Windows.Forms.Label
+$lblStat1.Text = "Total Pulls: 0"; $lblStat1.AutoSize = $true
+$lblStat1.Location = New-Object System.Drawing.Point(20, 25); $lblStat1.Font = New-Object System.Drawing.Font("Arial", 10)
+$grpStats.Controls.Add($lblStat1)
+
+# Label 2: Avg Pity (Highlight)
+$script:lblStatAvg = New-Object System.Windows.Forms.Label
+$script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.AutoSize = $true
+$script:lblStatAvg.Location = New-Object System.Drawing.Point(200, 25); $script:lblStatAvg.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold)
+$script:lblStatAvg.ForeColor = "White"
+$grpStats.Controls.Add($script:lblStatAvg)
+
+# Label 3: Cost
+$script:lblStatCost = New-Object System.Windows.Forms.Label
+$script:lblStatCost.Text = "Est. Cost: 0"; $script:lblStatCost.AutoSize = $true
+$script:lblStatCost.Location = New-Object System.Drawing.Point(380, 25); $script:lblStatCost.Font = New-Object System.Drawing.Font("Arial", 10)
+$script:lblStatCost.ForeColor = "Gold" # สีทองให้ดูแพง
+$grpStats.Controls.Add($script:lblStatCost)
+
+# --- ROW 5: LOG WINDOW (Y=430) ---
+# ขยับลงมาจาก 365 เป็น 430
 $txtLog = New-Object System.Windows.Forms.RichTextBox
-$txtLog.Location = New-Object System.Drawing.Point(20, 365); $txtLog.Size = New-Object System.Drawing.Size(550, 420) 
+$txtLog.Location = New-Object System.Drawing.Point(20, 430); $txtLog.Size = New-Object System.Drawing.Size(550, 360) # ลดความสูงนิดนึงชดเชยพื้นที่
 $txtLog.BackColor = "Black"; $txtLog.ForeColor = "Lime"; $txtLog.ReadOnly = $true; $txtLog.Font = New-Object System.Drawing.Font("Consolas", 10); $txtLog.BorderStyle = "None"
 $form.Controls.Add($txtLog)
 
@@ -189,11 +233,17 @@ function Log($msg, $color="Lime") {
 function Update-BannerList {
     $conf = Get-GameConfig $script:CurrentGame
     $script:cmbBanner.Items.Clear()
-    $script:cmbBanner.Items.Add("* FETCH ALL (Recommended)") 
+    
+    # เติม [void] ข้างหน้า เพื่อปิดปากไม่ให้มันคืนค่าตัวเลข
+    [void]$script:cmbBanner.Items.Add("* FETCH ALL (Recommended)") 
+    
     foreach ($b in $conf.Banners) {
-        $script:cmbBanner.Items.Add("$($b.Name)")
+        [void]$script:cmbBanner.Items.Add("$($b.Name)")
     }
-    $script:cmbBanner.SelectedIndex = 0
+    
+    if ($script:cmbBanner.Items.Count -gt 0) {
+        $script:cmbBanner.SelectedIndex = 0
+    }
 }
 
 # Config Check
@@ -424,8 +474,41 @@ $btnRun.Add_Click({
         # หยุด Progress Bar ด้านล่าง
         $script:progressBar.Style = "Blocks"
         $script:progressBar.Value = 100
+
+        # --- CALCULATE LUCK STATS ---
+        $totalPulls = $allHistory.Count
+        $total5Star = $highRankHistory.Count
+        $avgPity = 0
         
-        # --- DISCORD ---
+        # 1. Update Total
+        $lblStat1.Text = "Total Pulls: $totalPulls"
+
+        # 2. Update Avg Pity
+        if ($total5Star -gt 0) {
+            # สูตร: เอาจำนวนโรลทั้งหมด หารด้วย จำนวน 5 ดาวที่ออก
+            $avgPity = "{0:N2}" -f ($totalPulls / $total5Star)
+            $script:lblStatAvg.Text = "Avg. Pity: $avgPity"
+            
+            # เปลี่ยนสีตามความเฮง
+            if ([double]$avgPity -le 55) { $script:lblStatAvg.ForeColor = "Lime" }   # เฮงจัด
+            elseif ([double]$avgPity -le 73) { $script:lblStatAvg.ForeColor = "Gold" } # ทั่วไป
+            else { $script:lblStatAvg.ForeColor = "OrangeRed" }                       # เกลือ
+        } else {
+            $script:lblStatAvg.Text = "Avg. Pity: N/A"
+            $script:lblStatAvg.ForeColor = "Gray"
+        }
+
+        # 3. Update Cost (Currency)
+        $cost = $totalPulls * 160
+        $currencyName = "Primos"
+        if ($script:CurrentGame -eq "HSR") { $currencyName = "Jades" }
+        elseif ($script:CurrentGame -eq "ZZZ") { $currencyName = "Polychromes" }
+        
+        # จัด Format ใส่ลูกน้ำ (เช่น 160,000)
+        $costStr = "{0:N0}" -f $cost
+        $script:lblStatCost.Text = "Est. Cost: $costStr $currencyName"
+        
+        # === DISCORD ===
         if ($SendDiscord) {
             Log "`nSending report to Discord..." "Magenta"
             $discordMsg = Send-DiscordReport -HistoryData $highRankHistory -PityTrackers $pityTrackers -Config $conf -ShowNoMode $ShowNo

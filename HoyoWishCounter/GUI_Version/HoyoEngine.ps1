@@ -65,50 +65,117 @@ function Get-GameConfig {
     return $null
 }
 
-# --- 2. FILE OPERATIONS (SRS Logic + Fix Empty Path Error) ---
-# --- 2. FILE OPERATIONS (Final Fix: Copy Path Logic) ---
+# --- 2. FILE OPERATIONS (Trinity: Genshin + ZZZ + HSR) ---
 function Find-GameCacheFile {
     param([hashtable]$Config, [string]$StagingPath)
 
     if ($null -eq $Config) { throw "Config is missing." }
 
-    Log-Status "--- Auto-Detect Started (SRS Method) ---" "Cyan"
+    Log-Status "--- Auto-Detect Started ---" "Cyan"
     
-    # 1. หาไฟล์ Player.log
-    $AppData = [Environment]::GetFolderPath('ApplicationData')
-    $LocalLow = Join-Path $AppData "..\LocalLow"
-    $LogPath = $null
-    
-    foreach ($subFolder in $Config.LogFolders) {
-        $TryPath = Join-Path $LocalLow "$subFolder\Player.log"
-        if (Test-Path $TryPath) {
-            $LogPath = $TryPath
-            Log-Status "Found Log File: $TryPath" "Gray"
-            break
+    $FinalPath = $null
+    $GamePath = $null
+
+    # ==========================================
+    # LOGIC A: GENSHIN IMPACT (Legacy output_log.txt)
+    # ==========================================
+    if ($Config.Name -match "Genshin") {
+        Log-Status "Mode: Genshin Legacy" "Yellow"
+        
+        $logLocation = "%userprofile%\AppData\LocalLow\miHoYo\Genshin Impact\output_log.txt"
+        $path = [System.Environment]::ExpandEnvironmentVariables($logLocation)
+
+        if (-not [System.IO.File]::Exists($path)) {
+            $logLocationChina = "%userprofile%\AppData\LocalLow\miHoYo\$([char]0x539f)$([char]0x795e)\output_log.txt"
+            $pathChina = [System.Environment]::ExpandEnvironmentVariables($logLocationChina)
+            if ([System.IO.File]::Exists($pathChina)) { $path = $pathChina } 
+            else { throw "Cannot find 'output_log.txt'." }
         }
+        Log-Status "Found Log: $path" "Gray"
+
+        try {
+            $logs = Get-Content -Path $path -Encoding UTF8 -ErrorAction Stop
+            $m = $logs -match "(?m).:/.+(GenshinImpact_Data|YuanShen_Data)"
+            if ($matches.Length -eq 0) { throw "Pattern not found in log." }
+            $null = $m[0] -match "(.:/.+(GenshinImpact_Data|YuanShen_Data))"
+            $GamePath = $matches[1]
+        } catch { throw "Error parsing Genshin log." }
+
+    # ==========================================
+    # LOGIC B: ZENLESS ZONE ZERO (Special Subsystems Logic)
+    # ==========================================
+    } elseif ($Config.Name -match "Zenless") {
+        Log-Status "Mode: ZZZ Subsystems" "Yellow"
+
+        $AppData = [Environment]::GetFolderPath('ApplicationData')
+        $LocalLow = Join-Path $AppData "..\LocalLow"
+        $LogPath = $null
+
+        # ZZZ มักจะอยู่ใน miHoYo\ZenlessZoneZero (แต่เช็ค Cognosphere เผื่อไว้)
+        foreach ($subFolder in $Config.LogFolders) {
+            $TryPath = Join-Path $LocalLow "$subFolder\Player.log"
+            if (Test-Path $TryPath) { $LogPath = $TryPath; break }
+        }
+        if (-not $LogPath) { throw "Player.log not found." }
+        Log-Status "Found Log: $LogPath" "Gray"
+
+        # ** ZZZ SPECIFIC PARSING **
+        try {
+            # อ่าน 20 บรรทัดแรก (ต้นฉบับใช้ 16)
+            $LogLines = Get-Content $LogPath -First 20 -ErrorAction Stop
+            foreach ($line in $LogLines) {
+                # Logic จากสคริปต์ที่คุณให้มา
+                if ($line.StartsWith("[Subsystems] Discovering subsystems at path ")) {
+                    $GamePath = $line.Replace("[Subsystems] Discovering subsystems at path ", "").Replace("UnitySubsystems", "")
+                    # ตัด whitespace และ slash ท้ายออก
+                    $GamePath = $GamePath.Trim()
+                    break
+                }
+            }
+        } catch { throw "Error reading ZZZ log." }
+
+    # ==========================================
+    # LOGIC C: HONKAI STAR RAIL (Standard SRS)
+    # ==========================================
+    } else {
+        Log-Status "Mode: HSR Standard" "Yellow"
+        
+        $AppData = [Environment]::GetFolderPath('ApplicationData')
+        $LocalLow = Join-Path $AppData "..\LocalLow"
+        $LogPath = $null
+
+        foreach ($subFolder in $Config.LogFolders) {
+            $TryPath = Join-Path $LocalLow "$subFolder\Player.log"
+            if (Test-Path $TryPath) { $LogPath = $TryPath; break }
+        }
+        if (-not $LogPath) { throw "Player.log not found." }
+        Log-Status "Found Log: $LogPath" "Gray"
+
+        try {
+            $LogLines = Get-Content $LogPath -First 50 -ErrorAction Stop
+            foreach ($line in $LogLines) {
+                if ($line -match "Loading player data from (.+?)data.unity3d") {
+                    $GamePath = $matches[1]
+                    break
+                }
+            }
+        } catch { throw "Error reading HSR log." }
     }
 
-    if (-not $LogPath) { throw "Could not find Player.log! Please open the game at least once." }
-
-    # 2. อ่าน Log หา Path เกม
-    Log-Status "Reading Player.log..." "Yellow"
-    $GamePath = $null
-    
-    try {
-        $LogLines = Get-Content $LogPath -First 50 -ErrorAction Stop
-        foreach ($line in $LogLines) {
-            if ($line -match "Loading player data from (.+?)data.unity3d") {
-                $GamePath = $matches[1]
-                break
-            }
-        }
-    } catch { throw "Error reading log file." }
+    # ==========================================
+    # COMMON PROCESS: LOCATE CACHE & COPY
+    # ==========================================
 
     if ([string]::IsNullOrWhiteSpace($GamePath)) { throw "Could not extract Game Path from Log." }
+    
+    # Clean Path format (เปลี่ยน / เป็น \)
     $GamePath = $GamePath -replace "/", "\"
+    # ลบ Backslash ตัวท้ายสุดออก (ถ้ามี) เพื่อความชัวร์ในการ Join-Path
+    if ($GamePath.EndsWith("\")) { $GamePath = $GamePath.Substring(0, $GamePath.Length - 1) }
+    
     Log-Status "Game installed at: $GamePath" "Lime"
 
-    # 3. หา webCaches
+    # หา webCaches (ZZZ ปกติจะอยู่ที่ Root เลย, Genshin/HSR อาจอยู่ใน _Data)
     $PossibleWebCachePaths = @(
         "$GamePath\webCaches",
         "$GamePath\$($Config.DataFolderName)\webCaches"
@@ -117,54 +184,36 @@ function Find-GameCacheFile {
     foreach ($p in $PossibleWebCachePaths) {
         if (Test-Path $p) { $TargetWebCache = $p; break }
     }
-    if (-not $TargetWebCache) { throw "webCaches folder missing. Open Wish History in-game to generate it." }
+
+    if (-not $TargetWebCache) { throw "webCaches folder missing. Open Wish History in-game." }
     Log-Status "Found webCaches at: $TargetWebCache" "Gray"
 
-    # 4. หา Version ล่าสุด
-    $CacheFolders = Get-ChildItem $TargetWebCache -Directory
-    $MaxVersion = 0
-    $FinalPath = "$TargetWebCache\Cache\Cache_Data\data_2" 
+    # หา data_2 โดยเอาตัวที่ใหม่ที่สุด (Recursive LastWriteTime)
+    # วิธีนี้แก้ปัญหาเรื่องเลข Version ของ ZZZ ได้โดยอัตโนมัติ เพราะโฟลเดอร์เวอร์ชันสูงสุดย่อมใหม่สุด
+    Log-Status "Scanning for latest 'data_2'..." "Cyan"
+    
+    $TargetFiles = Get-ChildItem -Path $TargetWebCache -Filter "data_2" -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
 
-    foreach ($folder in $CacheFolders) {
-        if ($folder.Name -match '^\d+\.\d+\.\d+\.\d+$') {
-            try {
-                $VerNum = [int64]($folder.Name -replace '\.', '')
-                if ($VerNum -ge $MaxVersion) {
-                    $MaxVersion = $VerNum
-                    $FinalPath = "$($folder.FullName)\Cache\Cache_Data\data_2"
-                }
-            } catch {}
-        }
+    if ($null -eq $TargetFiles -or $TargetFiles.Count -eq 0) {
+        throw "data_2 file not found inside webCaches."
     }
-    Log-Status "Targeting Cache File: $FinalPath" "Cyan"
 
-    if (-not (Test-Path $FinalPath)) { throw "File 'data_2' not found inside cache folder." }
+    $FinalPath = $TargetFiles[0].FullName
+    Log-Status "Targeting File: $FinalPath" "Cyan"
 
-    # 5. [FIXED] ขั้นตอนก๊อปปี้ (ปลอดภัย 100% ไม่ใช้ .NET Constructor)
+    # Copy to Staging
     try {
-        # ถ้า Path ปลายทางว่าง ให้ตั้งค่า Default เป็นโฟลเดอร์ปัจจุบัน
-        if ([string]::IsNullOrWhiteSpace($StagingPath)) {
-            $StagingPath = ".\temp_data_2"
-        }
+        if ([string]::IsNullOrWhiteSpace($StagingPath)) { $StagingPath = ".\temp_data_2" }
         
-        # แปลงเป็น Full Path มาตรฐาน Windows (แก้ปัญหา Path ผิดรูปแบบ)
         $DestFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($StagingPath)
-        
-        # หาโฟลเดอร์แม่
         $DestDir = Split-Path -Parent $DestFullPath
         if ([string]::IsNullOrWhiteSpace($DestDir)) { $DestDir = "." }
 
-        # สร้างโฟลเดอร์ถ้าไม่มี
-        if (-not (Test-Path $DestDir)) {
-            New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
-        }
+        if (-not (Test-Path $DestDir)) { New-Item -ItemType Directory -Path $DestDir -Force | Out-Null }
 
-        # ก๊อปปี้
         Copy-Item -Path $FinalPath -Destination $DestFullPath -Force
-        
         Log-Status "Auto-Detect Success! File copied." "Green"
         
-        # ส่งค่า Path เต็มกลับไป
         return $DestFullPath
     } catch {
         throw "Copy Failed: $($_.Exception.Message)"
