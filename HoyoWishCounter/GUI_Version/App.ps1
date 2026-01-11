@@ -1,3 +1,8 @@
+# --- CONFIGURATION (DEBUG MODE) ---
+# ตั้งเป็น $true เพื่อให้แสดงข้อความในหน้าต่าง PowerShell (Console) ด้วย
+# ตั้งเป็น $false เพื่อปิด (แสดงแค่ใน GUI)
+$script:DebugMode = $true 
+
 # Load Engine
 $EnginePath = Join-Path $PSScriptRoot "HoyoEngine.ps1"
 if (-not (Test-Path $EnginePath)) { 
@@ -46,7 +51,10 @@ $menuFile = New-Object System.Windows.Forms.ToolStripMenuItem("File")
 $itemClear = New-Object System.Windows.Forms.ToolStripMenuItem("Reset / Clear All")
 $itemClear.ShortcutKeys = [System.Windows.Forms.Keys]::F5
 $itemClear.Add_Click({
-    # 1. เคลียร์หน้าจอ Log
+    # [DEBUG] แจ้งเตือนก่อนล้าง (จะเห็นชัดใน Console Debug Mode)
+    Log ">>> User requested RESET. Clearing all data... <<<" "OrangeRed"
+
+    # 1. เคลียร์หน้าจอ Log GUI
     $txtLog.Clear()
     
     # 2. รีเซ็ตหลอด Pity
@@ -63,14 +71,16 @@ $itemClear.Add_Click({
     $btnExport.Enabled = $false
     $btnExport.BackColor = "DimGray"
 
-    # 5. [เพิ่มใหม่] รีเซ็ต Stats Dashboard
-    # เช็คก่อนว่าตัวแปร UI ถูกสร้างหรือยัง (กัน Error ตอนเปิดโปรแกรมแรกๆ)
+    # 5. รีเซ็ต Stats Dashboard
     if ($lblStat1) { $lblStat1.Text = "Total Pulls: 0" }
     if ($script:lblStatAvg) { 
         $script:lblStatAvg.Text = "Avg. Pity: -" 
         $script:lblStatAvg.ForeColor = "White"
     }
     if ($script:lblStatCost) { $script:lblStatCost.Text = "Est. Cost: 0" }
+
+    # [DEBUG] แจ้งเตือนหลังล้างเสร็จ (บรรทัดแรกของหน้าจอใหม่)
+    Log "--- System Reset Complete. Ready. ---" "Gray"
 })
 [void]$menuFile.DropDownItems.Add($itemClear)
 
@@ -224,6 +234,25 @@ $form.Controls.Add($btnExport)
 # ============================
 
 function Log($msg, $color="Lime") { 
+    # --- ส่วนที่เพิ่มเข้ามา: Debug Mode ---
+    if ($script:DebugMode) {
+        # แปลงชื่อสีจาก System.Drawing เป็น ConsoleColor (แก้สี Lime ให้เป็น Green เพราะ Console ไม่มี Lime)
+        $consoleColor = $color
+        if ($color -eq "Lime") { $consoleColor = "Green" }
+        if ($color -eq "Gold") { $consoleColor = "Yellow" }
+        if ($color -eq "OrangeRed") { $consoleColor = "Red" }
+        if ($color -eq "DimGray") { $consoleColor = "Gray" }
+        
+        try {
+            Write-Host "[DEBUG] $msg" -ForegroundColor $consoleColor
+        } catch {
+            # ถ้าชื่อสีไม่ตรงกับ ConsoleColor ให้พ่นออกมาเป็นสีขาวปกติ
+            Write-Host "[DEBUG] $msg"
+        }
+    }
+    # ------------------------------------
+
+    # --- โค้ดเดิม (แสดงบน GUI) ---
     $txtLog.SelectionStart = $txtLog.Text.Length
     $txtLog.SelectionColor = [System.Drawing.Color]::FromName($color)
     $txtLog.AppendText("$msg`n")

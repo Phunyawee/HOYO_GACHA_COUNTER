@@ -1,6 +1,16 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [3.1.1] - 2026-01-12
+### 🔧 System & Maintenance
+- **Developer Debug Mode:**
+    - Introduced a configuration toggle ($script:DebugMode) at the top of App.ps1.
+    - When enabled ($true), the script mirrors all GUI logs to the background PowerShell console,       allowing for real-time troubleshooting even if the UI freezes.
+    - Smart Color Translation: Automatically converts GUI-specific colors (e.g., Lime, Gold) into compatible Console colors (Green, Yellow) for readable text in the black window.
+- **Enhanced Reset Feedback:**
+    - The Reset / Clear All function now explicitly logs the action ("User requested RESET" ... "System Reset Complete").
+    - In Debug Mode, this preserves the reset history in the console log even after the GUI wipes the visual data.
+
 ## [3.1.0] - 2026-01-11
 ### 🎨 Visual & UI Updates
 - **Luck Analysis Dashboard (New):**

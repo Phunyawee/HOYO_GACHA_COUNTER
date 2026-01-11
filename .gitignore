@@ -16,6 +16,7 @@ Thumbs.db
 # 4. ไฟล์ Log หรือไฟล์ขยะจากการรันสคริปต์
 *.log
 *.tmp
+*.csv
 output/
 
 data_*
