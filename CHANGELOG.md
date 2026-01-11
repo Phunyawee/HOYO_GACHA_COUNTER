@@ -1,6 +1,29 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [3.1.0] - 2026-01-11
+### 🎨 Visual & UI Updates
+- **Visual Pity Meter:**
+    - Introduced a dynamic **Pity Gauge** that fills up based on your current progress towards 90 pulls.
+    - **Color-Coded Status:** The bar changes color to indicate safety: **Green** (Safe), **Gold** (Approaching), and **Red** (Soft Pity/High Risk).
+    - **Live Counter:** Added a prominent text display (e.g., *"Current Pity: 76 / 90"*) above the gauge for instant readability.
+- **Menu Bar Integration:**
+    - Added a standard Windows **Menu Bar** at the top.
+    - **Reset Function:** Added **"Reset / Clear All"** (Shortcut: `F5`) to instantly clear logs, reset the pity counter, and wipe temporary data without restarting the app.
+- **Layout Refinements:**
+    - Redesigned the "Settings" area into a clean GroupBox structure.
+    - Adjusted window height and component spacing to accommodate the new visual elements without clutter.
+
+### ⚙️ Core Logic Upgrades
+- **Smart Auto-Detect 2.0 (SRS Logic):**
+    - **Log-Based Detection:** Replaced the legacy file scanning method with **Unity Log Parsing** (inspired by Star Rail Station).
+    - **True Universal Support:** Now correctly locates game installations on **ANY drive** (e.g., Drive M:, External SSDs, Network Drives) by reading the game's official `Player.log`.
+    - **Real-time Feedback:** The Auto-Detect process now reports specific steps (Finding Log > Reading Path > Copying) directly to the application status log.
+
+### 🐛 Bug Fixes
+- **Critical Path Fixes:** Resolved "Empty String" and "Illegal Path Form" errors caused by PowerShell's path handling on custom drive letters.
+- **Stability:** Implemented robust .NET fallback methods for file copying to ensure 100% success rate on non-standard environment setups.
+
 ## [3.0.0] - 2026-01-11
 ### 🚀 Major Overhaul: GUI Edition
 - **New Graphical User Interface (GUI):**

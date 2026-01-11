@@ -17,108 +17,163 @@ $form.StartPosition = "CenterScreen"
 $form.BackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
 $form.ForeColor = "White"
 
-# State Variables
-$script:CurrentGame = "Genshin"
-$script:StagingFile = Join-Path $PSScriptRoot "temp_data_2"
-$script:StopRequested = $false
-$script:LastFetchedData = @() # ตัวแปรเก็บข้อมูลสำหรับ Export
-
 # ============================
-#  UI SECTION
+#  UI SECTION (FIXED LAYOUT)
 # ============================
 
-# --- ROW 1: GAME BUTTONS (Y=20) ---
+# --- FORM SETUP ---
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Universal Hoyo Wish Counter (Final)"
+$form.Size = New-Object System.Drawing.Size(600, 900)
+$form.StartPosition = "CenterScreen"
+$form.BackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
+$form.ForeColor = "White"
+$form.FormBorderStyle = "FixedSingle"
+$form.MaximizeBox = $false
+
+# --- MENU BAR (อยู่บนสุด) ---
+$menuStrip = New-Object System.Windows.Forms.MenuStrip
+$menuStrip.BackColor = [System.Drawing.Color]::FromArgb(45, 45, 48)
+$menuStrip.ForeColor = "White"
+$form.Controls.Add($menuStrip)
+$form.MainMenuStrip = $menuStrip
+
+# เมนู File
+$menuFile = New-Object System.Windows.Forms.ToolStripMenuItem("File")
+$menuStrip.Items.Add($menuFile)
+
+# เมนูย่อย Reset
+$itemClear = New-Object System.Windows.Forms.ToolStripMenuItem("Reset / Clear All")
+$itemClear.ShortcutKeys = [System.Windows.Forms.Keys]::F5
+$itemClear.Add_Click({
+    $txtLog.Clear()
+    $script:pnlPityFill.Width = 0
+    $script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"
+    $script:lblPityTitle.ForeColor = "White"
+    $script:pnlPityFill.BackColor = "LimeGreen"
+    $script:LastFetchedData = @()
+    $script:progressBar.Value = 0
+    $btnExport.Enabled = $false
+    $btnExport.BackColor = "DimGray"
+})
+$menuFile.DropDownItems.Add($itemClear)
+
+# เมนูย่อย Exit
+$itemExit = New-Object System.Windows.Forms.ToolStripMenuItem("Exit")
+$itemExit.Add_Click({ $form.Close() })
+$menuFile.DropDownItems.Add($itemExit)
+
+# --- ROW 1: GAME BUTTONS (Y=40) ---
+# ขยับลงมาเพื่อให้พ้นเมนูบาร์
 $btnGenshin = New-Object System.Windows.Forms.Button
 $btnGenshin.Text = "Genshin"
-$btnGenshin.Location = New-Object System.Drawing.Point(20, 20); $btnGenshin.Size = New-Object System.Drawing.Size(170, 50)
-$btnGenshin.FlatStyle = "Flat"; $btnGenshin.BackColor = "Gold"; $btnGenshin.ForeColor = "Black"
+$btnGenshin.Location = New-Object System.Drawing.Point(20, 40); $btnGenshin.Size = New-Object System.Drawing.Size(170, 45)
+$btnGenshin.FlatStyle = "Flat"; $btnGenshin.BackColor = "Gold"; $btnGenshin.ForeColor = "Black"; $btnGenshin.FlatAppearance.BorderSize = 0
 $form.Controls.Add($btnGenshin)
 
 $btnHSR = New-Object System.Windows.Forms.Button
 $btnHSR.Text = "Star Rail"
-$btnHSR.Location = New-Object System.Drawing.Point(210, 20); $btnHSR.Size = New-Object System.Drawing.Size(170, 50)
-$btnHSR.FlatStyle = "Flat"; $btnHSR.BackColor = "Gray"
+$btnHSR.Location = New-Object System.Drawing.Point(210, 40); $btnHSR.Size = New-Object System.Drawing.Size(170, 45)
+$btnHSR.FlatStyle = "Flat"; $btnHSR.BackColor = "Gray"; $btnHSR.FlatAppearance.BorderSize = 0
 $form.Controls.Add($btnHSR)
 
 $btnZZZ = New-Object System.Windows.Forms.Button
 $btnZZZ.Text = "ZZZ"
-$btnZZZ.Location = New-Object System.Drawing.Point(400, 20); $btnZZZ.Size = New-Object System.Drawing.Size(170, 50)
-$btnZZZ.FlatStyle = "Flat"; $btnZZZ.BackColor = "Gray"
+$btnZZZ.Location = New-Object System.Drawing.Point(400, 40); $btnZZZ.Size = New-Object System.Drawing.Size(170, 45)
+$btnZZZ.FlatStyle = "Flat"; $btnZZZ.BackColor = "Gray"; $btnZZZ.FlatAppearance.BorderSize = 0
 $form.Controls.Add($btnZZZ)
 
-# --- ROW 2: FILE SELECTION (Y=90) ---
-$grpFile = New-Object System.Windows.Forms.GroupBox
-$grpFile.Text = "Cache File Selection"
-$grpFile.Location = New-Object System.Drawing.Point(20, 90); $grpFile.Size = New-Object System.Drawing.Size(545, 70)
-$grpFile.ForeColor = "White"
-$form.Controls.Add($grpFile)
+# --- ROW 2: SETTINGS (Y=100) ---
+# ขยับหนีปุ่มด้านบนลงมาที่ Y=100 (เดิม 80 ชนกัน)
+$grpSettings = New-Object System.Windows.Forms.GroupBox
+$grpSettings.Text = " Settings "
+$grpSettings.Location = New-Object System.Drawing.Point(20, 100); $grpSettings.Size = New-Object System.Drawing.Size(550, 110)
+$grpSettings.ForeColor = "White"
+$form.Controls.Add($grpSettings)
 
 $txtPath = New-Object System.Windows.Forms.TextBox
-$txtPath.Location = New-Object System.Drawing.Point(15, 25); $txtPath.Size = New-Object System.Drawing.Size(340, 30)
-$grpFile.Controls.Add($txtPath)
+$txtPath.Location = New-Object System.Drawing.Point(15, 25); $txtPath.Size = New-Object System.Drawing.Size(350, 25)
+$txtPath.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtPath.ForeColor = "White"; $txtPath.BorderStyle = "FixedSingle"
+$grpSettings.Controls.Add($txtPath)
 
 $btnAuto = New-Object System.Windows.Forms.Button
-$btnAuto.Text = "Auto-Detect"
-$btnAuto.Location = New-Object System.Drawing.Point(365, 23); $btnAuto.Size = New-Object System.Drawing.Size(80, 25)
-$btnAuto.BackColor = "DodgerBlue"; $btnAuto.FlatStyle = "Flat"
-$grpFile.Controls.Add($btnAuto)
+$btnAuto.Text = "Auto-Detect"; $btnAuto.Location = New-Object System.Drawing.Point(375, 24); $btnAuto.Size = New-Object System.Drawing.Size(80, 27)
+$btnAuto.BackColor = "DodgerBlue"; $btnAuto.FlatStyle = "Flat"; $btnAuto.FlatAppearance.BorderSize = 0
+$grpSettings.Controls.Add($btnAuto)
 
 $btnBrowse = New-Object System.Windows.Forms.Button
-$btnBrowse.Text = "Browse..."
-$btnBrowse.Location = New-Object System.Drawing.Point(455, 23); $btnBrowse.Size = New-Object System.Drawing.Size(80, 25)
-$btnBrowse.BackColor = "DimGray"; $btnBrowse.FlatStyle = "Flat"
-$grpFile.Controls.Add($btnBrowse)
+$btnBrowse.Text = "..."; $btnBrowse.Location = New-Object System.Drawing.Point(465, 24); $btnBrowse.Size = New-Object System.Drawing.Size(70, 27)
+$btnBrowse.BackColor = "DimGray"; $btnBrowse.FlatStyle = "Flat"; $btnBrowse.FlatAppearance.BorderSize = 0
+$grpSettings.Controls.Add($btnBrowse)
 
-# --- ROW 3: OPTIONS (Y=170) ---
 $chkSendDiscord = New-Object System.Windows.Forms.CheckBox
-$chkSendDiscord.Text = "Send Report to Discord"; 
-$chkSendDiscord.Location = New-Object System.Drawing.Point(30, 168); $chkSendDiscord.AutoSize = $true
-$chkSendDiscord.ForeColor = "Cyan"
-$chkSendDiscord.Checked = $true
-$form.Controls.Add($chkSendDiscord)
+$chkSendDiscord.Text = "Send Discord"; $chkSendDiscord.Location = New-Object System.Drawing.Point(15, 60); $chkSendDiscord.AutoSize = $true
+$chkSendDiscord.ForeColor = "Cyan"; $chkSendDiscord.Checked = $true
+$grpSettings.Controls.Add($chkSendDiscord)
 
 $chkShowNo = New-Object System.Windows.Forms.CheckBox
-$chkShowNo.Text = "Show [No. XX] (In Discord)"; 
-$chkShowNo.Location = New-Object System.Drawing.Point(30, 192); $chkShowNo.AutoSize = $true
-$form.Controls.Add($chkShowNo)
+$chkShowNo.Text = "Show [No.]"; $chkShowNo.Location = New-Object System.Drawing.Point(15, 82); $chkShowNo.AutoSize = $true
+$chkShowNo.ForeColor = "Silver"
+$grpSettings.Controls.Add($chkShowNo)
 
 $lblBanner = New-Object System.Windows.Forms.Label
-$lblBanner.Text = "Banner:"; $lblBanner.AutoSize = $true; $lblBanner.ForeColor = "Cyan"
-$lblBanner.Location = New-Object System.Drawing.Point(200, 185)
-$form.Controls.Add($lblBanner)
+$lblBanner.Text = "Banner:"; $lblBanner.AutoSize = $true; $lblBanner.Location = New-Object System.Drawing.Point(140, 66)
+$grpSettings.Controls.Add($lblBanner)
 
 $script:cmbBanner = New-Object System.Windows.Forms.ComboBox
-$script:cmbBanner.Location = New-Object System.Drawing.Point(260, 182)
-$script:cmbBanner.Size = New-Object System.Drawing.Size(305, 30)
+$script:cmbBanner.Location = New-Object System.Drawing.Point(200, 62); $script:cmbBanner.Size = New-Object System.Drawing.Size(335, 25)
 $script:cmbBanner.DropDownStyle = "DropDownList"
-$form.Controls.Add($script:cmbBanner)
+$script:cmbBanner.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $script:cmbBanner.ForeColor = "White"; $script:cmbBanner.FlatStyle = "Flat"
+$grpSettings.Controls.Add($script:cmbBanner)
 
-# --- ROW 4: MAIN ACTIONS (Y=230) ---
+# --- ROW 3: PITY METER (Y=225) ---
+# ขยับลงมาตามลำดับ
+$script:lblPityTitle = New-Object System.Windows.Forms.Label
+$script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"; 
+$script:lblPityTitle.Location = New-Object System.Drawing.Point(20, 225); 
+$script:lblPityTitle.AutoSize = $true
+$script:lblPityTitle.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold)
+$form.Controls.Add($script:lblPityTitle)
+
+$pnlPityBack = New-Object System.Windows.Forms.Panel
+$pnlPityBack.Location = New-Object System.Drawing.Point(20, 245); $pnlPityBack.Size = New-Object System.Drawing.Size(550, 25)
+$pnlPityBack.BackColor = [System.Drawing.Color]::FromArgb(60,60,60)
+$form.Controls.Add($pnlPityBack)
+
+$script:pnlPityFill = New-Object System.Windows.Forms.Panel
+$script:pnlPityFill.Location = New-Object System.Drawing.Point(0, 0); $script:pnlPityFill.Size = New-Object System.Drawing.Size(0, 25)
+$script:pnlPityFill.BackColor = "LimeGreen"
+$pnlPityBack.Controls.Add($script:pnlPityFill)
+
+# --- ROW 4: BUTTONS & PROGRESS (Y=285) ---
+$script:progressBar = New-Object System.Windows.Forms.ProgressBar
+$script:progressBar.Location = New-Object System.Drawing.Point(20, 285); $script:progressBar.Size = New-Object System.Drawing.Size(550, 10)
+$form.Controls.Add($script:progressBar)
+
 $btnRun = New-Object System.Windows.Forms.Button
-$btnRun.Text = "START FETCHING"; $btnRun.Location = New-Object System.Drawing.Point(20, 230); $btnRun.Size = New-Object System.Drawing.Size(400, 50)
-$btnRun.BackColor = "ForestGreen"; $btnRun.Font = New-Object System.Drawing.Font("Arial", 14, [System.Drawing.FontStyle]::Bold); $btnRun.FlatStyle = "Flat"
+$btnRun.Text = "START FETCHING"; $btnRun.Location = New-Object System.Drawing.Point(20, 305); $btnRun.Size = New-Object System.Drawing.Size(400, 45)
+$btnRun.BackColor = "ForestGreen"; $btnRun.Font = New-Object System.Drawing.Font("Arial", 12, [System.Drawing.FontStyle]::Bold); $btnRun.FlatStyle = "Flat"; $btnRun.FlatAppearance.BorderSize = 0
 $form.Controls.Add($btnRun)
 
 $btnStop = New-Object System.Windows.Forms.Button
-$btnStop.Text = "STOP"; $btnStop.Location = New-Object System.Drawing.Point(430, 230); $btnStop.Size = New-Object System.Drawing.Size(135, 50)
-$btnStop.BackColor = "Firebrick"; $btnStop.ForeColor = "White"; $btnStop.Font = New-Object System.Drawing.Font("Arial", 12, [System.Drawing.FontStyle]::Bold); $btnStop.FlatStyle = "Flat"
+$btnStop.Text = "STOP"; $btnStop.Location = New-Object System.Drawing.Point(430, 305); $btnStop.Size = New-Object System.Drawing.Size(140, 45)
+$btnStop.BackColor = "Firebrick"; $btnStop.ForeColor = "White"; $btnStop.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold); $btnStop.FlatStyle = "Flat"; $btnStop.FlatAppearance.BorderSize = 0
 $btnStop.Enabled = $false
 $form.Controls.Add($btnStop)
 
-# --- ROW 5: EXPORT (Y=290) - [NEW] ---
-$btnExport = New-Object System.Windows.Forms.Button
-$btnExport.Text = ">> Export History to CSV (Excel)"; 
-$btnExport.Location = New-Object System.Drawing.Point(20, 290); $btnExport.Size = New-Object System.Drawing.Size(545, 35)
-$btnExport.BackColor = "DimGray"; $btnExport.ForeColor = "White"; $btnExport.FlatStyle = "Flat"
-$btnExport.Enabled = $false # เปิดเมื่อ Fetch เสร็จ
-$form.Controls.Add($btnExport)
-
-# --- ROW 6: LOG WINDOW (Y=335) ---
+# --- ROW 5: LOG WINDOW (Y=365) ---
 $txtLog = New-Object System.Windows.Forms.RichTextBox
-$txtLog.Location = New-Object System.Drawing.Point(20, 335); $txtLog.Size = New-Object System.Drawing.Size(545, 400)
-$txtLog.BackColor = "Black"; $txtLog.ForeColor = "Lime"; $txtLog.ReadOnly = $true; $txtLog.Font = New-Object System.Drawing.Font("Consolas", 10)
+$txtLog.Location = New-Object System.Drawing.Point(20, 365); $txtLog.Size = New-Object System.Drawing.Size(550, 420) 
+$txtLog.BackColor = "Black"; $txtLog.ForeColor = "Lime"; $txtLog.ReadOnly = $true; $txtLog.Font = New-Object System.Drawing.Font("Consolas", 10); $txtLog.BorderStyle = "None"
 $form.Controls.Add($txtLog)
 
+# --- ROW 6: EXPORT (Y=800) ---
+$btnExport = New-Object System.Windows.Forms.Button
+$btnExport.Text = ">> Export History to CSV (Excel)"; 
+$btnExport.Location = New-Object System.Drawing.Point(20, 800); $btnExport.Size = New-Object System.Drawing.Size(550, 35)
+$btnExport.BackColor = "DimGray"; $btnExport.ForeColor = "White"; $btnExport.FlatStyle = "Flat"; $btnExport.FlatAppearance.BorderSize = 0
+$btnExport.Enabled = $false
+$form.Controls.Add($btnExport)
 
 # ============================
 #  FUNCTIONS
@@ -255,6 +310,9 @@ $btnRun.Add_Click({
         
         $allHistory = @()
 
+        $script:progressBar.Style = "Marquee" # หลอดวิ่งไปมา
+        $script:progressBar.MarqueeAnimationSpeed = 30
+
         # --- FETCH LOOP ---
         foreach ($banner in $TargetBanners) {
             if ($script:StopRequested) { throw "STOPPED" }
@@ -325,6 +383,47 @@ $btnRun.Add_Click({
         } else {
             Log "No High Rank items found." "Gray"
         }
+
+        # --- UPDATE PITY GAUGE UI (Current Pity Logic) ---
+        
+        # 1. คำนวณ Pity ปัจจุบัน (นับถอยหลังจากตัวล่าสุด จนกว่าจะเจอ 5 ดาว)
+        $currentPity = 0
+        if ($allHistory.Count -gt 0) {
+            # $allHistory[0] คือตัวใหม่ล่าสุด
+            foreach ($item in $allHistory) {
+                if ($item.rank_type -eq $conf.SRank) { 
+                    break # เจอ 5 ดาวแล้ว หยุดนับ
+                }
+                $currentPity++
+            }
+        }
+
+        # 2. คำนวณความยาวหลอด (เต็มหลอด 550px = 90 pity)
+        $percent = $currentPity / 90
+        if ($percent -gt 1) { $percent = 1 }
+        $newWidth = [int](550 * $percent)
+        
+        # 3. อัปเดต UI
+        $script:pnlPityFill.Width = $newWidth
+        
+        # อัปเดตข้อความบนหัวข้อแทน (ชัดเจนกว่า ไม่โดนบัง)
+        $script:lblPityTitle.Text = "Current Pity Progress: $currentPity / 90"
+
+        # 4. เปลี่ยนสีหลอดตามความเกลือ
+        if ($currentPity -ge 74) {
+            $script:pnlPityFill.BackColor = "Crimson" # แดงเข้ม (Soft Pity)
+            $script:lblPityTitle.ForeColor = "Red"    # ตัวหนังสือแดงด้วย
+        } elseif ($currentPity -ge 50) {
+            $script:pnlPityFill.BackColor = "Gold"    # เหลือง
+            $script:lblPityTitle.ForeColor = "Gold"
+        } else {
+            $script:pnlPityFill.BackColor = "LimeGreen" # เขียว
+            $script:lblPityTitle.ForeColor = "White"
+        }
+        
+        # หยุด Progress Bar ด้านล่าง
+        $script:progressBar.Style = "Blocks"
+        $script:progressBar.Value = 100
         
         # --- DISCORD ---
         if ($SendDiscord) {

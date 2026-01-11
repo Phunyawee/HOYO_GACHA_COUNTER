@@ -1,21 +1,32 @@
 # HoyoEngine.ps1 - Core Logic Library
-# ห้ามรันไฟล์นี้ตรงๆ ให้รันผ่าน App.ps1
+# SRS Logic Implementation
 
 Add-Type -AssemblyName System.Web
+
+# ฟังก์ชัน Wrapper สำหรับส่งข้อความไปที่หน้าจอ GUI (App.ps1)
+function Log-Status {
+    param($msg, $color="Yellow")
+    # ตรวจสอบว่าฟังก์ชัน Log มีอยู่จริงไหม (จาก App.ps1)
+    if (Get-Command "Log" -ErrorAction SilentlyContinue) {
+        Log $msg $color
+    } else {
+        Write-Host $msg -ForegroundColor $color
+    }
+}
 
 # --- 1. CONFIGURATION ---
 function Get-GameConfig {
     param([string]$GameName)
     
-    # Github URL สำหรับรูป Icon
     $BaseRepoUrl = "https://raw.githubusercontent.com/Phunyawee/HOYO_GACHA_COUNTER/main/HoyoWishCounter/BotIcon"
 
     switch ($GameName) {
         "Genshin" {
             return @{
                 Name = "Genshin Impact"
-                DefaultPaths = @("C:\Program Files\Genshin Impact", "C:\Program Files\HoYoverse\Genshin Impact")
-                CachePattern = "*GenshinImpact_Data*\webCaches"
+                # LogPath: ที่อยู่ของไฟล์ Log (Genshin มี 2 ค่าย miHoYo กับ Cognosphere)
+                LogFolders = @("miHoYo\Genshin Impact", "Cognosphere\Genshin Impact") 
+                DataFolderName = "GenshinImpact_Data"
                 HostUrl = "public-operation-hk4e-sg.hoyoverse.com"
                 ApiEndpoint = "/gacha_info/api/getGachaLog"
                 GameBiz = "hk4e_global"
@@ -27,8 +38,8 @@ function Get-GameConfig {
         "HSR" {
             return @{
                 Name = "Honkai: Star Rail"
-                DefaultPaths = @("C:\Program Files\Star Rail", "C:\Program Files\HoYoverse\Star Rail")
-                CachePattern = "*StarRail_Data*\webCaches"
+                LogFolders = @("Cognosphere\Star Rail")
+                DataFolderName = "StarRail_Data"
                 HostUrl = "public-operation-hkrpg.hoyoverse.com"
                 ApiEndpoint = "/common/gacha_record/api/getGachaLog"
                 GameBiz = "hkrpg_global"
@@ -40,8 +51,8 @@ function Get-GameConfig {
         "ZZZ" {
             return @{
                 Name = "Zenless Zone Zero"
-                DefaultPaths = @("C:\Program Files\ZenlessZoneZero", "C:\Program Files\HoYoverse\ZenlessZoneZero")
-                CachePattern = "*ZenlessZoneZero_Data*\webCaches"
+                LogFolders = @("miHoYo\ZenlessZoneZero", "Cognosphere\ZenlessZoneZero")
+                DataFolderName = "ZenlessZoneZero_Data"
                 HostUrl = "public-operation-nap-sg.hoyoverse.com"
                 ApiEndpoint = "/common/gacha_record/api/getGachaLog"
                 GameBiz = "nap_global"
@@ -54,44 +65,110 @@ function Get-GameConfig {
     return $null
 }
 
-# --- 2. FILE OPERATIONS (Auto-Find & Staging) ---
+# --- 2. FILE OPERATIONS (SRS Logic + Fix Empty Path Error) ---
+# --- 2. FILE OPERATIONS (Final Fix: Copy Path Logic) ---
 function Find-GameCacheFile {
     param([hashtable]$Config, [string]$StagingPath)
 
-    # Smart Search: หา Drive ที่ใช้งานได้ทั้งหมด
-    $Drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Used -gt 0 } 
-    $FoundFile = $null
+    if ($null -eq $Config) { throw "Config is missing." }
 
-    foreach ($Drive in $Drives) {
-        $RootPath = $Drive.Root
-        $PossibleParentFolders = @(
-            "$RootPath", "$RootPath\Program Files", "$RootPath\Program Files (x86)", "$RootPath\HoYoverse", "$RootPath\Games"
-        )
-
-        foreach ($Parent in $PossibleParentFolders) {
-            if (-not (Test-Path $Parent)) { continue }
-            
-            # หา webCaches ตาม Pattern ของแต่ละเกม
-            $GameDataFolder = Get-ChildItem -Path $Parent -Filter $Config.CachePattern -Directory -Recurse -Depth 2 -ErrorAction SilentlyContinue
-            
-            if ($GameDataFolder) {
-                $TargetFiles = Get-ChildItem -Path $GameDataFolder.FullName -Filter "data_2" -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
-                if ($TargetFiles) {
-                    $FoundFile = $TargetFiles[0].FullName
-                    break
-                }
-            }
+    Log-Status "--- Auto-Detect Started (SRS Method) ---" "Cyan"
+    
+    # 1. หาไฟล์ Player.log
+    $AppData = [Environment]::GetFolderPath('ApplicationData')
+    $LocalLow = Join-Path $AppData "..\LocalLow"
+    $LogPath = $null
+    
+    foreach ($subFolder in $Config.LogFolders) {
+        $TryPath = Join-Path $LocalLow "$subFolder\Player.log"
+        if (Test-Path $TryPath) {
+            $LogPath = $TryPath
+            Log-Status "Found Log File: $TryPath" "Gray"
+            break
         }
-        if ($FoundFile) { break }
     }
 
-    if (-not $FoundFile) { throw "Could not auto-detect 'data_2'. Please browse manually." }
+    if (-not $LogPath) { throw "Could not find Player.log! Please open the game at least once." }
 
-    # Copy to Staging
-    $StagingDir = Split-Path $StagingPath -Parent
-    if (-not (Test-Path $StagingDir)) { New-Item -ItemType Directory -Path $StagingDir | Out-Null }
-    Copy-Item -Path $FoundFile -Destination $StagingPath -Force
-    return $StagingPath
+    # 2. อ่าน Log หา Path เกม
+    Log-Status "Reading Player.log..." "Yellow"
+    $GamePath = $null
+    
+    try {
+        $LogLines = Get-Content $LogPath -First 50 -ErrorAction Stop
+        foreach ($line in $LogLines) {
+            if ($line -match "Loading player data from (.+?)data.unity3d") {
+                $GamePath = $matches[1]
+                break
+            }
+        }
+    } catch { throw "Error reading log file." }
+
+    if ([string]::IsNullOrWhiteSpace($GamePath)) { throw "Could not extract Game Path from Log." }
+    $GamePath = $GamePath -replace "/", "\"
+    Log-Status "Game installed at: $GamePath" "Lime"
+
+    # 3. หา webCaches
+    $PossibleWebCachePaths = @(
+        "$GamePath\webCaches",
+        "$GamePath\$($Config.DataFolderName)\webCaches"
+    )
+    $TargetWebCache = $null
+    foreach ($p in $PossibleWebCachePaths) {
+        if (Test-Path $p) { $TargetWebCache = $p; break }
+    }
+    if (-not $TargetWebCache) { throw "webCaches folder missing. Open Wish History in-game to generate it." }
+    Log-Status "Found webCaches at: $TargetWebCache" "Gray"
+
+    # 4. หา Version ล่าสุด
+    $CacheFolders = Get-ChildItem $TargetWebCache -Directory
+    $MaxVersion = 0
+    $FinalPath = "$TargetWebCache\Cache\Cache_Data\data_2" 
+
+    foreach ($folder in $CacheFolders) {
+        if ($folder.Name -match '^\d+\.\d+\.\d+\.\d+$') {
+            try {
+                $VerNum = [int64]($folder.Name -replace '\.', '')
+                if ($VerNum -ge $MaxVersion) {
+                    $MaxVersion = $VerNum
+                    $FinalPath = "$($folder.FullName)\Cache\Cache_Data\data_2"
+                }
+            } catch {}
+        }
+    }
+    Log-Status "Targeting Cache File: $FinalPath" "Cyan"
+
+    if (-not (Test-Path $FinalPath)) { throw "File 'data_2' not found inside cache folder." }
+
+    # 5. [FIXED] ขั้นตอนก๊อปปี้ (ปลอดภัย 100% ไม่ใช้ .NET Constructor)
+    try {
+        # ถ้า Path ปลายทางว่าง ให้ตั้งค่า Default เป็นโฟลเดอร์ปัจจุบัน
+        if ([string]::IsNullOrWhiteSpace($StagingPath)) {
+            $StagingPath = ".\temp_data_2"
+        }
+        
+        # แปลงเป็น Full Path มาตรฐาน Windows (แก้ปัญหา Path ผิดรูปแบบ)
+        $DestFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($StagingPath)
+        
+        # หาโฟลเดอร์แม่
+        $DestDir = Split-Path -Parent $DestFullPath
+        if ([string]::IsNullOrWhiteSpace($DestDir)) { $DestDir = "." }
+
+        # สร้างโฟลเดอร์ถ้าไม่มี
+        if (-not (Test-Path $DestDir)) {
+            New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
+        }
+
+        # ก๊อปปี้
+        Copy-Item -Path $FinalPath -Destination $DestFullPath -Force
+        
+        Log-Status "Auto-Detect Success! File copied." "Green"
+        
+        # ส่งค่า Path เต็มกลับไป
+        return $DestFullPath
+    } catch {
+        throw "Copy Failed: $($_.Exception.Message)"
+    }
 }
 
 # --- 3. URL EXTRACTION ---
@@ -109,7 +186,6 @@ function Get-AuthLinkFromFile {
             $cleanStr = ($chunk -split "`0")[0]
             $rawUrl = $null
 
-            # Regex ตามต้นฉบับ HoyoWish.ps1
             if ($cleanStr -match "(https.+?game_biz=[\w_]+)") { $rawUrl = $matches[0] } 
             elseif ($cleanStr -match "(https.+?authkey=[^`" ]+)") { $rawUrl = $matches[0] }
 
@@ -120,13 +196,12 @@ function Get-AuthLinkFromFile {
                     if (-not $qs["game_biz"]) { $qs["game_biz"] = $Config.GameBiz }
                     $qs["size"] = "1"
                     $qs["gacha_type"] = $Config.Banners[0].Code
-                    if ($Config.Name -match "Zenless") { $qs["real_gacha_type"] = $Config.Banners[0].Code } # ZZZ Fix
+                    if ($Config.Name -match "Zenless") { $qs["real_gacha_type"] = $Config.Banners[0].Code } 
                     
                     $builder = New-Object System.UriBuilder("https://$($uri.Host)$($Config.ApiEndpoint)")
                     $builder.Query = $qs.ToString()
                     $TestLink = $builder.Uri.AbsoluteUri
 
-                    # Test Connection
                     $test = Invoke-RestMethod -Uri $TestLink -Method Get -TimeoutSec 3
                     if ($test.retcode -eq 0) {
                         return @{ Url = $TestLink; Host = $uri.Host }
@@ -147,7 +222,7 @@ function Fetch-GachaPages {
 
     while (-not $isFinished) {
         if ($PageCallback) { & $PageCallback $page }
-        Start-Sleep -Milliseconds 600 # Safety delay
+        Start-Sleep -Milliseconds 600
 
         $uriObj = [System.Uri]$Url
         $qs = [System.Web.HttpUtility]::ParseQueryString($uriObj.Query)
@@ -177,14 +252,13 @@ function Fetch-GachaPages {
 
 # --- 5. DISCORD ---
 function Send-DiscordReport {
-    param($HistoryData, $PityTrackers, $Config, [bool]$ShowNoMode) # เพิ่ม ShowNoMode
+    param($HistoryData, $PityTrackers, $Config, [bool]$ShowNoMode)
     
     if (-not (Test-Path "config.json")) { return "Skipped (No Config)" }
     $jsonConfig = Get-Content "config.json" -Raw | ConvertFrom-Json
     $WebhookUrl = $jsonConfig.webhook_url
     if ([string]::IsNullOrWhiteSpace($WebhookUrl)) { return "Skipped (Empty URL)" }
 
-    # Fields (Pity Summary)
     $fields = @()
     foreach ($b in $Config.Banners) {
         $val = $PityTrackers[$b.Code]
@@ -192,7 +266,6 @@ function Send-DiscordReport {
         $fields += @{ name = "$($b.Name) Pity"; value = "**$val**"; inline = $true }
     }
 
-    # Description (List Logic ตามต้นฉบับ)
     $descTxt = ""
     $count = 0
     $limit = 30
@@ -206,7 +279,6 @@ function Send-DiscordReport {
             $icon = ":green_circle:"
             if ($h.Pity -gt 75) { $icon = ":red_circle:" } elseif ($h.Pity -gt 50) { $icon = ":yellow_circle:" }
             
-            # Logic: Show No vs Date
             if ($ShowNoMode) {
                 $prefix = "[No.$($i+1)]"
             } else {

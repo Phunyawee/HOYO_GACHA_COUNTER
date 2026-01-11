@@ -77,6 +77,7 @@ json
 }
 ```
 ![Discord Report](../screenshots/Discord_Result2.png)
+
 *(The bot will send a summary like this directly to your server)*
 
 ## 🛠️ Troubleshooting
