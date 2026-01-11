@@ -49,3 +49,7 @@ Please note that game servers only keep your wish history for the last **6 month
 ### 🤝 Credits
 - Parsing logic inspired by [paimon.moe](https://paimon.moe)
 - Refactored for simplicity, safety, and universal compatibility.
+
+## 🙏 Acknowledgements
+This project builds upon and is inspired by established community tools for HoYoverse games.
+👉 **[View Full List of References & Credits](./REFERENCES.md)**
