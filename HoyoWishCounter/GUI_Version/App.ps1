@@ -3,16 +3,133 @@
 # ตั้งเป็น $false เพื่อปิด (แสดงแค่ใน GUI)
 $script:DebugMode = $true 
 
-# Load Engine
-$EnginePath = Join-Path $PSScriptRoot "HoyoEngine.ps1"
-if (-not (Test-Path $EnginePath)) { 
-    [System.Windows.Forms.MessageBox]::Show("Error: HoyoEngine.ps1 not found!", "Error", 0, 16)
-    exit 
-}
-. $EnginePath # Load Functions
+
+
+# # Load Engine
+# $EnginePath = Join-Path $PSScriptRoot "HoyoEngine.ps1"
+# if (-not (Test-Path $EnginePath)) { 
+#     [System.Windows.Forms.MessageBox]::Show("Error: HoyoEngine.ps1 not found!", "Error", 0, 16)
+#     exit 
+# }
+#. $EnginePath # Load Functions
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+
+# --- 3. GLOBAL FONT SETTINGS (ต้องอยู่หลัง Load Assemblies) ---
+try {
+    $fontNormal = New-Object System.Drawing.Font("Segoe UI", 9)
+    $fontBold   = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
+    $fontHeader = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $fontLog    = New-Object System.Drawing.Font("Consolas", 10)
+} catch {
+    # Fallback เผื่อเครื่องไม่มี Segoe UI
+    $fontNormal = New-Object System.Drawing.Font("Arial", 9)
+    $fontBold   = New-Object System.Drawing.Font("Arial", 9, [System.Drawing.FontStyle]::Bold)
+    $fontHeader = New-Object System.Drawing.Font("Arial", 12, [System.Drawing.FontStyle]::Bold)
+    $fontLog    = New-Object System.Drawing.Font("Courier New", 10)
+}
+
+
+# ============================
+#  FUNCTIONS
+# ============================
+# ฟังก์ชันแต่งปุ่ม Modern Style (ฉบับแก้ไข Scope)
+function Apply-ButtonStyle {
+    param($Button, $BaseColorName, $HoverColorName, $CustomFont)
+
+    $Button.FlatStyle = "Flat"
+    $Button.FlatAppearance.BorderSize = 0
+    $Button.BackColor = [System.Drawing.Color]::FromName($BaseColorName)
+    $Button.ForeColor = "White"
+    $Button.Cursor = [System.Windows.Forms.Cursors]::Hand 
+    
+    if ($CustomFont) { $Button.Font = $CustomFont } 
+    else { $Button.Font = $script:fontBold }
+
+    # --- แก้ไขตรงนี้ ---
+    # 1. ใช้ $this แทน $Button (เพื่อให้มันรู้ว่าคือปุ่มตัวเอง)
+    # 2. ใช้ .GetNewClosure() เพื่อล็อคค่าสีไว้ในหน่วยความจำ ไม่ให้หายไปหลังจบฟังก์ชัน
+
+    $enterEvent = { 
+        $this.BackColor = [System.Drawing.Color]::FromName($HoverColorName) 
+    }.GetNewClosure()
+
+    $leaveEvent = { 
+        if ($this.Enabled) {
+            $this.BackColor = [System.Drawing.Color]::FromName($BaseColorName) 
+        }
+    }.GetNewClosure()
+
+    $Button.Add_MouseEnter($enterEvent)
+    $Button.Add_MouseLeave($leaveEvent)
+}
+
+
+# --- 0. SPLASH SCREEN (LOADING) ---
+$splashPath = Join-Path $PSScriptRoot "splash.png"
+
+if (Test-Path $splashPath) {
+    # 1. สร้างหน้าต่าง Splash
+    $splash = New-Object System.Windows.Forms.Form
+    $splashImg = [System.Drawing.Image]::FromFile($splashPath)
+    $splash.BackgroundImage = $splashImg
+    $splash.BackgroundImageLayout = "Stretch"
+    
+    # กำหนดขนาด (เอาตามขนาดรูปจริง หรือฟิกไว้ที่ 600x350)
+    $splash.Size = $splashImg.Size 
+    # หรือถ้าอยากบังคับขนาด uncomment บรรทัดล่าง:
+    # $splash.Size = New-Object System.Drawing.Size(600, 350)
+
+    $splash.FormBorderStyle = "None"       # ไร้ขอบ
+    $splash.StartPosition = "CenterScreen" # กลางจอ
+    $splash.ShowInTaskbar = $false         # ไม่โชว์ใน Taskbar ด้านล่าง
+
+    # 2. สร้างหลอด Loading (Custom Panel สีเขียว สไตล์เดียวกับ Pity Meter)
+    $loadBack = New-Object System.Windows.Forms.Panel
+    $loadBack.Height = 6 # ความหนาหลอด
+    $loadBack.Dock = "Bottom"
+    $loadBack.BackColor = [System.Drawing.Color]::FromArgb(40,40,40) # สีพื้นหลังหลอด (เทาดำ)
+    
+    $loadFill = New-Object System.Windows.Forms.Panel
+    $loadFill.Height = 6
+    $loadFill.Width = 0
+    $loadFill.BackColor = "LimeGreen" # สีหลอดวิ่ง (เปลี่ยนได้ เช่น DeepSkyBlue)
+    $loadFill.Left = 0
+    
+    $loadBack.Controls.Add($loadFill)
+    $splash.Controls.Add($loadBack)
+
+    # 3. โชว์หน้าต่าง
+    $splash.Show()
+    $splash.Refresh()
+
+    # 4. จำลองการโหลด (Animation)
+    # ช่วง 1: โหลดเร็วๆ ช่วงแรก
+    for ($i = 0; $i -le 40; $i+=2) {
+        $loadFill.Width = ($splash.Width * $i / 100)
+        Start-Sleep -Milliseconds 10
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+
+    # ช่วง 2: โหลด HoyoEngine (ของจริง)
+    # (ย้ายบรรทัด Load Engine เดิมของคุณมาไว้ตรงนี้ก็ได้ หรือปล่อยไว้ข้างล่างก็ได้ แต่นี่คือจุดที่ควรโหลด)
+    if (Test-Path (Join-Path $PSScriptRoot "HoyoEngine.ps1")) {
+        . (Join-Path $PSScriptRoot "HoyoEngine.ps1")
+    }
+    
+    # ช่วง 3: วิ่งให้เต็มหลอด
+    for ($i = 41; $i -le 100; $i+=5) {
+        $loadFill.Width = ($splash.Width * $i / 100)
+        Start-Sleep -Milliseconds 20 # หน่วงเวลาหน่อยให้ดูเหมือนโหลดเสร็จ
+        [System.Windows.Forms.Application]::DoEvents()
+    }
+
+    Start-Sleep -Milliseconds 500 # ค้างไว้แป๊บนึงให้คนเห็นคำว่า "Complete" (ถ้ามีในรูป)
+    $splash.Close()
+    $splash.Dispose()
+    $splashImg.Dispose() # คืน ram รูปภาพ
+}
 
 # --- GUI SETUP ---
 $form = New-Object System.Windows.Forms.Form
@@ -123,13 +240,39 @@ $txtPath.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtPath.ForeCo
 $grpSettings.Controls.Add($txtPath)
 
 $btnAuto = New-Object System.Windows.Forms.Button
-$btnAuto.Text = "Auto-Detect"; $btnAuto.Location = New-Object System.Drawing.Point(375, 24); $btnAuto.Size = New-Object System.Drawing.Size(80, 27)
-$btnAuto.BackColor = "DodgerBlue"; $btnAuto.FlatStyle = "Flat"; $btnAuto.FlatAppearance.BorderSize = 0
+$btnAuto.Text = "Auto-Detect"
+$btnAuto.Location = New-Object System.Drawing.Point(375, 24); $btnAuto.Size = New-Object System.Drawing.Size(80, 27)
+
+# Style
+$btnAuto.BackColor = "DodgerBlue"  # สีฟ้าสด
+$btnAuto.ForeColor = "White"
+$btnAuto.FlatStyle = "Flat"
+$btnAuto.FlatAppearance.BorderSize = 0
+$btnAuto.Font = $fontNormal        # ใช้ตัวแปร Font
+$btnAuto.Cursor = [System.Windows.Forms.Cursors]::Hand
+
+# Hover Effect (ฟ้าสว่างขึ้น)
+$btnAuto.Add_MouseEnter({ $btnAuto.BackColor = "DeepSkyBlue" })
+$btnAuto.Add_MouseLeave({ $btnAuto.BackColor = "DodgerBlue" })
+
 $grpSettings.Controls.Add($btnAuto)
 
 $btnBrowse = New-Object System.Windows.Forms.Button
-$btnBrowse.Text = "..."; $btnBrowse.Location = New-Object System.Drawing.Point(465, 24); $btnBrowse.Size = New-Object System.Drawing.Size(70, 27)
-$btnBrowse.BackColor = "DimGray"; $btnBrowse.FlatStyle = "Flat"; $btnBrowse.FlatAppearance.BorderSize = 0
+$btnBrowse.Text = "..."
+$btnBrowse.Location = New-Object System.Drawing.Point(465, 24); $btnBrowse.Size = New-Object System.Drawing.Size(70, 27)
+
+# Style
+$btnBrowse.BackColor = "DimGray"
+$btnBrowse.ForeColor = "White"
+$btnBrowse.FlatStyle = "Flat"
+$btnBrowse.FlatAppearance.BorderSize = 0
+$btnBrowse.Font = $fontNormal      # ใช้ตัวแปร Font
+$btnBrowse.Cursor = [System.Windows.Forms.Cursors]::Hand
+
+# Hover Effect (เทาสว่างขึ้น)
+$btnBrowse.Add_MouseEnter({ $btnBrowse.BackColor = "Gray" })
+$btnBrowse.Add_MouseLeave({ $btnBrowse.BackColor = "DimGray" })
+
 $grpSettings.Controls.Add($btnBrowse)
 
 $chkSendDiscord = New-Object System.Windows.Forms.CheckBox
@@ -158,7 +301,6 @@ $script:lblPityTitle = New-Object System.Windows.Forms.Label
 $script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"; 
 $script:lblPityTitle.Location = New-Object System.Drawing.Point(20, 225); 
 $script:lblPityTitle.AutoSize = $true
-$script:lblPityTitle.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold)
 $form.Controls.Add($script:lblPityTitle)
 
 $pnlPityBack = New-Object System.Windows.Forms.Panel
@@ -176,14 +318,17 @@ $script:progressBar = New-Object System.Windows.Forms.ProgressBar
 $script:progressBar.Location = New-Object System.Drawing.Point(20, 285); $script:progressBar.Size = New-Object System.Drawing.Size(550, 10)
 $form.Controls.Add($script:progressBar)
 
+# --- ROW 4: BUTTONS & PROGRESS ---
+# Button: START FETCHING
 $btnRun = New-Object System.Windows.Forms.Button
 $btnRun.Text = "START FETCHING"; $btnRun.Location = New-Object System.Drawing.Point(20, 305); $btnRun.Size = New-Object System.Drawing.Size(400, 45)
-$btnRun.BackColor = "ForestGreen"; $btnRun.Font = New-Object System.Drawing.Font("Arial", 12, [System.Drawing.FontStyle]::Bold); $btnRun.FlatStyle = "Flat"; $btnRun.FlatAppearance.BorderSize = 0
+# บรรทัดนี้จัดการสีและฟอนต์ให้แล้ว
+Apply-ButtonStyle -Button $btnRun -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontHeader
 $form.Controls.Add($btnRun)
 
 $btnStop = New-Object System.Windows.Forms.Button
 $btnStop.Text = "STOP"; $btnStop.Location = New-Object System.Drawing.Point(430, 305); $btnStop.Size = New-Object System.Drawing.Size(140, 45)
-$btnStop.BackColor = "Firebrick"; $btnStop.ForeColor = "White"; $btnStop.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold); $btnStop.FlatStyle = "Flat"; $btnStop.FlatAppearance.BorderSize = 0
+$btnStop.BackColor = "Firebrick"; $btnStop.ForeColor = "White"; $btnStop.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold); $btnStop.FlatStyle = "Flat"; $btnStop.FlatAppearance.BorderSize = 0
 $btnStop.Enabled = $false
 $form.Controls.Add($btnStop)
 
@@ -197,41 +342,46 @@ $form.Controls.Add($grpStats)
 # Label 1: Total Pulls
 $lblStat1 = New-Object System.Windows.Forms.Label
 $lblStat1.Text = "Total Pulls: 0"; $lblStat1.AutoSize = $true
-$lblStat1.Location = New-Object System.Drawing.Point(20, 25); $lblStat1.Font = New-Object System.Drawing.Font("Arial", 10)
+$lblStat1.Location = New-Object System.Drawing.Point(20, 25); $lblStat1.Font = New-Object System.Drawing.Font("Segoe UI", 10)
 $grpStats.Controls.Add($lblStat1)
 
 # Label 2: Avg Pity (Highlight)
 $script:lblStatAvg = New-Object System.Windows.Forms.Label
 $script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.AutoSize = $true
-$script:lblStatAvg.Location = New-Object System.Drawing.Point(200, 25); $script:lblStatAvg.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold)
+$script:lblStatAvg.Location = New-Object System.Drawing.Point(200, 25); $script:lblStatAvg.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $script:lblStatAvg.ForeColor = "White"
 $grpStats.Controls.Add($script:lblStatAvg)
 
 # Label 3: Cost
 $script:lblStatCost = New-Object System.Windows.Forms.Label
 $script:lblStatCost.Text = "Est. Cost: 0"; $script:lblStatCost.AutoSize = $true
-$script:lblStatCost.Location = New-Object System.Drawing.Point(380, 25); $script:lblStatCost.Font = New-Object System.Drawing.Font("Arial", 10)
+$script:lblStatCost.Location = New-Object System.Drawing.Point(380, 25); $script:lblStatCost.Font = New-Object System.Drawing.Font("Segoe UI", 10)
 $script:lblStatCost.ForeColor = "Gold" # สีทองให้ดูแพง
 $grpStats.Controls.Add($script:lblStatCost)
 
-# --- ROW 5: LOG WINDOW (Y=430) ---
-# ขยับลงมาจาก 365 เป็น 430
+# --- ROW 5: LOG WINDOW ---
 $txtLog = New-Object System.Windows.Forms.RichTextBox
-$txtLog.Location = New-Object System.Drawing.Point(20, 430); $txtLog.Size = New-Object System.Drawing.Size(550, 360) # ลดความสูงนิดนึงชดเชยพื้นที่
-$txtLog.BackColor = "Black"; $txtLog.ForeColor = "Lime"; $txtLog.ReadOnly = $true; $txtLog.Font = New-Object System.Drawing.Font("Consolas", 10); $txtLog.BorderStyle = "None"
+$txtLog.Location = New-Object System.Drawing.Point(20, 430)
+$txtLog.Size = New-Object System.Drawing.Size(550, 360)
+
+# --- สไตล์เดิมมีกรอบ (Classic Terminal) ---
+$txtLog.BackColor = "Black"           # ดำสนิท
+$txtLog.ForeColor = "Lime"            # ตัวหนังสือเขียว Hacker
+$txtLog.BorderStyle = "FixedSingle"   # **ใส่กรอบกลับมา**
+$txtLog.Font = $fontLog # ใช้ฟอนต์ Consolas
+$txtLog.ReadOnly = $true
+$txtLog.ScrollBars = "Vertical"
+
 $form.Controls.Add($txtLog)
 
 # --- ROW 6: EXPORT (Y=800) ---
 $btnExport = New-Object System.Windows.Forms.Button
 $btnExport.Text = ">> Export History to CSV (Excel)"; 
 $btnExport.Location = New-Object System.Drawing.Point(20, 800); $btnExport.Size = New-Object System.Drawing.Size(550, 35)
-$btnExport.BackColor = "DimGray"; $btnExport.ForeColor = "White"; $btnExport.FlatStyle = "Flat"; $btnExport.FlatAppearance.BorderSize = 0
+Apply-ButtonStyle -Button $btnExport -BaseColorName "DimGray" -HoverColorName "Gray";
 $btnExport.Enabled = $false
 $form.Controls.Add($btnExport)
 
-# ============================
-#  FUNCTIONS
-# ============================
 
 function Log($msg, $color="Lime") { 
     # --- ส่วนที่เพิ่มเข้ามา: Debug Mode ---

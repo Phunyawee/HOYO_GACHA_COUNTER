@@ -1,6 +1,27 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+
+
+## [3.1.2] - 2026-01-12
+### 🎨 Visual Overhaul (Modern UI)
+- **Flat Design System:**
+    - Updated all controls to match the Windows 10/11 aesthetic using Segoe UI fonts and borderless inputs.
+    - Added Interactive Hover Effects to buttons: colors now brighten dynamically, and the cursor transforms into a hand pointer (Cursors.Hand), providing a responsive, web-like feel.
+- **Cinematic Splash Screen:**
+    - Introduced a professional Loading Sequence on startup.
+    - Displays a custom splash.png (if available) with a synchronized progress bar animation while the core engine loads in the background.
+    - Gracefully transitions to the main application once initialization is complete.
+### 🛠️ UX Improvements
+- **Console-Style Logging:**
+    - Restored the Fixed-Border look for the log window but switched to a pure black background with green text, mimicking a classic terminal/CMD interface.
+- **Global Font Management:**
+    - Refactored font definitions into Global Variables  `($fontNormal, $fontHeader, $fontLog)`, making future theme adjustments instant and consistent across the entire app.
+- **Start Button Consistency:**
+    - Reverted the "START FETCHING" button to its original high-contrast Forest Green style for better visibility, while retaining the new hover mechanics.
+
+
+
 ## [3.1.1] - 2026-01-12
 ### 🔧 System & Maintenance
 - **Developer Debug Mode:**
