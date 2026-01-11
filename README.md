@@ -12,19 +12,20 @@ A simple, safe, and lightweight tool to extract Gacha Links and calculate Pity H
 > 💡 **Why use this?** Unlike other tools, this script reads local cache files directly. **No Admin permission required**, **No password needed**, and **No external API calls** for extracting keys. Everything runs locally on your machine.
 
 ## ✨ Universal Version Features (Recommended)
-- 🎮 **3-in-1 Support:** One script works for all 3 games.
-- 📊 **Pity Tracker:** View 5-Star/S-Rank history, pity count, and timeline.
+- 🎮 **3-in-1 Support:** One app works for all 3 games.
+- 🖥️ **Modern GUI:** User-friendly interface (Windows Forms). No more command line typing.
+- 🔍 **Auto-Detect:** Automatically finds the game cache file for you.
+- 📊 **Smart Tracker:** View 5-Star/S-Rank history, pity count, and **Export to CSV**.
 - 💬 **Discord Integration:** Sends beautiful reports to your Discord Webhook.
-- 🛡️ **Safe & Local:** No password needed.
 
 ## 📸 Preview
-![Discord Report Preview](./HoyoWishCounter/screenshots/Discord_Result.png)
-*(Example of the Discord Report output from the Universal Version)*
+![GUI Preview](./HoyoWishCounter/screenshots/GUI_Result.png)
+*(New Graphical User Interface with instant calculation and Discord reporting)*
 
 ## 🚀 Choose Your Version
 
 ### ⭐ Option 1: Universal Tool (Recommended)
-The latest version with **Discord Support**, **GUI Menu**, and support for **all 3 games** in one place.
+The latest version featuring a **Full GUI**, **Auto-Detect Cache**, **CSV Export**, and **Discord Support** for all 3 games.
 
 #### 📂 [CLICK HERE to Open Universal Tool](./HoyoWishCounter)
 *(Go here for the best experience)*
@@ -32,7 +33,7 @@ The latest version with **Discord Support**, **GUI Menu**, and support for **all
 ---
 
 ### 📜 Option 2: Standalone Versions (Legacy)
-Simple, separate scripts for each game. Useful if you want to inspect specific source code or don't need Discord features.
+Simple, separate console scripts for each game. Useful if you want to inspect specific source code or don't need the GUI/Discord features.
 
 - 📂 **[Genshin Impact (Standalone)](./Genshin)**
 - 📂 **[Honkai: Star Rail (Standalone)](./StarRail)**

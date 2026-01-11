@@ -1,6 +1,34 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [3.0.0] - 2026-01-11
+### 🚀 Major Overhaul: GUI Edition
+- **New Graphical User Interface (GUI):**
+    - Transitioned from the legacy Console/Terminal window to a full **Windows Forms Application**.
+    - **Interactive Dashboard:** Switch between games (Genshin, HSR, ZZZ) instantly with top-bar tabs without restarting the script.
+    - **Real-time Log:** Added a color-coded scrolling log window to visualize the fetching process and Pity results clearly.
+- **Architecture Restructuring:**
+    - Split the monolithic script into two modular components:
+        - `App.ps1`: Handles the UI, event listeners, and user interaction.
+        - `HoyoEngine.ps1`: A dedicated library for API fetching, logic parsing, and Discord handling.
+    - **Launcher Update:** Replaced individual game launchers (`Run_Genshin.bat`, etc.) with a single universal **`Start_GUI.bat`**.
+
+### ✨ New Features
+- **🔍 Smart Auto-Detect System:**
+    - Added an **"Auto-Detect"** button that intelligently scans system drives to locate the elusive `data_2` cache file automatically.
+    - Eliminates the need for manual drag-and-drop in most standard installations.
+- **📊 CSV Export Support:**
+    - Added **"Export History to CSV"** function. Users can now save their entire wish history to an Excel-compatible file (`.csv`) for offline backup or analysis.
+    - *Note:* The export button unlocks automatically after a successful fetch.
+- **🛑 Control & Safety:**
+    - Added a **STOP Button**: Users can now safely halt the fetching process mid-way without crashing the script or freezing the window.
+    - **Status Indicators:** Buttons change colors (Green/Red/Gray) to indicate active states (Running, Stopped, or Idle).
+
+### 🐛 Improvements & Fixes
+- **ZZZ Optimization:** Standardized the `real_gacha_type` parameter logic within `HoyoEngine` to ensure 100% compatibility with Zenless Zone Zero's API quirks.
+- **Error Handling:** Improved "AuthKey Expired" detection. The GUI now prompts a clear MessageBox instructing the user to refresh the game history, instead of just printing a console error.
+- **Config Flexibility:** The program now gracefully handles missing `config.json` files by simply disabling the Discord checkbox visually, rather than throwing script errors.
+
 ## [2.1.1] - 2026-01-11
 ### 🎨 Visual & Assets Fixes
 - **GitHub Hosted Assets:** Changed the source of Discord Bot Icons (Paimon, Pom-Pom, Bangboo) to use **GitHub Raw Links** (`raw.githubusercontent.com`).
