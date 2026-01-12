@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] - 2026-01-13  
+### ✨ The "Time Machine" Update
+### 🚀 Major Features
+#### SRS Auto-Detection (Smart Path Finding)
+- Implemented intelligent log parsing logic inspired by **Star Rail Station (SRS)**.
+- Automatically scans game logs (`output_log.txt` / `Player.log`) to detect:
+  - Exact game installation path  
+  - Cache location
+- Resolves issues for users with **custom install directories**, especially for:
+  - Zenless Zone Zero (ZZZ)
+  - Honkai: Star Rail (HSR)
+#### Time Machine (Scope & Filter Analysis)
+- Added an advanced **Filter Panel** that appears after data is fetched.
+- Users can now filter wish history by **specific date ranges**.
+- **True Pity Calculation**:
+  - Even when filtering a limited date range, the engine backtracks through the full history.
+  - Ensures Pity counters remain **accurate and consistent with in-game state**.
+#### Interactive Analytics Graph
+- Introduced a responsive **Side Panel** with a dynamic column chart.
+- Visualizes **5★ pull history** with color-coded luck indicators:
+  - 🟢 Green — Early pull  
+  - 🟡 Gold — Soft pity  
+  - 🔴 Red — Hard pity
+- Added `>> Show Graph` toggle in the Menu Bar to expand or collapse the chart.
+- Supports **real-time updates** when filters are adjusted.
+### 🛠️ UX & Quality of Life
+#### Smart Snap Reset
+- Added a **[SNAP] Find Reset** button.
+- Automatically finds the nearest past 5★ pull and:
+  - Snaps the **From** date to the next pull (Pity = 0)
+- Makes analyzing the **current banner cycle** effortless.
+#### Manual Discord Reporting
+- Added a dedicated **Discord Report** button inside the Filter Panel.
+- Allows sending **targeted reports** (e.g. “My pulls this month”).
+- Maintains correct **True Pity** values even for partial datasets.
+- Includes a **Sort Order** option:
+  - Newest First
+  - Oldest First
+- Controls how data is displayed in the Discord embed.
+#### UI Refinements
+- Reorganized the Filter Panel into a clean **two-row layout** with grouped controls.
+- Removed emojis from critical UI elements to ensure:
+  - Full compatibility across all Windows versions
+  - Consistent rendering across system locales
+- Integrated the graph toggle directly into the **Top Menu Bar**.
+### 🐛 Bug Fixes & Optimizations
+- **Fixed:** Export CSV now respects the active filter and exports only visible data.
+- **Fixed:** Discord report sorting issue where manual reports could appear in reverse order.
+- **Optimized:** Reworked the Pity calculation engine:
+  - Display Logic: Newest → Oldest
+  - Calculation Logic: Oldest → Newest
+- Prevents calculation errors during complex filtering and time-based analysis.
+
+
 
 ## [3.1.2] - 2026-01-12
 ### 🎨 Visual Overhaul (Modern UI)

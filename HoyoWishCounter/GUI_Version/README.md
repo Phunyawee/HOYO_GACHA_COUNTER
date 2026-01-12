@@ -1,97 +1,112 @@
 <div align="center">
 
-# 🌠 Universal Hoyo Wish Counter (GUI Version)
+# 🌠 Universal Hoyo Wish Counter (GUI V4)
 
 [![Thai Badge](https://img.shields.io/badge/Lang-Thai-blue)](./README_TH.md)
 [![English Badge](https://img.shields.io/badge/Lang-English-red)](./README.md)
+[![Release](https://img.shields.io/badge/Release-v4.0.0-gold)](./App.ps1)
 
 **The Ultimate Gacha Tracker for Genshin Impact, Honkai: Star Rail, and Zenless Zone Zero.**
-Now with a graphical interface, CSV Export, and Auto-Detect capabilities.
+Now featuring "Time Machine" analytics, Interactive Graphs, and SRS Auto-Detection.
 
-![GUI Main Screen](../screenshots/GUI_Result.png)
-*(User-friendly interface with instant calculation)*
+![Graph Analytics](../screenshots/GUI_V4_Graph.png)
+*(New in v4.0: Expandable Analytics Graph & Time Machine Filter)*
 
 </div>
+
+---
+
+## ✨ What's New in v4.0?
+*   **🧠 SRS Auto-Detect:** Smarter engine that finds your game cache automatically, even if installed on custom drives (Logic powered by SRS method).
+*   **⏳ Time Machine:** Filter your history by date range to analyze specific banners or months.
+*   **📊 Interactive Graph:** Visualizes your pull history with color-coded bars representing luck (Green/Gold/Red).
+*   **⚡ Smart Snap:** Instantly finds the nearest Pity Reset point in the past for accurate "current banner" tracking.
+*   **📱 Manual Discord Report:** Send custom reports for specific date ranges directly to your server.
 
 ---
 
 ## 📂 File List
 | File Name | Description |
 | :--- | :--- |
-| **Start_GUI.bat** | ▶️ **Launcher:** Double-click this to start the program. |
-| **App.ps1** | 🖼️ **GUI Script:** The main interface window. |
-| **HoyoEngine.ps1** | ⚙️ **Core Logic:** Handles API fetching and calculations (Do not run directly). |
-| **config.json** | 📝 **Settings:** Stores your Discord Webhook URL (Optional). |
+| **Start_GUI.bat** | ▶️ **Launcher:** Double-click this to start the tool safely. |
+| **App.ps1** | 🖼️ **GUI Interface:** The main application window. |
+| **HoyoEngine.ps1** | ⚙️ **Core Engine:** Handles SRS logic, API fetching, and Pity math (Do not run directly). |
+| **config.json** | 📝 **Settings:** Stores your Discord Webhook URL. |
 
 ---
 
 ## 🚀 Usage Guide
 
 ### 📌 PHASE 1: Generate the Key
-This tool reads the official game cache safely. You need to refresh the link first.
+The tool reads the official game cache. You must generate a fresh link first.
 
 1.  **Open the Game** (Genshin, HSR, or ZZZ).
 2.  Open the **History (Wish/Warp/Signal)** menu in-game.
 3.  Wait for the list to load, then **close the menu**.
-    *   *This action generates a fresh `data_2` file with a valid link.*
+    *   *This generates a fresh `data_2` file with a valid 1-hour token.*
 
 ---
 
-### ⚡ PHASE 2: Run the Tool
+### ⚡ PHASE 2: Run & Analyze
 
-#### 1️⃣ Launch the App
-Double-click **`Start_GUI.bat`**. The program window will appear.
-
-#### 2️⃣ Select Game & File
-1.  Click the button for your game (e.g., **Genshin**).
+#### 1️⃣ Launch & Detect
+Double-click **`Start_GUI.bat`**.
+1.  Select your game (Buttons at top).
 2.  Click **"Auto-Detect"** (Blue button).
-    *   The tool will automatically search for the `data_2` file in your system.
-    *   *If Auto-Detect fails:* Click "Browse..." and find the file manually in your game's `webCaches` folder.
+    *   *v4.0 Engine will scan your game logs to find the exact path automatically.*
 
-![Auto Detect](../screenshots/GUI_Main.png)
+![Main Interface](../screenshots/GUI_V4_Main.png)
 
-#### 3️⃣ Fetch Data
-1.  (Optional) Select a specific Banner or leave it as **"* FETCH ALL"**.
-2.  Click **"START FETCHING"** (Green button).
-3.  The tool will read your history page by page.
+#### 2️⃣ Fetch Data
+Click **"START FETCHING"**. The tool will download your history.
+*   Once finished, the **Filter Panel** and **Graph Toggle** will unlock.
 
-#### 4️⃣ View Results & Export
-*   **Log Window:** Shows your 5-Star history and Pity count.
-*   **Discord:** Sends a stylish report to your server (if configured).
-*   **Export:** Click **">> Export History to CSV"** to save your data to an Excel-readable file.
+#### 3️⃣ Use Time Machine (Filter)
+Want to check pulls from a specific month?
+1.  Check **"Enable Filter"**.
+2.  Select **From** and **To** dates.
+3.  Click **"[SNAP] Find Reset"** to auto-align the start date to the nearest Pity 0.
+4.  **True Pity Mode:** Even when filtering, the tool calculates Pity based on your *entire* history, ensuring accuracy.
 
-![Result Screen](../screenshots/GUI_Running.png)
+![Filter Panel](../screenshots/GUI_V4_Filter.png)
+
+#### 4️⃣ Visual Analytics
+Click **`>> Show Graph`** in the top menu bar.
+*   A side panel will expand showing your 5-Star history.
+*   **Colors:** <span style="color:green">Green (Early)</span>, <span style="color:gold">Gold (Soft Pity)</span>, <span style="color:red">Red (Hard Pity)</span>.
 
 ---
 
-## 💬 Discord Setup (Optional)
-To enable Discord notifications:
+## 💬 Discord Integration
+Send stylish embed reports to your own Discord server.
 
-1.  Create a file named `config.json` in the same folder.
-2.  Paste your Webhook URL inside like this:
+1.  Create `config.json` in the app folder:
+    ```json
+    {
+        "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL..."
+    }
+    ```
+2.  **Auto Send:** Sends a full summary after fetching.
+3.  **Manual Send:** Click **"Discord Report"** in the Filter Panel to send a custom report based on your selected date range.
 
-```
-json
-{
-    "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_URL_HERE"
-}
-```
-![Discord Report](../screenshots/Discord_Result2.png)
+![Discord Embed](../screenshots/Discord_V4_Embed.png)
 
-*(The bot will send a summary like this directly to your server)*
+---
 
 ## 🛠️ Troubleshooting
-**Q: "Error: HoyoEngine.ps1 not found!"**
-A: Make sure **App.ps1** and **HoyoEngine.ps1** are in the same folder. Always run the tool via Start_GUI.bat.
 
-**Q: "AuthKey not found" or "Link Expired"**
-A: The link in the cache file has expired (it lasts about 1 hour).
-Fix: Open the History menu in the game again, then click **"Auto-Detect"** and **"Start Fetching"** again.
+**Q: Auto-Detect cannot find the file?**
+A: Ensure you opened the Wish History in-game *recently*. If it still fails, use **"Browse..."** to find `data_2` in your game's `webCaches` folder manually.
 
-**Q: Auto-Detect cannot find the file.**
-A: If you installed the game in a custom drive (not C:), use the **"Browse..."** button to locate the data_2 file manually inside the webCaches folder of your game.
+**Q: The Graph or Discord button is disabled.**
+A: You must click **"START FETCHING"** successfully at least once to unlock these features.
 
+**Q: "AuthKey timeout" / "Link Expired"**
+A: The game's link only lasts for 1 hour. Re-open the History menu in-game to refresh it.
+
+---
 
 ## 📜 Credits
-**Core Logic & GUI:** Developed using PowerShell and Windows Forms.
-**AuthKey Extraction:** Logic inspired by community methods (paimon.moe).
+*   **Development:** PowerShell & .NET Windows Forms
+*   **Logic Inspiration:** Paimon.moe & Star Rail Station (SRS) for log parsing techniques.
+*   **Icons:** Official Hoyoverse Assets.

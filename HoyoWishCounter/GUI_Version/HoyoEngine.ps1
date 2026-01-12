@@ -334,7 +334,8 @@ function Send-DiscordReport {
                 $prefix = "`[$($h.Time)`]"
             }
             
-            $bNameShort = $h.Banner.Split('(')[0].Trim().Split(' ')[0]
+            $bannerText = if ($h.Banner) { $h.Banner } else { "Unknown" }
+            $bNameShort = $bannerText.Split('(')[0].Trim()
             $descTxt += "$prefix $icon **$($h.Name)** (Pity: **$($h.Pity)**) - *$bNameShort*`n"
             $count++
         }
