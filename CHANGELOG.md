@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] - 2026-01-14
+### ✨ The "Visual Analytics" Update
+
+### 📊 Deep Analytics & Visualization
+#### Advanced Charting Options
+- Added a **Chart Type Selector** to the analytics panel.
+- Users can now switch visualization modes dynamically:
+  - **Column / Bar:** Classic view for Pity distribution.
+  - **Line / Spline:** Best for viewing trends over time.
+  - **Drop Rate Analysis:** A new **Doughnut Chart** mode visualizing the ratio of 5★, 4★, and 3★ pulls with detailed percentages.
+#### Luck Grading System (Tier List)
+- Introduced a **Luck Grade Evaluation** in the stats dashboard.
+- Automatically assigns a rank (**SS, A, B, C, F**) based on your global average Pity.
+- Includes a tooltip explaining the grading criteria (e.g., Avg < 50 = SS).
+#### 50/50 Win/Loss Indicators
+- Implemented **Standard Banner Logic** detection for Genshin, HSR, and ZZZ.
+- The text log now visually highlights character names in **Crimson (Red)** if they are "Standard" characters pulled on an Event Banner (indicating a **50/50 Loss**).
+
+### 💾 Social Sharing & Flexing
+#### Smart Image Export
+- Added a **Save IMG** button to the chart panel.
+- Captures the current graph state (works for both Pity and Rate Analysis charts).
+- Generates a high-quality **PNG/JPG** with a professional footer.
+#### Professional Watermark System
+- Automatically appends a non-intrusive **Footer Strip** containing:
+  - **Player Name & UID** (Customizable input).
+  - **App Branding** and Generation Date.
+- Features **Smart Text Truncation**: Automatically shortens long player names to ensure they never overlap with the UID or branding.
+#### Live Preview Workflow
+- Implemented a **"Preview Before Save"** window.
+- Users can review the generated image with the watermark before writing to disk.
+- Includes a **"< Back to Edit"** button that preserves previous inputs, allowing for quick corrections without re-typing.
+
+### 🛠️ UX & Technical Polish
+#### Credits & About Screen
+- Added a **Help > About & Credits** menu.
+- Features a stylized, center-aligned animation in the main log window (Hacker/Matrix style).
+#### Enhanced Debugging & Logging
+- Refactored the internal logging engine.
+- Setting `$DebugMode = $true` now provides detailed, timestamped console logs for user actions (e.g., changing chart types, expanding panels, saving images).
+#### 📂 Project Structure
+- **Reorganization:** Restructured the project directory by moving specific internal folders into dedicated subdirectories.
+- This cleanup improves the root folder organization without affecting the script's functionality.
+#### Bug Fixes
+- **Fixed:** Chart data sorting now correctly mirrors the "Newest/Oldest" filter checkbox.
+- **Fixed:** Pie Chart (Doughnut) percentage labels now correctly display counts and formatted percentages.
+- **Optimized:** Improved the `Update-Chart` logic to cache data, preventing "No Data" errors when switching chart types.
+- **Refactored:** Centralized logic via `Reset-LogWindow` helper to prevent style conflicts when switching between Credits and Fetch views.
+
 ## [4.0.0] - 2026-01-13  
 ### ✨ The "Time Machine" Update
 ### 🚀 Major Features

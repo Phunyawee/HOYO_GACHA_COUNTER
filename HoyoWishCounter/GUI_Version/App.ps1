@@ -1,7 +1,7 @@
 # --- CONFIGURATION (DEBUG MODE) ---
 # ตั้งเป็น $true เพื่อให้แสดงข้อความในหน้าต่าง PowerShell (Console) ด้วย
 # ตั้งเป็น $false เพื่อปิด (แสดงแค่ใน GUI)
-$script:DebugMode = $false 
+$script:DebugMode = $true 
 
 # # Load Engine
 # $EnginePath = Join-Path $PSScriptRoot "HoyoEngine.ps1"
@@ -76,6 +76,9 @@ $script:AbortLaunch = $false # ตัวแปรเช็คว่ากดย�
 if (Test-Path $splashPath) {
     # 1. สร้างหน้าต่าง Splash
     $splash = New-Object System.Windows.Forms.Form
+
+    if ($script:DebugMode) { Write-Host "[INIT] Splash Screen: Started" -ForegroundColor Cyan }
+
     $splashImg = [System.Drawing.Image]::FromFile($splashPath)
     $splash.BackgroundImage = $splashImg
     $splash.BackgroundImageLayout = "Stretch"
@@ -146,6 +149,7 @@ if (Test-Path $splashPath) {
         Check-Abort # เช็คก่อนขยับหลอด
         $loadFill.Width = ($splash.Width * $i / 100)
         Start-Sleep -Milliseconds 10
+        if ($script:DebugMode -and $i -eq 50) { Write-Host "[INIT] Engine Loading..." -ForegroundColor Gray }
     }
 
     # ช่วง 2: โหลด Engine จริง
@@ -159,11 +163,13 @@ if (Test-Path $splashPath) {
         Check-Abort # เช็คตลอดทาง
         $loadFill.Width = ($splash.Width * $i / 100)
         Start-Sleep -Milliseconds 20 
+        if ($script:DebugMode -and $i -eq 50) { Write-Host "[INIT] Engine Loading..." -ForegroundColor Gray }
     }
 
     Start-Sleep -Milliseconds 200 # ค้างแป๊บนึง
     Check-Abort
 
+    if ($script:DebugMode) { Write-Host "[INIT] Splash Screen: Completed. Launching Main UI." -ForegroundColor Green }
     # ปิด Splash ปกติ (ถ้าไม่ถูกยกเลิก)
     $splash.Close()
     $splash.Dispose()
@@ -219,10 +225,13 @@ $menuFile = New-Object System.Windows.Forms.ToolStripMenuItem("File")
 $itemClear = New-Object System.Windows.Forms.ToolStripMenuItem("Reset / Clear All")
 $itemClear.ShortcutKeys = [System.Windows.Forms.Keys]::F5
 $itemClear.Add_Click({
+    # เรียกใช้ Helper บรรทัดเดียวจบ!
+    Reset-LogWindow
+    
+    # 3. เริ่ม Log ข้อความ Reset
     Log ">>> User requested RESET. Clearing all data... <<<" "OrangeRed"
     
-    # 1. Clear Data & UI เดิม
-    $txtLog.Clear()
+    # 4. Reset ค่าตัวแปรอื่นๆ ตามเดิม
     $script:pnlPityFill.Width = 0
     $script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"; $script:lblPityTitle.ForeColor = "White"; $script:pnlPityFill.BackColor = "LimeGreen"
     $script:LastFetchedData = @()
@@ -232,24 +241,26 @@ $itemClear.Add_Click({
     $lblStat1.Text = "Total Pulls: 0"; $script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.ForeColor = "White"
     $script:lblStatCost.Text = "Est. Cost: 0"
     
-    # --- [NEW] 2. Reset Filter Panel ---
+    # 5. Reset Filter Panel
     $grpFilter.Enabled = $false
     $chkFilterEnable.Checked = $false
-    $dtpStart.Value = Get-Date # Reset วันที่
+    $dtpStart.Value = Get-Date
     $dtpEnd.Value = Get-Date
     
-    # --- [NEW] 3. Clear Graph & Panel ---
+    # 6. Clear Graph & Panel
     $chart.Series.Clear()
     $chart.Visible = $false
     $lblNoData.Visible = $true
     
-    # ถ้ากราฟเปิดอยู่ ให้ยุบกลับด้วย (Optional) หรือจะเปิดค้างไว้แต่โล่งๆ ก็ได้
-    # ถ้าอยากยุบกลับ:
+    # ถ้ากราฟเปิดอยู่ ให้ยุบกลับ
     if ($script:isExpanded) {
         $form.Width = 600
         $menuExpand.Text = ">> Show Graph"
         $script:isExpanded = $false
     }
+
+    # เพิ่มบรรทัดนี้เข้าไปใน Reset Logic (ใน $itemClear.Add_Click)
+    $script:lblLuckGrade.Text = "Grade: -"; $script:lblLuckGrade.ForeColor = "DimGray"
 
     Log "--- System Reset Complete. Ready. ---" "Gray"
 })
@@ -259,6 +270,59 @@ $itemClear.Add_Click({
 $itemExit = New-Object System.Windows.Forms.ToolStripMenuItem("Exit")
 $itemExit.Add_Click({ $form.Close() })
 [void]$menuFile.DropDownItems.Add($itemExit)
+
+# --- [NEW] MENU HELP / CREDITS ---
+$menuHelp = New-Object System.Windows.Forms.ToolStripMenuItem("Help")
+[void]$menuStrip.Items.Add($menuHelp)
+
+$itemCredits = New-Object System.Windows.Forms.ToolStripMenuItem("About & Credits")
+$itemCredits.ShortcutKeys = "F1" # กด F1 เพื่อเรียกดูได้ด้วย
+[void]$menuHelp.DropDownItems.Add($itemCredits)
+
+$itemCredits.Add_Click({
+    # 1. เคลียร์หน้าจอ Log
+    $txtLog.Clear()
+    
+    # 2. ปรับการจัดวางกึ่งกลาง (ให้ดูแพง)
+    $txtLog.SelectionAlignment = "Center"
+
+    # --- HEADER ---
+    $txtLog.SelectionFont = New-Object System.Drawing.Font("Consolas", 14, [System.Drawing.FontStyle]::Bold)
+    $txtLog.SelectionColor = "Cyan"
+    $txtLog.AppendText("`n================================`n")
+    $txtLog.AppendText(" HOYO WISH COUNTER (ULTIMATE) `n")
+    $txtLog.AppendText("================================`n`n")
+
+    # --- VERSION ---
+    $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
+    $txtLog.SelectionColor = "DimGray"
+    $txtLog.AppendText("Version 1.0.0 (Stable Build)`n`n")
+
+    # --- DEVELOPER (ใส่ชื่อคุณตรงนี้) ---
+    $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
+    $txtLog.SelectionColor = "Silver"
+    $txtLog.AppendText("Created & Designed by`n")
+
+    $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 18, [System.Drawing.FontStyle]::Bold)
+    $txtLog.SelectionColor = "Gold"
+    # [แก้ชื่อตรงนี้] ใส่ชื่อเล่นหรือนามปากกาคุณเลย
+    $txtLog.AppendText(" [ PHUNYAWEE ] `n`n") 
+
+    # --- QUOTE ---
+    $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Italic)
+    $txtLog.SelectionColor = "LimeGreen"
+    $txtLog.AppendText("`"May all your pulls be gold,`nand your 50/50s never lost.`"`n`n")
+
+    # --- FOOTER ---
+    $txtLog.SelectionFont = New-Object System.Drawing.Font("Consolas", 8, [System.Drawing.FontStyle]::Regular)
+    $txtLog.SelectionColor = "Gray"
+    $txtLog.AppendText("Powered by PowerShell & .NET WinForms`n")
+    $txtLog.AppendText("Data Source: Official Game Cache API`n")
+    
+    # 3. คืนค่าการจัดวางกลับเป็นชิดซ้าย (สำคัญ! ไม่งั้น Log ปกติจะเบี้ยว)
+    $txtLog.SelectionAlignment = "Left"
+    $txtLog.SelectionStart = 0 # เลื่อน Scroll ขึ้นบนสุด
+})
 
 # 2. [NEW] ปุ่ม Toggle Expand (ขวาสุด)
 $menuExpand = New-Object System.Windows.Forms.ToolStripMenuItem(">> Show Graph")
@@ -273,11 +337,13 @@ $script:isExpanded = $false
 # Event คลิกปุ่มนี้
 $menuExpand.Add_Click({
     if ($script:isExpanded) {
+        Log "Action: Collapse Graph Panel (Hide)" "DimGray"
         # ยุบกลับ
         $form.Width = 600
         $menuExpand.Text = ">> Show Graph"
         $script:isExpanded = $false
     } else {
+        Log "Action: Expand Graph Panel (Show)" "Cyan"  
         # ขยายออก
         $form.Width = 1200
         $menuExpand.Text = "<< Hide Graph"
@@ -433,34 +499,52 @@ $btnStop.FlatAppearance.BorderSize = 0
 $btnStop.Enabled = $false
 $form.Controls.Add($btnStop)
 
-# --- ROW 4.5: STATS DASHBOARD (Y=360) [NEW!] ---
+# --- ROW 4.5: STATS DASHBOARD (Y=360) [MODIFIED] ---
 $grpStats = New-Object System.Windows.Forms.GroupBox
 $grpStats.Text = " Luck Analysis (Based on fetched data) "
 $grpStats.Location = New-Object System.Drawing.Point(20, 360); $grpStats.Size = New-Object System.Drawing.Size(550, 60)
 $grpStats.ForeColor = "Silver"
 $form.Controls.Add($grpStats)
 
-# Label 1: Total Pulls
+# Label 1: Total Pulls (ขยับซ้ายสุด X=15)
 $lblStat1 = New-Object System.Windows.Forms.Label
 $lblStat1.Text = "Total Pulls: 0"; $lblStat1.AutoSize = $true
-$lblStat1.Location = New-Object System.Drawing.Point(20, 25); 
+$lblStat1.Location = New-Object System.Drawing.Point(15, 25); 
 $lblStat1.Font = $script:fontNormal
 $grpStats.Controls.Add($lblStat1)
 
-# Label 2: Avg Pity (Highlight)
+# Label 2: Avg Pity (ขยับมาที่ X=130)
 $script:lblStatAvg = New-Object System.Windows.Forms.Label
 $script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.AutoSize = $true
-$script:lblStatAvg.Location = New-Object System.Drawing.Point(200, 25); 
+$script:lblStatAvg.Location = New-Object System.Drawing.Point(130, 25); 
 $script:lblStatAvg.Font = $script:fontBold
 $script:lblStatAvg.ForeColor = "White"
 $grpStats.Controls.Add($script:lblStatAvg)
 
-# Label 3: Cost
+# [NEW] Label 3: Luck Grade (แทรกตรงกลาง X=260)
+$script:lblLuckGrade = New-Object System.Windows.Forms.Label
+$script:lblLuckGrade.Text = "Grade: -"; $script:lblLuckGrade.AutoSize = $true
+$script:lblLuckGrade.Location = New-Object System.Drawing.Point(260, 25); 
+$script:lblLuckGrade.Font = $script:fontBold
+$script:lblLuckGrade.ForeColor = "DimGray"
+$script:lblLuckGrade.Cursor = [System.Windows.Forms.Cursors]::Help # เปลี่ยนเมาส์เป็นรูปเครื่องหมาย ?
+$grpStats.Controls.Add($script:lblLuckGrade)
+
+# ใส่ Tooltip อธิบายเกณฑ์
+$gradeInfo = "Luck Grading Criteria (Global Standard):`n`n" +
+             "SS : Avg < 50   (Godlike)`n" +
+             " A : 50 - 60    (Lucky)`n" +
+             " B : 61 - 73    (Average)`n" +
+             " C : 74 - 76    (Salty)`n" +
+             " F : > 76       (Cursed)"
+$toolTip.SetToolTip($script:lblLuckGrade, $gradeInfo)
+
+# Label 4: Cost (ขยับไปขวาสุด X=390)
 $script:lblStatCost = New-Object System.Windows.Forms.Label
 $script:lblStatCost.Text = "Est. Cost: 0"; $script:lblStatCost.AutoSize = $true
-$script:lblStatCost.Location = New-Object System.Drawing.Point(380, 25); 
+$script:lblStatCost.Location = New-Object System.Drawing.Point(390, 25); 
 $script:lblStatCost.Font = $script:fontNormal
-$script:lblStatCost.ForeColor = "Gold" # สีทองให้ดูแพง
+$script:lblStatCost.ForeColor = "Gold" 
 $grpStats.Controls.Add($script:lblStatCost)
 
 # ============================================
@@ -604,6 +688,49 @@ $chart.BackColor = "Transparent"
 $chart.Visible = $false # ซ่อนไว้ก่อน
 $pnlChart.Controls.Add($chart)
 
+# --- [NEW] 1. CHART TYPE SELECTOR (มุมขวาบนของกราฟ) ---
+$cmbChartType = New-Object System.Windows.Forms.ComboBox
+$cmbChartType.Items.AddRange(@("Column", "Bar", "Spline", "Line", "Area", "StepLine", "Rate Analysis"))
+$cmbChartType.SelectedIndex = 0 # Default = Column
+$cmbChartType.Size = New-Object System.Drawing.Size(80, 25)
+$cmbChartType.Anchor = "Top, Right"
+$cmbChartType.Location = New-Object System.Drawing.Point(($pnlChart.Width - 90), 5)
+$cmbChartType.DropDownStyle = "DropDownList"
+$cmbChartType.BackColor = "DimGray"
+$cmbChartType.ForeColor = "White"
+$cmbChartType.FlatStyle = "Flat"
+$cmbChartType.Font = $script:fontNormal
+
+# --- [NEW] 2. SAVE IMAGE BUTTON ---
+$btnSaveImg = New-Object System.Windows.Forms.Button
+$btnSaveImg.Text = "Save IMG"
+$btnSaveImg.Size = New-Object System.Drawing.Size(80, 25)
+# วางข้างๆ ComboBox (ขยับซ้ายมา 85px)
+$btnSaveImg.Location = New-Object System.Drawing.Point(($pnlChart.Width - 175), 5) 
+$btnSaveImg.Anchor = "Top, Right"
+
+# Style
+$btnSaveImg.BackColor = "Indigo" # สีม่วงเข้มดูหรู
+$btnSaveImg.ForeColor = "White"
+$btnSaveImg.FlatStyle = "Flat"
+$btnSaveImg.FlatAppearance.BorderSize = 0
+$btnSaveImg.Font = $script:fontNormal
+$btnSaveImg.Cursor = [System.Windows.Forms.Cursors]::Hand
+
+$pnlChart.Controls.Add($btnSaveImg)
+$btnSaveImg.BringToFront()
+
+# สั่งให้เปลี่ยนกราฟทันทีเมื่อเลือก
+$cmbChartType.Add_SelectedIndexChanged({ 
+    $type = $cmbChartType.SelectedItem
+    # [NEW] สั่ง Log บอกว่า user เปลี่ยนไปดูกราฟแบบไหน
+    Log "User switched chart view to: [$type]" "DimGray"
+    
+    if ($chart.Visible) { Update-Chart -DataList $script:CurrentChartData }
+})
+$pnlChart.Controls.Add($cmbChartType)
+$cmbChartType.BringToFront() # ดึงมาบัง Chart ไว้
+
 # --- Chart Setup (Dark Theme) ---
 $chartArea = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea
 $chartArea.Name = "MainArea"
@@ -636,26 +763,40 @@ $chart.Titles.Add($title)
 # ============================================
 #  Function
 # ============================================
-function Log($msg, $color="Lime") { 
-    # --- ส่วนที่เพิ่มเข้ามา: Debug Mode ---
-    if ($script:DebugMode) {
-        # แปลงชื่อสีจาก System.Drawing เป็น ConsoleColor (แก้สี Lime ให้เป็น Green เพราะ Console ไม่มี Lime)
-        $consoleColor = $color
-        if ($color -eq "Lime") { $consoleColor = "Green" }
-        if ($color -eq "Gold") { $consoleColor = "Yellow" }
-        if ($color -eq "OrangeRed") { $consoleColor = "Red" }
-        if ($color -eq "DimGray") { $consoleColor = "Gray" }
-        
-        try {
-            Write-Host "[DEBUG] $msg" -ForegroundColor $consoleColor
-        } catch {
-            # ถ้าชื่อสีไม่ตรงกับ ConsoleColor ให้พ่นออกมาเป็นสีขาวปกติ
-            Write-Host "[DEBUG] $msg"
-        }
-    }
-    # ------------------------------------
+# Helper สำหรับล้างหน้าจอและคืนค่า Style เริ่มต้น
+function Reset-LogWindow {
+    # 1. ล้างข้อความ
+    $txtLog.Clear()
+    
+    # 2. บังคับคืนค่า Style (กันเหนียวกรณีมาจากหน้า Credits)
+    $txtLog.SelectionAlignment = "Left"       # ชิดซ้าย
+    $txtLog.SelectionFont = $script:fontLog   # ใช้ Font ปกติ (Consolas)
+    $txtLog.SelectionColor = "Lime"           # สีเขียว
+}
 
-    # --- โค้ดเดิม (แสดงบน GUI) ---
+function Log($msg, $color="Lime") { 
+    # --- ส่วนแสดงผลใน Debug Console (PowerShell Window) ---
+    if ($script:DebugMode) {
+        # แปลงชื่อสีจาก System.Drawing เป็น ConsoleColor
+        $consoleColor = "White" # Default
+        switch ($color) {
+            "Lime"      { $consoleColor = "Green" }
+            "Gold"      { $consoleColor = "Yellow" }
+            "OrangeRed" { $consoleColor = "Red" }
+            "Crimson"   { $consoleColor = "Red" }
+            "DimGray"   { $consoleColor = "DarkGray" }
+            "Cyan"      { $consoleColor = "Cyan" }
+            "Magenta"   { $consoleColor = "Magenta" }
+            "Gray"      { $consoleColor = "Gray" }
+            "Yellow"    { $consoleColor = "Yellow" }
+        }
+        
+        # พิมพ์ลง Console พร้อมระบุเวลา
+        $timeStamp = Get-Date -Format "HH:mm:ss"
+        Write-Host "[$timeStamp] $msg" -ForegroundColor $consoleColor
+    }
+
+    # --- ส่วนแสดงผลใน GUI (เหมือนเดิม) ---
     $txtLog.SelectionStart = $txtLog.Text.Length
     $txtLog.SelectionColor = [System.Drawing.Color]::FromName($color)
     $txtLog.AppendText("$msg`n")
@@ -715,7 +856,6 @@ $btnZZZ.Add_Click({
     Update-BannerList
     $btnExport.Enabled = $false
 })
-
 # 2. File
 $btnAuto.Add_Click({
     $conf = Get-GameConfig $script:CurrentGame
@@ -729,20 +869,16 @@ $btnAuto.Add_Click({
         Log "Auto-detect failed." "Red"
     }
 })
-
 $btnBrowse.Add_Click({
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
     $dlg.Filter = "data_2|data_2|All Files|*.*"
     if ($dlg.ShowDialog() -eq "OK") { $txtPath.Text = $dlg.FileName }
 })
-
 # 3. Stop
 $btnStop.Add_Click({
     $script:StopRequested = $true
     Log ">>> STOP COMMAND RECEIVED! <<<" "Red"
 })
-
-# 4. Export CSV (New)
 # 4. Export CSV (Fixed: Support Filter + No Emoji)
 $btnExport.Add_Click({
     # ตรวจสอบว่าจะเอาข้อมูลชุดไหน (ชุดที่กรองแล้ว หรือ ชุดทั้งหมด)
@@ -769,10 +905,10 @@ $btnExport.Add_Click({
         [System.Windows.Forms.MessageBox]::Show("Export Failed: $_", "Error", 0, 16)
     }
 })
-
 # 5. START FETCHING
 $btnRun.Add_Click({
-    $txtLog.Clear()
+    Reset-LogWindow
+
     $conf = Get-GameConfig $script:CurrentGame
     $targetFile = $txtPath.Text
     $ShowNo = $chkShowNo.Checked
@@ -869,24 +1005,12 @@ $btnRun.Add_Click({
         }
 
         # --- DISPLAY ---
-        Log "`n=== $($conf.Name) HIGH RANK HISTORY ===" "Cyan"
-        if ($highRankHistory.Count -gt 0) {
-            for ($i = $highRankHistory.Count - 1; $i -ge 0; $i--) {
-                $h = $highRankHistory[$i]
-                
-                $pColor = "Lime"
-                if ($h.Pity -gt 75) { $pColor = "Red" } elseif ($h.Pity -gt 50) { $pColor = "Yellow" }
-                
-                $idxTxt = if ($ShowNo) { "[No.$($i+1)]".PadRight(12) } else { "[$($h.Time)] " }
-                $txtLog.SelectionColor = [System.Drawing.Color]::Gray; $txtLog.AppendText($idxTxt)
-                
-                $txtLog.SelectionColor = [System.Drawing.Color]::Gold; $txtLog.AppendText("$($h.Name.PadRight(18)) ")
-                
-                $txtLog.SelectionColor = [System.Drawing.Color]::FromName($pColor); $txtLog.AppendText("Pity: $($h.Pity)`n")
-            }
-        } else {
-            Log "No High Rank items found." "Gray"
-        }
+
+        # 1. เปิดใช้งานแผงกรองข้อมูล (เพื่อให้กดเล่นต่อได้)
+        $grpFilter.Enabled = $true
+        
+        # 2. สั่งอัปเดตหน้าจอทันที! (จะโชว์ทั้ง Log สีใหม่ และวาดกราฟทันที)
+        Update-FilteredView
 
         # --- UPDATE PITY GAUGE UI (Current Pity Logic) ---
         
@@ -995,7 +1119,217 @@ $btnRun.Add_Click({
         # -------------------
     }
 })
+$btnSaveImg.Add_Click({
+    Log "User clicked [Save Image] button." "Magenta"
+    
+    if (-not $chart.Visible) { 
+        [System.Windows.Forms.MessageBox]::Show("No graph to save!", "Error", 0, 16)
+        return 
+    }
 
+    # ใช้ตัวแปรเก็บนอก Loop
+    $memName = ""
+    $memUID = ""
+    $loop = $true 
+
+    while ($loop) {
+        # ==========================================
+        # STEP 1: INPUT POPUP
+        # ==========================================
+        $inputForm = New-Object System.Windows.Forms.Form
+        $inputForm.Text = "Add Watermark"
+        $inputForm.Size = New-Object System.Drawing.Size(350, 180)
+        $inputForm.StartPosition = "CenterParent"
+        $inputForm.FormBorderStyle = "FixedDialog"
+        $inputForm.MaximizeBox = $false; $inputForm.MinimizeBox = $false
+        $inputForm.BackColor = [System.Drawing.Color]::FromArgb(40, 40, 40); $inputForm.ForeColor = "White"
+
+        $lbl1 = New-Object System.Windows.Forms.Label; $lbl1.Text = "Player Name:"; $lbl1.Location = "20,20"; $lbl1.AutoSize=$true
+        $txtName = New-Object System.Windows.Forms.TextBox; $txtName.Location = "120,18"; $txtName.Width = 180; $txtName.BackColor="60,60,60"; $txtName.ForeColor="Cyan"
+        
+        # [จุดสำคัญ] ดึงค่าเดิมมาใส่
+        $txtName.Text = $memName 
+
+        $lbl2 = New-Object System.Windows.Forms.Label; $lbl2.Text = "UID (Game):"; $lbl2.Location = "20,55"; $lbl2.AutoSize=$true
+        $txtUID = New-Object System.Windows.Forms.TextBox; $txtUID.Location = "120,53"; $txtUID.Width = 180; $txtUID.BackColor="60,60,60"; $txtUID.ForeColor="Gold"
+        
+        # [จุดสำคัญ] ดึงค่าเดิมมาใส่
+        $txtUID.Text = $memUID 
+
+        $btnOK = New-Object System.Windows.Forms.Button; $btnOK.Text = "Preview >"; $btnOK.DialogResult = "OK"; $btnOK.Location = "130,100"; $btnOK.BackColor="RoyalBlue"; $btnOK.ForeColor="White"; $btnOK.FlatStyle="Flat"
+        $btnCancel = New-Object System.Windows.Forms.Button; $btnCancel.Text = "Close"; $btnCancel.DialogResult = "Cancel"; $btnCancel.Location = "220,100"; $btnCancel.BackColor="DimGray"; $btnCancel.ForeColor="White"; $btnCancel.FlatStyle="Flat"
+
+        $inputForm.Controls.AddRange(@($lbl1, $txtName, $lbl2, $txtUID, $btnOK, $btnCancel))
+        $inputForm.AcceptButton = $btnOK
+
+        # ถ้ากด Close หรือกากบาทในหน้า Input -> จบการทำงานทันที
+        if ($inputForm.ShowDialog() -ne "OK") { 
+            $loop = $false 
+            $inputForm.Dispose()
+            break 
+        }
+        
+        # จำค่าไว้ใช้รอบหน้า
+        $memName = $txtName.Text.Trim()
+        $memUID  = $txtUID.Text.Trim()
+        $inputForm.Dispose()
+
+        # ==========================================
+        # STEP 2: GENERATE BITMAP
+        # ==========================================
+        try {
+            $footerHeight = 70
+            $finalWidth = $chart.Width
+            $finalHeight = $chart.Height + $footerHeight
+            
+            $previewBmp = New-Object System.Drawing.Bitmap($finalWidth, $finalHeight)
+            $g = [System.Drawing.Graphics]::FromImage($previewBmp)
+            $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
+            $g.Clear([System.Drawing.Color]::FromArgb(25,25,25)) 
+
+            $chartBmp = New-Object System.Drawing.Bitmap($chart.Width, $chart.Height)
+            $chart.DrawToBitmap($chartBmp, $chart.ClientRectangle)
+            $g.DrawImage($chartBmp, 0, 0)
+            $chartBmp.Dispose()
+
+            $footerRect = New-Object System.Drawing.Rectangle(0, $chart.Height, $finalWidth, $footerHeight)
+            $brushFooter = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(40,40,40))
+            $g.FillRectangle($brushFooter, $footerRect)
+            $penLine = New-Object System.Drawing.Pen([System.Drawing.Color]::Gold, 2)
+            $g.DrawLine($penLine, 0, $chart.Height, $finalWidth, $chart.Height)
+
+            $fontBrand = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+            $brandText = "Universal Hoyo Wish Counter"
+            $g.DrawString($brandText, $fontBrand, [System.Drawing.Brushes]::Gray, 20, ($chart.Height + 22))
+            
+            $brandSize = $g.MeasureString($brandText, $fontBrand)
+            $safeZoneLeft = 20 + $brandSize.Width + 30 
+            
+            $fontInfo = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+            $fontDate = New-Object System.Drawing.Font("Consolas", 10, [System.Drawing.FontStyle]::Regular)
+            
+            $rawName = if ($memName -ne "") { "Player: $memName" } else { "Player: Traveler" }
+            $rawUID  = if ($memUID -ne "")  { "  |  UID: $memUID" } else { "" }
+            
+            $maxAvailableWidth = $finalWidth - 20 - $safeZoneLeft 
+            $fullText = $rawName + $rawUID
+            
+            if ($g.MeasureString($fullText, $fontInfo).Width -gt $maxAvailableWidth) {
+                $tempName = $memName
+                while ($true) {
+                    if ($tempName.Length -eq 0) { break }
+                    $tempName = $tempName.Substring(0, $tempName.Length - 1)
+                    $tryText = "Player: $tempName..." + $rawUID
+                    if ($g.MeasureString($tryText, $fontInfo).Width -le $maxAvailableWidth) {
+                        $fullText = $tryText; break
+                    }
+                }
+            }
+            
+            $dateText = "Generated: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+            $formatRight = New-Object System.Drawing.StringFormat; $formatRight.Alignment = "Far"
+            
+            $g.DrawString($fullText, $fontInfo, [System.Drawing.Brushes]::White, ($finalWidth - 20), ($chart.Height + 12), $formatRight)
+            $g.DrawString($dateText, $fontDate, [System.Drawing.Brushes]::LightGray, ($finalWidth - 20), ($chart.Height + 38), $formatRight)
+            $g.Dispose()
+
+            # ==========================================
+            # STEP 3: PREVIEW WINDOW
+            # ==========================================
+            $previewForm = New-Object System.Windows.Forms.Form
+            $previewForm.Text = "Preview Image"
+            $previewForm.Size = New-Object System.Drawing.Size(800, 600)
+            $previewForm.StartPosition = "CenterParent"
+            $previewForm.BackColor = [System.Drawing.Color]::FromArgb(30,30,30)
+
+            $pnlBottom = New-Object System.Windows.Forms.Panel
+            $pnlBottom.Dock = "Bottom"
+            $pnlBottom.Height = 60
+            $pnlBottom.BackColor = [System.Drawing.Color]::FromArgb(50,50,50)
+
+            $picPreview = New-Object System.Windows.Forms.PictureBox
+            $picPreview.Dock = "Fill"
+            $picPreview.Image = $previewBmp
+            $picPreview.SizeMode = "Zoom"
+            $picPreview.BackColor = "Black"
+            
+            # ปุ่ม Confirm
+            $btnConfirm = New-Object System.Windows.Forms.Button
+            $btnConfirm.Text = "Confirm & Save"
+            $btnConfirm.Size = New-Object System.Drawing.Size(140, 35)
+            $btnConfirm.Anchor = "Top, Right" 
+            $btnConfirm.Location = New-Object System.Drawing.Point(($pnlBottom.Width - 160), 12)
+            Apply-ButtonStyle -Button $btnConfirm -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontBold
+            
+            # ปุ่ม Back
+            $btnBack = New-Object System.Windows.Forms.Button
+            $btnBack.Text = "< Back to Edit"
+            $btnBack.Size = New-Object System.Drawing.Size(120, 35)
+            $btnBack.Anchor = "Top, Right"
+            $btnBack.Location = New-Object System.Drawing.Point(($pnlBottom.Width - 300), 12)
+            Apply-ButtonStyle -Button $btnBack -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontBold
+
+            # [FIXED] ใช้ Hashtable เก็บค่า State (เพื่อให้ส่งค่าข้าม Scope ของปุ่มได้)
+            $state = @{ Action = "None" }
+
+            $btnConfirm.Add_Click({
+                $sfd = New-Object System.Windows.Forms.SaveFileDialog
+                $sfd.Filter = "PNG Image|*.png|JPEG Image|*.jpg"
+                $gName = $script:CurrentGame
+                $dateStr = Get-Date -Format 'yyyyMMdd_HHmm'
+                $sfd.FileName = "${gName}_LuckChart_${dateStr}"
+
+                if ($sfd.ShowDialog() -eq "OK") {
+                    try {
+                        $format = [System.Drawing.Imaging.ImageFormat]::Png
+                        if ($sfd.FileName.EndsWith(".jpg") -or $sfd.FileName.EndsWith(".jpeg")) { 
+                            $format = [System.Drawing.Imaging.ImageFormat]::Jpeg 
+                        }
+                        $previewBmp.Save($sfd.FileName, $format)
+                        Log "Image saved to: $($sfd.FileName)" "Lime"
+                        [System.Windows.Forms.MessageBox]::Show("Saved!", "Success", 0, 64)
+                        
+                        $state.Action = "Save" # อัปเดต state
+                        $previewForm.Close()
+                    } catch {
+                        [System.Windows.Forms.MessageBox]::Show("Error: $($_.Exception.Message)", "Error", 0, 16)
+                    }
+                }
+            })
+
+            $btnBack.Add_Click({
+                $state.Action = "Back" # อัปเดต state
+                $previewForm.Close()
+            })
+
+            $pnlBottom.Controls.Add($btnConfirm)
+            $pnlBottom.Controls.Add($btnBack)
+            $previewForm.Controls.Add($pnlBottom) 
+            $previewForm.Controls.Add($picPreview)
+            $pnlBottom.SendToBack()
+
+            $previewForm.ShowDialog()
+            
+            $previewBmp.Dispose()
+            $previewForm.Dispose()
+
+            # [CHECK STATE]
+            if ($state.Action -eq "Save") {
+                $loop = $false # จบงาน
+            } elseif ($state.Action -eq "Back") {
+                # วนลูปต่อ (กลับไปหน้า Input พร้อมค่า $memName เดิม)
+                Log "User requested Back to Edit." "DimGray"
+            } else {
+                # กดปิดหน้าต่าง Preview (กากบาท)
+                $loop = $false
+            }
+
+        } catch {
+            Log "Error: $($_.Exception.Message)" "Red"
+            $loop = $false
+        }
+    } # End Loop
+})
 # ==========================================
 #  CORE LOGIC: UPDATE VIEW (GUI & LOG)
 # ==========================================
@@ -1007,14 +1341,15 @@ function Update-FilteredView {
     if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
 
     $conf = Get-GameConfig $script:CurrentGame
-    $txtLog.Clear()
+    
+    # เรียก Helper ล้างหน้าจอ
+    Reset-LogWindow
 
     # 1. เช็คว่าเปิด Filter ไหม?
     if ($chkFilterEnable.Checked) {
         $startDate = $dtpStart.Value.Date
-        $endDate = $dtpEnd.Value.Date.AddDays(1).AddSeconds(-1) # ครอบคลุมถึงวินาทีสุดท้ายของวัน
+        $endDate = $dtpEnd.Value.Date.AddDays(1).AddSeconds(-1) 
 
-        # กรองข้อมูลเก็บไว้ในตัวแปร Global
         $script:FilteredData = $script:LastFetchedData | Where-Object { 
             [DateTime]$_.time -ge $startDate -and [DateTime]$_.time -le $endDate 
         }
@@ -1024,7 +1359,7 @@ function Update-FilteredView {
         Log "--- FULL HISTORY VIEW ---" "Cyan"
     }
 
-    # 2. คำนวณ Stats พื้นฐาน (Total, Cost)
+    # 2. คำนวณ Stats พื้นฐาน
     $totalPulls = $script:FilteredData.Count
     $lblStat1.Text = "Total Pulls: $totalPulls"
     
@@ -1032,25 +1367,20 @@ function Update-FilteredView {
     $currencyName = if ($script:CurrentGame -eq "HSR") { "Jades" } elseif ($script:CurrentGame -eq "ZZZ") { "Polychromes" } else { "Primos" }
     $script:lblStatCost.Text = "Est. Cost: $(" {0:N0}" -f $cost) $currencyName"
 
-    # 3. เตรียมคำนวณ Pity (ต้องเรียงจาก เก่า -> ใหม่ เสมอ)
+    # 3. เตรียมคำนวณ Pity
     $sortedItems = $script:FilteredData | Sort-Object { [decimal]$_.id } 
     
     $pityTrackers = @{} 
     foreach ($b in $conf.Banners) { $pityTrackers[$b.Code] = 0 }
 
     # [Logic: True Pity Offset] 
-    # ถ้าเปิด Filter และเลือก True Pity -> ต้องไปนับย้อนหลังในอดีตมาบวกเพิ่ม
     if ($chkFilterEnable.Checked -and $radModeAbs.Checked) {
         if ($sortedItems.Count -gt 0) {
             $firstItemInScope = $sortedItems[0]
-            # ขุดข้อมูลทั้งหมดมาไล่นับ
             $allHistorySorted = $script:LastFetchedData | Sort-Object { [decimal]$_.id }
             
             foreach ($item in $allHistorySorted) {
-                # หยุดเมื่อชนตัวแรกของ Scope
                 if ($item.id -eq $firstItemInScope.id) { break }
-                
-                # นับ Pity สะสม
                 $code = [string]$item.gacha_type
                 if ($script:CurrentGame -eq "Genshin" -and $code -eq "400") { $code = "301" }
                 if (-not $pityTrackers.ContainsKey($code)) { $pityTrackers[$code] = 0 }
@@ -1061,7 +1391,7 @@ function Update-FilteredView {
         }
     }
 
-    # 4. Loop ข้อมูลใน Scope เพื่อหา 5 ดาว และ Pity ที่แท้จริง
+    # 4. Loop ข้อมูลใน Scope
     $highRankCount = 0
     $pitySum = 0
     $displayList = @() 
@@ -1077,7 +1407,6 @@ function Update-FilteredView {
             $highRankCount++
             $pitySum += $pityTrackers[$code]
             
-            # เก็บข้อมูลไว้โชว์
             $displayList += [PSCustomObject]@{
                 Time = $item.time
                 Name = $item.name
@@ -1088,125 +1417,248 @@ function Update-FilteredView {
         }
     }
 
-    # 5. อัปเดต UI Avg Pity
+    # 5. [EDITED] อัปเดต UI Avg Pity และ Luck Grade
     if ($highRankCount -gt 0) {
         $avg = $pitySum / $highRankCount
         $script:lblStatAvg.Text = "Avg. Pity: $(" {0:N2}" -f $avg)"
+        
+        # สี Avg Pity
         if ($avg -le 55) { $script:lblStatAvg.ForeColor = "Lime" }
         elseif ($avg -le 73) { $script:lblStatAvg.ForeColor = "Gold" }
         else { $script:lblStatAvg.ForeColor = "OrangeRed" }
+
+        # --- [NEW] คำนวณ Grade ---
+        $grade = ""
+        $gColor = "White"
+
+        if ($avg -lt 50)     { $grade = "SS"; $gColor = "Cyan" }
+        elseif ($avg -le 60) { $grade = "A";  $gColor = "Lime" }
+        elseif ($avg -le 73) { $grade = "B";  $gColor = "Gold" }
+        elseif ($avg -le 76) { $grade = "C";  $gColor = "Orange" }
+        else                 { $grade = "F";  $gColor = "Red" }
+        
+        $script:lblLuckGrade.Text = "Grade: $grade"
+        $script:lblLuckGrade.ForeColor = $gColor
+        # -------------------------
+
     } else {
         $script:lblStatAvg.Text = "Avg. Pity: -"
         $script:lblStatAvg.ForeColor = "White"
+        
+        # Reset Grade
+        $script:lblLuckGrade.Text = "Grade: -"
+        $script:lblLuckGrade.ForeColor = "DimGray"
     }
 
     # 6. แสดงผลลง Log Window
     if ($displayList.Count -gt 0) {
         
-        # Helper: Print บรรทัดเดียว
+        # Helper: Print บรรทัดเดียว พร้อมเช็ค Win/Loss
         function Print-Line($h, $idx) {
             $pColor = "Lime"
             if ($h.Pity -gt 75) { $pColor = "Red" } elseif ($h.Pity -gt 50) { $pColor = "Yellow" }
             
+            # Logic เช็คสีชื่อ (แดง = หลุดเรท)
+            $nameColor = "Gold"
+            $isStandardChar = $false
+            switch ($script:CurrentGame) {
+                "Genshin" { if ($h.Name -match "^(Diluc|Jean|Mona|Qiqi|Keqing|Tighnari|Dehya)$") { $isStandardChar = $true } }
+                "HSR"     { if ($h.Name -match "^(Himeko|Welt|Bronya|Gepard|Clara|Yanqing|Bailu)$") { $isStandardChar = $true } }
+                "ZZZ"     { if ($h.Name -match "^(Grace|Rina|Koleda|Nekomata|Soldier 11|Lycaon)$") { $isStandardChar = $true } }
+            }
+            $isNotEventBanner = ($h.Banner -match "Standard|Novice|Weapon|Light Cone|W-Engine|Bangboo")
+            
+            if ($isStandardChar -and (-not $isNotEventBanner)) {
+                $nameColor = "Crimson" 
+            }
+
             $prefix = if ($chkShowNo.Checked) { "[No.$idx] ".PadRight(12) } else { "[$($h.Time)] " }
             
             $txtLog.SelectionColor = "Gray"; $txtLog.AppendText($prefix)
-            $txtLog.SelectionColor = "Gold"; $txtLog.AppendText("$($h.Name.PadRight(18)) ")
+            $txtLog.SelectionColor = $nameColor; $txtLog.AppendText("$($h.Name.PadRight(18)) ")
             $txtLog.SelectionColor = $pColor; $txtLog.AppendText("Pity: $($h.Pity)`n")
         }
 
+        $chartData = @()
+
         if ($chkSortDesc.Checked) {
-            # Newest First (ถอยหลัง)
+            # Newest First
             for ($i = $displayList.Count - 1; $i -ge 0; $i--) {
                 Print-Line -h $displayList[$i] -idx ($i+1)
+                $chartData += $displayList[$i]
             }
         } else {
-            # Oldest First (เดินหน้า)
+            # Oldest First
             for ($i = 0; $i -lt $displayList.Count; $i++) {
                 Print-Line -h $displayList[$i] -idx ($i+1)
+                $chartData += $displayList[$i]
             }
         }
+        
+        Update-Chart -DataList $chartData
+
     } else {
         Log "No 5-Star items found in this range." "Gray"
+        Update-Chart -DataList @()
     }
-
-    # [NEW] สั่งวาดกราฟ
-    Update-Chart -DataList $displayList
 }
+
+# ตัวแปร Global (ประกาศไว้นอกฟังก์ชันเพื่อให้แน่ใจว่ามีอยู่จริง)
+$script:CurrentChartData = @()
 
 function Update-Chart {
     param($DataList)
 
+    # 0. Caching Data
+    if ($null -ne $DataList) { $script:CurrentChartData = $DataList }
+    else { $DataList = $script:CurrentChartData }
+
     # 1. Clear กราฟเก่า
     $chart.Series.Clear()
+    $chart.Titles.Clear()
+    $chart.Legends.Clear() # [สำคัญ] ลบ Legend เก่าทิ้งด้วย
     
-    # ถ้าไม่มีข้อมูล หรือไม่ได้เปิด Panel อยู่ -> จบ
-    if ($null -eq $DataList -or $DataList.Count -eq 0) {
-        $chart.Visible = $false
-        $lblNoData.Visible = $true
-        return
+    $typeStr = $cmbChartType.SelectedItem
+    if ($null -eq $typeStr) { $typeStr = "Column" }
+
+    # ==================================================
+    # CASE A: RATE ANALYSIS (Doughnut Chart) - PRO DESIGN
+    # ==================================================
+    if ($typeStr -eq "Rate Analysis") {
+        $chart.Visible = $true; $lblNoData.Visible = $false
+
+        $sourceData = $script:FilteredData
+        if ($null -eq $sourceData -or $sourceData.Count -eq 0) { return }
+
+        $conf = Get-GameConfig $script:CurrentGame
+        $count5 = ($sourceData | Where-Object { $_.rank_type -eq $conf.SRank }).Count
+        $count4 = ($sourceData | Where-Object { $_.rank_type -eq "4" }).Count
+        $count3 = $sourceData.Count - $count5 - $count4
+
+        $series = New-Object System.Windows.Forms.DataVisualization.Charting.Series
+        $series.Name = "Rates"
+        $series.ChartType = "Doughnut" # <--- เปลี่ยนเป็นโดนัท ดูแพงกว่า
+        $series.IsValueShownAsLabel = $true
+        
+        # ตั้งค่าโดนัท
+        $series["DoughnutRadius"] = "60" # ความหนาของวง
+        $series["PieLabelStyle"] = "Outside" # ให้ป้ายชื่ออยู่ข้างนอก มีเส้นชี้ (ดู Pro)
+        $series["PieLineColor"] = "Gray"     # สีเส้นชี้
+        
+        # --- Data Points ---
+        # Label บนกราฟ: #VALY (แสดงแค่จำนวนตัวเลข)
+        # Legend: ชื่อ - #VALY (#PERCENT{P2}) (แสดงครบ)
+
+        # 1. 5-Star (Gold)
+        $dp5 = New-Object System.Windows.Forms.DataVisualization.Charting.DataPoint(0, $count5)
+        $dp5.Label = "#VALY" 
+        $dp5.LegendText = "5-Star :  #VALY  (#PERCENT{P2})" 
+        $dp5.Color = "Gold"
+        $dp5.LabelForeColor = "Gold" # ตัวเลขสีทองตามสีแท่ง
+        $dp5.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+        $series.Points.Add($dp5)
+
+        # 2. 4-Star (Purple)
+        $dp4 = New-Object System.Windows.Forms.DataVisualization.Charting.DataPoint(0, $count4)
+        $dp4.Label = "#VALY"
+        $dp4.LegendText = "4-Star :  #VALY  (#PERCENT{P2})"
+        $dp4.Color = "MediumPurple"
+        $dp4.LabelForeColor = "MediumPurple"
+        $dp4.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+        $series.Points.Add($dp4)
+
+        # 3. 3-Star (Blue)
+        $dp3 = New-Object System.Windows.Forms.DataVisualization.Charting.DataPoint(0, $count3)
+        $dp3.Label = "#VALY"
+        $dp3.LegendText = "3-Star :  #VALY  (#PERCENT{P2})"
+        $dp3.Color = "DodgerBlue"
+        $dp3.LabelForeColor = "DodgerBlue"
+        $dp3.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+        $series.Points.Add($dp3)
+
+        $chart.Series.Add($series)
+
+        # Legend Styling (สำคัญมากสำหรับความ Pro)
+        $leg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend
+        $leg.Name = "MainLegend"
+        $leg.Docking = "Bottom"
+        $leg.Alignment = "Center"
+        $leg.BackColor = "Transparent"
+        $leg.ForeColor = "Silver"
+        $leg.Font = New-Object System.Drawing.Font("Consolas", 10, [System.Drawing.FontStyle]::Regular) # ใช้ Font monospace เพื่อให้ตัวเลขตรงกัน
+        $chart.Legends.Add($leg)
+
+        # Title
+        $t = New-Object System.Windows.Forms.DataVisualization.Charting.Title
+        $t.Text = "Drop Rate Analysis (Total: $($sourceData.Count))"
+        $t.ForeColor = "Silver"
+        $t.Font = $script:fontHeader
+        $t.Alignment = "TopLeft"
+        $chart.Titles.Add($t)
+
+        $chart.ChartAreas[0].AxisX.Enabled = "False"
+        $chart.ChartAreas[0].AxisY.Enabled = "False"
+        $chart.ChartAreas[0].BackColor = "Transparent"
+        $chart.Update()
+        return 
     }
 
-    # ถ้ามีข้อมูล -> โชว์กราฟ
-    $chart.Visible = $true
-    $lblNoData.Visible = $false
 
-    # 2. สร้าง Series (กราฟแท่ง)
+    # ==================================================
+    # CASE B: PITY HISTORY (Normal Graph)
+    # ==================================================
+    if ($null -eq $DataList -or $DataList.Count -eq 0) {
+        $chart.Visible = $false; $lblNoData.Visible = $true; return
+    }
+
+    $chart.Visible = $true; $lblNoData.Visible = $false
+    $chart.ChartAreas[0].AxisX.Enabled = "True"
+    $chart.ChartAreas[0].AxisY.Enabled = "True"
+    $chart.ChartAreas[0].AxisY.Title = "Pity Count"
+
+    # Title (ย้ายไปซ้ายบน เช่นกัน)
+    $t = New-Object System.Windows.Forms.DataVisualization.Charting.Title
+    $t.Text = "5-Star Pity History"
+    $t.ForeColor = "Gold"
+    $t.Font = $script:fontHeader
+    $t.Alignment = "TopLeft" # <--- ชิดซ้ายบน
+    $chart.Titles.Add($t)
+
     $series = New-Object System.Windows.Forms.DataVisualization.Charting.Series
     $series.Name = "Pity"
-    $series.ChartType = "Column" 
-    $series.IsValueShownAsLabel = $true # โชว์ตัวเลขบนแท่ง
+    $series.ChartType = $typeStr
+    $series.IsValueShownAsLabel = $true 
     $series.LabelForeColor = "White"
-    $series["PixelPointWidth"] = "25" # ความกว้างแท่ง
     
-    # 3. เตรียมข้อมูล (กลับหัวให้เรียงจาก อดีต -> ปัจจุบัน เพื่อให้กราฟวิ่งซ้ายไปขวา)
-    # $DataList ที่รับมา มันเรียง ใหม่ -> เก่า (เพื่อโชว์ Log)
-    $plotData = @()
-    if ($DataList.Count -gt 0) {
-        for ($i = $DataList.Count - 1; $i -ge 0; $i--) {
-            $plotData += $DataList[$i]
-        }
-    }
-    # นับ Index (เริ่มต้นที่ 1)
+    if ($typeStr -match "Line|Spline") {
+        $series.BorderWidth = 3
+        $series.MarkerStyle = "Circle"; $series.MarkerSize = 8
+    } else { $series["PixelPointWidth"] = "30" }
+
     $idx = 1
-    # 4. Plot ลงกราฟ
-    foreach ($item in $plotData) {
-        # สร้าง Label แกน X (เช่น "Jean (12/01)")
-        $label = ""
-        
-        if ($chkShowNo.Checked) {
-            # ถ้าเลือก Show No. -> "Jean (#1)"
-            $label = "$($item.Name)`n(#$idx)"
-        } else {
-            # ถ้าปกติ -> "Jean (12/01)"
-            $dateStr = [DateTime]::Parse($item.Time).ToString("dd/MM")
-            $label = "$($item.Name)`n($dateStr)"
-        }
+    foreach ($item in $DataList) {
+        $label = if ($chkShowNo.Checked) { "$($item.Name)`n(#$idx)" } else { "$($item.Name)`n($([DateTime]::Parse($item.Time).ToString("dd/MM")))" }
         
         $ptIndex = $series.Points.AddXY($label, $item.Pity)
         $pt = $series.Points[$ptIndex]
-        
-        # Tooltip (เอาเมาส์ชี้)
         $pt.ToolTip = "Name: $($item.Name)`nDate: $($item.Time)`nPity: $($item.Pity)`nBanner: $($item.Banner)"
 
-        # ใส่สีตามความเกลือ (Gradient)
-        $pt.BackGradientStyle = "TopBottom"
-        
-        if ($item.Pity -gt 75) {
-            $pt.Color = "Crimson"       # แดง (เกลือ)
-            $pt.BackSecondaryColor = "Maroon"
-        } elseif ($item.Pity -gt 50) {
-            $pt.Color = "Gold"          # ทอง (เฉยๆ)
-            $pt.BackSecondaryColor = "DarkGoldenrod"
+        if ($typeStr -eq "Column" -or $typeStr -eq "Bar") {
+            $pt.BackGradientStyle = "TopBottom"
+            if ($item.Pity -gt 75) { $pt.Color = "Crimson"; $pt.BackSecondaryColor = "Maroon" } 
+            elseif ($item.Pity -gt 50) { $pt.Color = "Gold"; $pt.BackSecondaryColor = "DarkGoldenrod" } 
+            else { $pt.Color = "LimeGreen"; $pt.BackSecondaryColor = "DarkGreen" }
         } else {
-            $pt.Color = "LimeGreen"     # เขียว (ดวงดี)
-            $pt.BackSecondaryColor = "DarkGreen"
+            $series.Color = "White"
+            if ($item.Pity -gt 75) { $pt.MarkerColor = "Red" } 
+            elseif ($item.Pity -gt 50) { $pt.MarkerColor = "Gold" } 
+            else { $pt.MarkerColor = "LimeGreen" }
         }
-
         $idx++
     }
-
     $chart.Series.Add($series)
+    $chart.ChartAreas[0].AxisX.Interval = 1
+    if ($typeStr -eq "Bar") { $chart.ChartAreas[0].AxisY.Title = "Pity Count" }
     $chart.Update()
 }
 # ==========================================
