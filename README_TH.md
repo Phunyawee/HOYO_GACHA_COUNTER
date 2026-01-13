@@ -40,6 +40,7 @@
 - 📂 **[Honkai: Star Rail (แบบแยก)](./Simple/StarRail)**
 - 📂 **[Zenless Zone Zero (แบบแยก)](./Simple/zzz)**
 
+
 ---
 
 ## ⚠️ ข้อจำกัด (Limitation)

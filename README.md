@@ -36,9 +36,9 @@ The latest version featuring a **Full GUI**, **Auto-Detect Cache**, **CSV Export
 ### 📜 Option 2: Standalone Versions (Legacy)
 Simple, separate console scripts for each game. Useful if you want to inspect specific source code or don't need the GUI/Discord features.
 
-- 📂 **[Genshin Impact (Standalone)](./Genshin)**
-- 📂 **[Honkai: Star Rail (Standalone)](./StarRail)**
-- 📂 **[Zenless Zone Zero (Standalone)](./zzz)**
+- 📂 **[Genshin Impact (Standalone)](./Simple/Genshin)**
+- 📂 **[Honkai: Star Rail (Standalone)](./Simple/StarRail)**
+- 📂 **[Zenless Zone Zero (Standalone)](./Simple/zzz)**
 
 ---
 
