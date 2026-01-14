@@ -296,7 +296,7 @@ $itemCredits.Add_Click({
     # --- VERSION ---
     $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
     $txtLog.SelectionColor = "DimGray"
-    $txtLog.AppendText("Version 1.0.0 (Stable Build)`n`n")
+    $txtLog.AppendText("Version 4.1.0 (Stable Build)`n`n")
 
     # --- DEVELOPER (ใส่ชื่อคุณตรงนี้) ---
     $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
