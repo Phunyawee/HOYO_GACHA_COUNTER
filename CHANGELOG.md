@@ -2,6 +2,85 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2026-01-17
+### 🔮 The "Prophecy" Update (Wish Simulator)
+
+This major update transforms the application from a "History Tracker" into a **"Future Predictor"**. We have introduced a mathematical simulation engine to help users plan their resources with statistical confidence.
+
+### 🚀 New Features
+*   **Wish Forecast (Simulator Tool):**
+    *   **New Interface:** Accessible via **Menu > Tools > Wish Forecast (F8)**.
+    *   **Smart Auto-Detect:** Automatically pulls `Current Pity`, `Guaranteed Status` (Win/Loss), and `Banner Mode` (Character/Weapon) from your local data.
+    *   **Visual Feedback:** Real-time progress bar and percentage display during simulation.
+    *   **Insightful Results:** Displays "Success Chance %" and "Average Cost" calculated from your exact budget.
+
+### 🧠 Deep Dive: The Monte Carlo Engine
+We moved away from simple probability formulas (which struggle to account for HoYoverse's complex Soft Pity and Guarantee systems). Instead, we implemented a **Monte Carlo Method**.
+
+**How it works:**
+The engine virtually "pulls" gacha for you **100,000 times** using the exact game rules (0.6% base rate, ramping soft pity, 50/50 logic). By aggregating these parallel universes, we derive a highly accurate probability.
+
+**The Algorithm (Core Logic):**
+Below is the actual logic used in `HoyoEngine.ps1` to simulate the rates dynamically:
+
+```powershell
+# --- Core Monte Carlo Logic (Snippet) ---
+for ($round = 1; $round -le 100000; $round++) {
+    $CurrentPity = $StartPity
+    $Guaranteed = $IsGuaranteed
+    
+    # Simulate pulls based on user budget
+    for ($i = 1; $i -le $MyPulls; $i++) {
+        $CurrentPity++
+        
+        # 1. Calculate Rate (Implementing Soft Pity Rules)
+        # 0.6% Base Rate -> Increases by ~6% per pull after Soft Pity (74)
+        $CurrentRate = 0.6
+        if ($CurrentPity -ge 74) {
+            $CurrentRate = 0.6 + (($CurrentPity - 74) * 6.0)
+        }
+        # Hard Pity Cap (90 for Char, 80 for Weapon)
+        if ($CurrentPity -ge $HardPityCap) { $CurrentRate = 100.0 }
+
+        # 2. Roll the Dice (RNG)
+        $Roll = (Get-Random -Minimum 0.0 -Maximum 100.0)
+
+        if ($Roll -le $CurrentRate) {
+            # 3. Check 50/50 vs Guaranteed
+            if ($Guaranteed -or (Get-Random -Min 0 -Max 2) -eq 0) {
+                $SuccessCount++ 
+                break # Won the 5-Star
+            } else {
+                $Guaranteed = $true # Lost 50/50, next is guaranteed
+                $CurrentPity = 0 
+            }
+        }
+    }
+}
+```
+## 🎨 UI/UX Improvements
+
+- **Menu Bar Integration**  
+  Moved the **Forecast** tool into a standard top `MenuStrip` for a cleaner and more professional layout.
+
+- **Help System**  
+  Added an interactive **?** button in the simulation result panel to explain the statistical meaning of the results.
+
+- **Compact Layout**  
+  Optimized the main window size to prevent UI overflow on smaller laptop screens.
+
+---
+
+## 🔧 Fixes & Optimizations
+
+- **Smart Pity Cap**  
+  The engine now strictly distinguishes pity limits based on the latest `gacha_type`.
+  - **Character Banner:** 90 Pity
+  - **Weapon Banner:** 80 Pity
+
+- **Thread Safety & UI Responsiveness**  
+  - Improved UI responsiveness during the simulation loop using `Application::DoEvents()`.
+
 ## [4.2.0] - 2026-01-16
 ### ✨ The "Modern UI & Precision" Update
 

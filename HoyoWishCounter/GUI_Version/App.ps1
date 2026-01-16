@@ -221,6 +221,16 @@ $form.MainMenuStrip = $menuStrip
 $menuFile = New-Object System.Windows.Forms.ToolStripMenuItem("File")
 [void]$menuStrip.Items.Add($menuFile)
 
+# --- MENU: TOOLS (Forecast) ---
+$menuTools = New-Object System.Windows.Forms.ToolStripMenuItem("Tools")
+$menuStrip.Items.Add($menuTools) | Out-Null
+
+# สร้างเมนูย่อย Simulator
+$script:itemForecast = New-Object System.Windows.Forms.ToolStripMenuItem("Wish Forecast (Simulator)")
+$script:itemForecast.ShortcutKeys = "F8"  # คีย์ลัดกด F8 ได้เลย เท่ๆ
+$script:itemForecast.Enabled = $false     # ปิดไว้ก่อน รอ Fetch เสร็จ
+$menuTools.DropDownItems.Add($script:itemForecast) | Out-Null
+
 # เมนูย่อย Reset
 $itemClear = New-Object System.Windows.Forms.ToolStripMenuItem("Reset / Clear All")
 $itemClear.ShortcutKeys = [System.Windows.Forms.Keys]::F5
@@ -296,7 +306,7 @@ $itemCredits.Add_Click({
     # --- VERSION ---
     $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
     $txtLog.SelectionColor = "DimGray"
-    $txtLog.AppendText("Version 4.1.0 (Stable Build)`n`n")
+    $txtLog.AppendText("Version 5.0.0`n`n")
 
     # --- DEVELOPER (ใส่ชื่อคุณตรงนี้) ---
     $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
@@ -323,6 +333,7 @@ $itemCredits.Add_Click({
     $txtLog.SelectionAlignment = "Left"
     $txtLog.SelectionStart = 0 # เลื่อน Scroll ขึ้นบนสุด
 })
+
 
 # 2. [NEW] ปุ่ม Toggle Expand (ขวาสุด)
 $menuExpand = New-Object System.Windows.Forms.ToolStripMenuItem(">> Show Graph")
@@ -707,7 +718,7 @@ $btnExport.Location = New-Object System.Drawing.Point(20, 850); $btnExport.Size 
 Apply-ButtonStyle -Button $btnExport -BaseColorName "DimGray" -HoverColorName "Gray";
 $btnExport.Enabled = $false
 $form.Controls.Add($btnExport)
-# ปรับขนาด Form ให้ยาวขึ้นรับของใหม่
+
 $form.Size = New-Object System.Drawing.Size(600, 950)
 
 # ============================================
@@ -1141,6 +1152,7 @@ $btnRun.Add_Click({
         if ($allHistory.Count -gt 0) {
             $btnExport.Enabled = $true
             Apply-ButtonStyle -Button $btnExport -BaseColorName "RoyalBlue" -HoverColorName "CornflowerBlue" -CustomFont $script:fontBold
+            $script:itemForecast.Enabled = $true
         }
 
     } catch {
@@ -1369,6 +1381,194 @@ $btnSaveImg.Add_Click({
             $loop = $false
         }
     } # End Loop
+})
+
+# ==========================================
+#  EVENT: MENU FORECAST CLICK
+# ==========================================
+$script:itemForecast.Add_Click({
+    Log "Action: Open Forecast Simulator Window" "Cyan"
+
+    # 1. AUTO-DETECT DATA
+    $currentPity = 0
+    $isGuaranteed = $false
+    $mode = "Character (90)"
+    $hardCap = 90
+    $softCap = 74
+
+    if ($null -ne $script:LastFetchedData -and $script:LastFetchedData.Count -gt 0) {
+        $conf = Get-GameConfig $script:CurrentGame
+        
+        # หา Pity ล่าสุด
+        foreach ($item in $script:LastFetchedData) {
+            if ($item.rank_type -eq $conf.SRank) { 
+                # ใช้ Function เช็ค Win/Loss ที่เราเพิ่มใน Engine
+                $status = Get-GachaStatus -GameName $script:CurrentGame -CharName $item.name -BannerCode $item.gacha_type
+                if ($status -eq "LOSS") { $isGuaranteed = $true }
+                break 
+            }
+            $currentPity++
+        }
+        
+        # เช็คประเภทตู้ (Weapon/Char)
+        $lastType = $script:LastFetchedData[0].gacha_type
+        if ($lastType -match "^(302|12|3|5)$") {
+            $mode = "Weapon/LC (80)"
+            $hardCap = 80; $softCap = 64
+        }
+        
+        Log "[Forecast] Auto-Detected: Pity=$currentPity, Guaranteed=$isGuaranteed, Mode=$mode" "Gray"
+    }
+
+    # 2. UI SETUP (Sim Window)
+    $fSim = New-Object System.Windows.Forms.Form
+    $fSim.Text = "Hoyo Wish Forecast (v5.0.0)"
+    $fSim.Size = New-Object System.Drawing.Size(400, 550)
+    $fSim.StartPosition = "CenterParent"
+    $fSim.BackColor = [System.Drawing.Color]::FromArgb(20, 20, 40)
+    $fSim.ForeColor = "White"
+    $fSim.FormBorderStyle = "FixedDialog"
+    $fSim.MaximizeBox = $false
+
+    # Helper functions for clean code
+    function Add-Label($txt, $x, $y, $font=$script:fontNormal, $color="Silver") {
+        $l = New-Object System.Windows.Forms.Label; $l.Text=$txt; $l.Location="$x,$y"; $l.AutoSize=$true; $l.Font=$font; $l.ForeColor=$color
+        $fSim.Controls.Add($l); return $l
+    }
+    function Add-Input($val, $x, $y, $w=80) {
+        $t = New-Object System.Windows.Forms.TextBox; $t.Text="$val"; $t.Location="$x,$y"; $t.Width=$w; $t.BackColor="30,30,50"; $t.ForeColor="Cyan"; $t.BorderStyle="FixedSingle"; $t.TextAlign="Center"
+        $fSim.Controls.Add($t); return $t
+    }
+
+    # ZONE A: REALITY
+    Add-Label "CURRENT STATUS" 20 20 $script:fontBold "Gold"
+    Add-Label "Current Pity:" 30 50
+    $txtPity = Add-Input $currentPity 120 48 50
+    Add-Label "Guaranteed?" 200 50
+    $chkG = New-Object System.Windows.Forms.CheckBox; $chkG.Location="290,46"; $chkG.Text="YES"; $chkG.Checked=$isGuaranteed; $chkG.ForeColor="Lime"
+    $chkG.Add_CheckedChanged({ if($chkG.Checked){$chkG.Text="YES";$chkG.ForeColor="Lime"}else{$chkG.Text="NO";$chkG.ForeColor="Gray"} })
+    $fSim.Controls.Add($chkG)
+    Add-Label "Mode: $mode" 30 80 $script:fontNormal "DimGray"
+
+    # ZONE B: RESOURCES
+    Add-Label "RESOURCES" 20 120 $script:fontBold "Gold"
+    Add-Label "Primos / Jades:" 30 150
+    $txtPrimos = Add-Input "0" 140 148 100
+    Add-Label "Fates / Tickets:" 30 180
+    $txtFates = Add-Input "0" 140 178 100
+    Add-Label "Total Pulls:" 30 215 $script:fontBold "White"
+    $lblTotalPulls = Add-Label "0" 140 215 $script:fontBold "Cyan"
+
+    $calcAction = {
+        try { $lblTotalPulls.Text = "$([math]::Floor([int]$txtPrimos.Text / 160) + [int]$txtFates.Text)" } catch { $lblTotalPulls.Text="0" }
+    }
+    $txtPrimos.Add_TextChanged($calcAction); $txtFates.Add_TextChanged($calcAction)
+
+    # BUTTON
+    $btnSim = New-Object System.Windows.Forms.Button; $btnSim.Text="RUN SIMULATION (100k Runs)"; $btnSim.Location="40, 260"; $btnSim.Size="300, 45"
+    Apply-ButtonStyle -Button $btnSim -BaseColorName "MediumSlateBlue" -HoverColorName "SlateBlue" -CustomFont $script:fontHeader
+    $fSim.Controls.Add($btnSim)
+
+     # ZONE C: RESULT (แก้ตั้งแต่ตรงนี้ลงไป)
+    $pnlRes = New-Object System.Windows.Forms.Panel; $pnlRes.Location="20,320"; $pnlRes.Size="345,180"; $pnlRes.BackColor="25,25,45"; $pnlRes.BorderStyle="FixedSingle"; $fSim.Controls.Add($pnlRes)
+    
+    $l1 = New-Object System.Windows.Forms.Label; $l1.Text="SIMULATION RESULT"; $l1.Location="10,10"; $l1.AutoSize=$true; $l1.ForeColor="Silver"; $l1.Font=$script:fontBold; $pnlRes.Controls.Add($l1)
+    
+    # --- [NEW] ปุ่ม Help (?) ---
+    $btnHelp = New-Object System.Windows.Forms.Button
+    $btnHelp.Text = "?"
+    $btnHelp.Size = New-Object System.Drawing.Size(25, 25)
+    $btnHelp.Location = "310, 5" # มุมขวาบนของ Panel
+    $btnHelp.FlatStyle = "Flat"
+    $btnHelp.FlatAppearance.BorderSize = 0
+    $btnHelp.BackColor = "Transparent"
+    $btnHelp.ForeColor = "Cyan"
+    $btnHelp.Font = $script:fontBold
+    $btnHelp.Cursor = [System.Windows.Forms.Cursors]::Hand
+    
+    # Logic ปุ่ม Help: เปิดหน้าต่างอธิบาย
+    $btnHelp.Add_Click({
+        $fHelp = New-Object System.Windows.Forms.Form
+        $fHelp.Text = "What is this % ?"
+        $fHelp.Size = New-Object System.Drawing.Size(400, 300)
+        $fHelp.StartPosition = "CenterParent"
+        $fHelp.BackColor = [System.Drawing.Color]::FromArgb(30,30,30)
+        $fHelp.ForeColor = "White"
+        $fHelp.FormBorderStyle = "FixedToolWindow" # มีปุ่ม X ให้ปิดได้
+
+        $txtInfo = New-Object System.Windows.Forms.Label
+        $txtInfo.Location = "20,20"; $txtInfo.Size = "340, 200"; $txtInfo.AutoSize = $false
+        $txtInfo.Font = $script:fontNormal
+        $txtInfo.Text = "Understanding 'Success Chance':`n`n" +
+                        "This program runs a simulation of 100,000 players who have the EXACT same resources (Primos/Pity) as you.`n`n" +
+                        "If the result is 26.9%:`n" +
+                        "It means out of 100,000 simulations, 26,900 of them successfully got the 5-Star character.`n`n" +
+                        "It is NOT a guarantee, but a probability based on official game rules (Soft Pity, 50/50, etc.)."
+        
+        $btnOk = New-Object System.Windows.Forms.Button
+        $btnOk.Text = "Got it"
+        $btnOk.Location = "140, 220"; $btnOk.Size = "100,30"
+        Apply-ButtonStyle -Button $btnOk -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+        $btnOk.Add_Click({ $fHelp.Close() })
+
+        $fHelp.Controls.Add($txtInfo)
+        $fHelp.Controls.Add($btnOk)
+        $fHelp.ShowDialog()
+    })
+    $pnlRes.Controls.Add($btnHelp)
+    # ---------------------------
+
+    $lblChance = New-Object System.Windows.Forms.Label; $lblChance.Text="Win Rate: -"; $lblChance.Location="10,40"; $lblChance.AutoSize=$true; $lblChance.ForeColor="White"; $lblChance.Font=$script:fontHeader; $pnlRes.Controls.Add($lblChance)
+    $lblCost = New-Object System.Windows.Forms.Label; $lblCost.Text="Avg. Cost: -"; $lblCost.Location="10,80"; $lblCost.AutoSize=$true; $lblCost.ForeColor="Gray"; $pnlRes.Controls.Add($lblCost)
+    $pbBack = New-Object System.Windows.Forms.Panel; $pbBack.Location="10,120"; $pbBack.Size="320,10"; $pbBack.BackColor="40,40,60"; $pnlRes.Controls.Add($pbBack)
+    $pbFill = New-Object System.Windows.Forms.Panel; $pbFill.Location="0,0"; $pbFill.Size="0,10"; $pbFill.BackColor="Lime"; $pbBack.Controls.Add($pbFill)
+
+    # 3. RUN LOGIC (แก้ไขให้รับ Progress)
+    $btnSim.Add_Click({
+        $budget = [int]$lblTotalPulls.Text
+        if ($budget -le 0) { [System.Windows.Forms.MessageBox]::Show("Please enter resources!", "No Budget", 0, 48); return }
+        
+        $fSim.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
+        $btnSim.Enabled = $false
+        
+        Log "[Forecast] Starting Monte Carlo Sim (100k runs)..." "Magenta"
+        
+        # --- [NEW] ส่ง Callback ไปรับค่า ---
+        $res = Invoke-GachaSimulation -SimCount 100000 `
+                                      -MyPulls $budget `
+                                      -StartPity ([int]$txtPity.Text) `
+                                      -IsGuaranteed ($chkG.Checked) `
+                                      -HardPityCap $hardCap `
+                                      -SoftPityStart $softCap `
+                                      -ProgressCallback { 
+                                          param($currentRound)
+                                          # อัปเดตข้อความบนปุ่ม
+                                          $percent = ($currentRound / 100000) * 100
+                                          $btnSim.Text = "Simulating... $percent%"
+                                          
+                                          # อัปเดต Log หน้าจอหลัก (ใช้ Invoke เพราะเรียกข้าม Thread บางทีอาจมีปัญหา แต่ PowerShell ปกติรัน Thread เดียวกัน)
+                                          Log "[Forecast] Progress: $percent%" "Gray"
+                                          [System.Windows.Forms.Application]::DoEvents() # สำคัญ! สั่งให้ UI ขยับ
+                                      }
+        
+        # Update UI Results
+        $winRate = "{0:N1}" -f $res.WinRate
+        $lblChance.Text = "Success Chance: $winRate%"
+        $lblCost.Text = "Avg. Cost: ~$('{0:N0}' -f $res.AvgCost) pulls"
+        
+        Log "[Forecast] COMPLETE! WinRate=$winRate%" "Lime"
+        
+        if ($res.WinRate -ge 80) { $lblChance.ForeColor="Lime"; $pbFill.BackColor="Lime" }
+        elseif ($res.WinRate -ge 50) { $lblChance.ForeColor="Gold"; $pbFill.BackColor="Gold" }
+        else { $lblChance.ForeColor="Crimson"; $pbFill.BackColor="Crimson" }
+        $pbFill.Width = [int](320 * ($res.WinRate / 100))
+
+        $fSim.Cursor = [System.Windows.Forms.Cursors]::Default
+        $btnSim.Enabled = $true
+        $btnSim.Text = "RUN SIMULATION (100k Runs)"
+    })
+
+    $fSim.ShowDialog() | Out-Null
 })
 # ==========================================
 #  CORE LOGIC: UPDATE VIEW (GUI & LOG)

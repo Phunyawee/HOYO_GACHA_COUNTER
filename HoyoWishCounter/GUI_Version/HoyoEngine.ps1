@@ -395,3 +395,68 @@ function Get-GachaStatus {
         return "WIN"  # ได้หน้าตู้
     }
 }
+
+
+# --- 7. SIMULATION ENGINE (Monte Carlo with Progress) ---
+function Invoke-GachaSimulation {
+    param(
+        [int]$SimCount = 100000, 
+        [int]$MyPulls,           
+        [int]$StartPity,         
+        [bool]$IsGuaranteed,     
+        [int]$HardPityCap = 90,  
+        [int]$SoftPityStart = 74,
+        [scriptblock]$ProgressCallback # <--- เพิ่มช่องรับคำสั่งรายงานผล
+    )
+
+    $SuccessCount = 0
+    $TotalPullsUsed = 0
+    $BaseRate = 0.6
+
+    for ($round = 1; $round -le $SimCount; $round++) {
+        # --- PROGRESS REPORT LOGIC ---
+        # รายงานผลทุกๆ 10% (เช่น ทุก 10,000 รอบ) เพื่อไม่ให้หน่วงเกินไป
+        if ($round % ($SimCount / 10) -eq 0) {
+            if ($ProgressCallback) {
+                # ส่งเลขรอบปัจจุบันกลับไป
+                & $ProgressCallback $round 
+            }
+        }
+        # -----------------------------
+
+        $CurrentPity = $StartPity
+        $Guaranteed = $IsGuaranteed
+        $GotIt = $false
+        
+        for ($i = 1; $i -le $MyPulls; $i++) {
+            $CurrentPity++
+            
+            $CurrentRate = $BaseRate
+            if ($CurrentPity -ge $SoftPityStart) {
+                $CurrentRate = $BaseRate + (($CurrentPity - $SoftPityStart) * 6.0)
+            }
+            if ($CurrentPity -ge $HardPityCap) { $CurrentRate = 100.0 }
+
+            $Roll = (Get-Random -Minimum 0.0 -Maximum 100.0)
+
+            if ($Roll -le $CurrentRate) {
+                if ($Guaranteed) {
+                    $GotIt = $true; $TotalPullsUsed += $i; break
+                } else {
+                    if ((Get-Random -Minimum 0 -Maximum 2) -eq 0) {
+                        $GotIt = $true; $TotalPullsUsed += $i; break
+                    } else {
+                        $Guaranteed = $true
+                        $CurrentPity = 0 
+                    }
+                }
+            }
+        }
+        if ($GotIt) { $SuccessCount++ }
+    }
+
+    return @{
+        WinRate = ($SuccessCount / $SimCount) * 100
+        AvgCost = if ($SuccessCount -gt 0) { $TotalPullsUsed / $SuccessCount } else { 0 }
+    }
+}

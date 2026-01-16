@@ -93,6 +93,31 @@ Send stylish embed reports to your own Discord server.
 
 ---
 
+## 🔮 v5.0.0 - Wish Forecast (Simulator) Update
+> *"Stop guessing, start calculating. Mathematics doesn't lie."*
+
+We are proud to introduce a powerful new tool integrated directly into the application: **The Monte Carlo Wish Simulator**. Unlike simple calculators, this engine runs **100,000 simulations** based on your actual resources to predict your specific success rate.
+
+![Forecast Menu](../screenshots/GUI_V5_Menu.png)
+
+### ✨ Key Features
+*   **🧠 Smart Auto-Detect:** The simulator automatically pulls your **Current Pity**, **Guaranteed Status (50/50)**, and **Banner Mode** (Character 90 / Weapon 80) from your latest fetch data. No manual entry required!
+*   **🎲 Monte Carlo Engine:** It doesn't just use a formula; it actually simulates pulling gacha **100,000 times** using official game rules (Base Rate, Soft Pity, Hard Pity) to ensure statistical accuracy.
+*   **📊 Visual Insights:**
+    *   **Success Chance %:** Color-coded probability gauge (Green = Safe, Red = Risky).
+    *   **Average Cost:** Estimates how many pulls you typically need.
+    *   **Progress Feedback:** Watch the simulation engine crunch numbers in real-time.
+
+### 🚀 How to Use
+1.  Fetch your latest history in the main window.
+2.  Go to **Tools > 🔮 Wish Forecast (Simulator)** or press **F8**.
+3.  Enter your available **Primogems** or **Fates**.
+4.  Click **RUN SIMULATION** and wait for the prophecy!
+
+![Simulator Window](../screenshots/GUI_V5_Simulator.png)
+
+---
+
 ## 🛠️ Troubleshooting
 
 **Q: Auto-Detect cannot find the file?**
