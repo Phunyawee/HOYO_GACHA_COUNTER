@@ -386,110 +386,161 @@ $btnZZZ.FlatAppearance.BorderSize = 0
 $btnZZZ.Font = $script:fontHeader      # <--- เพิ่มบรรทัดนี้ (ใช้ Font ใหญ่)
 $form.Controls.Add($btnZZZ)
 
-# --- ROW 2: SETTINGS (Y=100) ---
-# ขยับหนีปุ่มด้านบนลงมาที่ Y=100 (เดิม 80 ชนกัน)
+# --- ROW 2: SETTINGS (RE-DESIGNED & FIXED) ---
 $grpSettings = New-Object System.Windows.Forms.GroupBox
-$grpSettings.Text = " Settings "
-$grpSettings.Location = New-Object System.Drawing.Point(20, 100); $grpSettings.Size = New-Object System.Drawing.Size(550, 110)
-$grpSettings.ForeColor = "White"
+$grpSettings.Text = " Configuration "
+$grpSettings.Location = New-Object System.Drawing.Point(20, 100)
+$grpSettings.Size = New-Object System.Drawing.Size(550, 135) 
+$grpSettings.ForeColor = "Silver"
 $form.Controls.Add($grpSettings)
 
+# --- LINE 1: PATH & ACTIONS (Y=25) ---
 $txtPath = New-Object System.Windows.Forms.TextBox
-$txtPath.Location = New-Object System.Drawing.Point(15, 25); $txtPath.Size = New-Object System.Drawing.Size(350, 25)
-$txtPath.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtPath.ForeColor = "White"; $txtPath.BorderStyle = "FixedSingle"
+$txtPath.Location = New-Object System.Drawing.Point(15, 26); 
+$txtPath.Size = New-Object System.Drawing.Size(340, 25)
+$txtPath.BackColor = [System.Drawing.Color]::FromArgb(45,45,45)
+$txtPath.ForeColor = "Cyan"
+$txtPath.BorderStyle = "FixedSingle"
 $grpSettings.Controls.Add($txtPath)
 
+# ปุ่ม Auto-Detect
 $btnAuto = New-Object System.Windows.Forms.Button
-$btnAuto.Text = "Auto-Detect"
-$btnAuto.Location = New-Object System.Drawing.Point(375, 24); $btnAuto.Size = New-Object System.Drawing.Size(80, 27)
-
-# Style
-$btnAuto.BackColor = "DodgerBlue"  # สีฟ้าสด
-$btnAuto.ForeColor = "White"
-$btnAuto.FlatStyle = "Flat"
-$btnAuto.FlatAppearance.BorderSize = 0
-$btnAuto.Font = $script:fontNormal        # ใช้ตัวแปร Font
-$btnAuto.Cursor = [System.Windows.Forms.Cursors]::Hand
-
-# Hover Effect (ฟ้าสว่างขึ้น)
-$btnAuto.Add_MouseEnter({ $btnAuto.BackColor = "DeepSkyBlue" })
-$btnAuto.Add_MouseLeave({ $btnAuto.BackColor = "DodgerBlue" })
-
+$btnAuto.Text = "Auto Find"
+$btnAuto.Location = New-Object System.Drawing.Point(365, 25); 
+$btnAuto.Size = New-Object System.Drawing.Size(100, 27) 
+Apply-ButtonStyle -Button $btnAuto -BaseColorName "DodgerBlue" -HoverColorName "DeepSkyBlue" -CustomFont $script:fontNormal
 $grpSettings.Controls.Add($btnAuto)
 
+# ปุ่ม Browse
 $btnBrowse = New-Object System.Windows.Forms.Button
 $btnBrowse.Text = "..."
-$btnBrowse.Location = New-Object System.Drawing.Point(465, 24); $btnBrowse.Size = New-Object System.Drawing.Size(70, 27)
-
-# Style
-$btnBrowse.BackColor = "DimGray"
-$btnBrowse.ForeColor = "White"
-$btnBrowse.FlatStyle = "Flat"
-$btnBrowse.FlatAppearance.BorderSize = 0
-$btnBrowse.Font = $script:fontNormal      # ใช้ตัวแปร Font
-$btnBrowse.Cursor = [System.Windows.Forms.Cursors]::Hand
-
-# Hover Effect (เทาสว่างขึ้น)
-$btnBrowse.Add_MouseEnter({ $btnBrowse.BackColor = "Gray" })
-$btnBrowse.Add_MouseLeave({ $btnBrowse.BackColor = "DimGray" })
-
+$btnBrowse.Location = New-Object System.Drawing.Point(475, 25); 
+$btnBrowse.Size = New-Object System.Drawing.Size(60, 27)
+Apply-ButtonStyle -Button $btnBrowse -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
 $grpSettings.Controls.Add($btnBrowse)
 
-$chkSendDiscord = New-Object System.Windows.Forms.CheckBox
-$chkSendDiscord.Text = "Send Discord"; $chkSendDiscord.Location = New-Object System.Drawing.Point(15, 60); $chkSendDiscord.AutoSize = $true
-$chkSendDiscord.ForeColor = "Cyan"; $chkSendDiscord.Checked = $true
-$grpSettings.Controls.Add($chkSendDiscord)
-$toolTip.SetToolTip($chkSendDiscord, "Auto-Send: Automatically sends a FULL REPORT to Discord immediately after fetching completes.")
+# --- LINE 2: TOGGLES (Y=65) ---
 
+# 1. Discord Toggle
+$chkSendDiscord = New-Object System.Windows.Forms.CheckBox
+$chkSendDiscord.Appearance = "Button" 
+$chkSendDiscord.Size = New-Object System.Drawing.Size(255, 30) 
+$chkSendDiscord.Location = New-Object System.Drawing.Point(15, 65)
+$chkSendDiscord.FlatStyle = "Flat"; $chkSendDiscord.FlatAppearance.BorderSize = 0
+$chkSendDiscord.TextAlign = "MiddleCenter"
+$chkSendDiscord.Cursor = [System.Windows.Forms.Cursors]::Hand
+$chkSendDiscord.Checked = $true 
+
+# Logic เปลี่ยนสี Discord (แก้ตรงนี้ครับ)
+$discordToggleEvent = {
+    if ($chkSendDiscord.Checked) {
+        $chkSendDiscord.Text = "Discord Report: ON"
+        $chkSendDiscord.BackColor = "MediumSlateBlue" 
+        $chkSendDiscord.ForeColor = "White"
+    } else {
+        $chkSendDiscord.Text = "Discord Report: OFF"
+        # ต้องใช้ [System.Drawing.Color]::FromArgb(...)
+        $chkSendDiscord.BackColor = [System.Drawing.Color]::FromArgb(60,60,60) 
+        $chkSendDiscord.ForeColor = "Gray"
+    }
+}
+$chkSendDiscord.Add_CheckedChanged($discordToggleEvent)
+& $discordToggleEvent # Apply สีเริ่มต้น
+$grpSettings.Controls.Add($chkSendDiscord)
+$toolTip.SetToolTip($chkSendDiscord, "Auto-Send report to Discord after fetching.")
+
+# 2. View Toggle (Show No.)
 $chkShowNo = New-Object System.Windows.Forms.CheckBox
-$chkShowNo.Text = "Show [No.]"; $chkShowNo.Location = New-Object System.Drawing.Point(15, 82); $chkShowNo.AutoSize = $true
-$chkShowNo.ForeColor = "Silver"
+$chkShowNo.Appearance = "Button"
+$chkShowNo.Size = New-Object System.Drawing.Size(255, 30) 
+$chkShowNo.Location = New-Object System.Drawing.Point(280, 65)
+$chkShowNo.FlatStyle = "Flat"; $chkShowNo.FlatAppearance.BorderSize = 0
+$chkShowNo.TextAlign = "MiddleCenter"
+$chkShowNo.Cursor = [System.Windows.Forms.Cursors]::Hand
+$chkShowNo.Checked = $false
+
+# Logic เปลี่ยนสี View (แก้ตรงนี้ครับ)
+$viewToggleEvent = {
+    if ($chkShowNo.Checked) {
+        $chkShowNo.Text = "View: Index [No.]"
+        $chkShowNo.BackColor = "Gold" 
+        $chkShowNo.ForeColor = "Black"
+    } else {
+        $chkShowNo.Text = "View: Timestamp"
+        # ต้องใช้ [System.Drawing.Color]::FromArgb(...)
+        $chkShowNo.BackColor = [System.Drawing.Color]::FromArgb(60,60,60)
+        $chkShowNo.ForeColor = "Gray"
+    }
+    
+    # Realtime Update Logic
+    if ($null -ne $script:LastFetchedData -and $script:LastFetchedData.Count -gt 0) {
+        Update-FilteredView
+    }
+}
+$chkShowNo.Add_CheckedChanged($viewToggleEvent)
+& $viewToggleEvent # Apply สีเริ่มต้น
 $grpSettings.Controls.Add($chkShowNo)
 
+# --- LINE 3: BANNER SELECTOR (Y=105) ---
 $lblBanner = New-Object System.Windows.Forms.Label
-$lblBanner.Text = "Banner:"; $lblBanner.AutoSize = $true; $lblBanner.Location = New-Object System.Drawing.Point(140, 66)
+$lblBanner.Text = "Target Banner:"
+$lblBanner.AutoSize = $true
+$lblBanner.Location = New-Object System.Drawing.Point(15, 108)
+$lblBanner.ForeColor = "Silver"
 $grpSettings.Controls.Add($lblBanner)
 
 $script:cmbBanner = New-Object System.Windows.Forms.ComboBox
-$script:cmbBanner.Location = New-Object System.Drawing.Point(200, 62); $script:cmbBanner.Size = New-Object System.Drawing.Size(335, 25)
+$script:cmbBanner.Location = New-Object System.Drawing.Point(110, 105); 
+$script:cmbBanner.Size = New-Object System.Drawing.Size(425, 25) 
 $script:cmbBanner.DropDownStyle = "DropDownList"
-$script:cmbBanner.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $script:cmbBanner.ForeColor = "White"; $script:cmbBanner.FlatStyle = "Flat"
+$script:cmbBanner.BackColor = [System.Drawing.Color]::FromArgb(45,45,45)
+$script:cmbBanner.ForeColor = "White"
+$script:cmbBanner.FlatStyle = "Flat"
 $grpSettings.Controls.Add($script:cmbBanner)
 
-# --- ROW 3: PITY METER (Y=225) ---
-# ขยับลงมาตามลำดับ
+# ============================================
+#  --- ROW 3: PITY METER (Re-designed) ---
+#  (ย้ายลงมาที่ Y=250 เพื่อหลบ Settings อันใหม่)
+# ============================================
+
+# Title Label (ปรับตำแหน่ง + ฟอนต์)
 $script:lblPityTitle = New-Object System.Windows.Forms.Label
-$script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"; 
-$script:lblPityTitle.Location = New-Object System.Drawing.Point(20, 225); 
+$script:lblPityTitle.Text = "Current Pity Status"; 
+$script:lblPityTitle.Location = New-Object System.Drawing.Point(20, 250); 
 $script:lblPityTitle.AutoSize = $true
+$script:lblPityTitle.Font = $script:fontBold
+$script:lblPityTitle.ForeColor = "Silver"
 $form.Controls.Add($script:lblPityTitle)
 
+# Meter Background (ทำให้ดู Modern ขึ้น: ผอมลงแต่ยาว)
 $pnlPityBack = New-Object System.Windows.Forms.Panel
-$pnlPityBack.Location = New-Object System.Drawing.Point(20, 245); $pnlPityBack.Size = New-Object System.Drawing.Size(550, 25)
-$pnlPityBack.BackColor = [System.Drawing.Color]::FromArgb(60,60,60)
+$pnlPityBack.Location = New-Object System.Drawing.Point(20, 275); 
+$pnlPityBack.Size = New-Object System.Drawing.Size(550, 15) # ลดความสูงเหลือ 15px ดู Sleek
+$pnlPityBack.BackColor = [System.Drawing.Color]::FromArgb(40,40,40)
+$pnlPityBack.BorderStyle = "None"
 $form.Controls.Add($pnlPityBack)
 
+# Meter Fill (ไส้ใน)
 $script:pnlPityFill = New-Object System.Windows.Forms.Panel
-$script:pnlPityFill.Location = New-Object System.Drawing.Point(0, 0); $script:pnlPityFill.Size = New-Object System.Drawing.Size(0, 25)
-$script:pnlPityFill.BackColor = "LimeGreen"
+$script:pnlPityFill.Location = New-Object System.Drawing.Point(0, 0); 
+$script:pnlPityFill.Size = New-Object System.Drawing.Size(0, 15)
+$script:pnlPityFill.BackColor = "DodgerBlue" # เปลี่ยนสี Default เป็นฟ้า
 $pnlPityBack.Controls.Add($script:pnlPityFill)
 
-# --- ROW 4: BUTTONS & PROGRESS (Y=285) ---
-$script:progressBar = New-Object System.Windows.Forms.ProgressBar
-$script:progressBar.Location = New-Object System.Drawing.Point(20, 285); $script:progressBar.Size = New-Object System.Drawing.Size(550, 10)
-$form.Controls.Add($script:progressBar)
-
-# --- ROW 4: BUTTONS & PROGRESS ---
-# Button: START FETCHING
+# ============================================
+#  --- ROW 4: BUTTONS (No Loading Bar) ---
+#  (ขยับขึ้นมาแทนที่ Progress Bar เดิมที่เอาออกไป)
+# ============================================
 $btnRun = New-Object System.Windows.Forms.Button
-$btnRun.Text = "START FETCHING"; $btnRun.Location = New-Object System.Drawing.Point(20, 305); $btnRun.Size = New-Object System.Drawing.Size(400, 45)
-# บรรทัดนี้จัดการสีและฟอนต์ให้แล้ว
+$btnRun.Text = "START FETCHING"; 
+$btnRun.Location = New-Object System.Drawing.Point(20, 310); # Y=310
+$btnRun.Size = New-Object System.Drawing.Size(400, 45)
 Apply-ButtonStyle -Button $btnRun -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontHeader
 $form.Controls.Add($btnRun)
 
 $btnStop = New-Object System.Windows.Forms.Button
 $btnStop.Text = "STOP"; 
-$btnStop.Location = New-Object System.Drawing.Point(430, 305); 
+$btnStop.Location = New-Object System.Drawing.Point(430, 310); # Y=310
 $btnStop.Size = New-Object System.Drawing.Size(140, 45)
 $btnStop.BackColor = "Firebrick"; 
 $btnStop.ForeColor = "White"; 
@@ -906,6 +957,7 @@ $btnExport.Add_Click({
     }
 })
 # 5. START FETCHING
+# 5. START FETCHING
 $btnRun.Add_Click({
     Reset-LogWindow
 
@@ -925,6 +977,11 @@ $btnRun.Add_Click({
     $script:StopRequested = $false
     $script:LastFetchedData = @() # Reset Data
 
+    # Reset UI Pity Meter
+    $script:pnlPityFill.Width = 0
+    $script:lblPityTitle.Text = "Fetching Data..."
+    $script:lblPityTitle.ForeColor = "Cyan"
+
     if ($script:cmbBanner.SelectedIndex -le 0) {
         $TargetBanners = $conf.Banners 
     } else {
@@ -938,9 +995,6 @@ $btnRun.Add_Click({
         
         $allHistory = @()
 
-        $script:progressBar.Style = "Marquee" # หลอดวิ่งไปมา
-        $script:progressBar.MarqueeAnimationSpeed = 30
-
         # --- FETCH LOOP ---
         foreach ($banner in $TargetBanners) {
             if ($script:StopRequested) { throw "STOPPED" }
@@ -949,21 +1003,12 @@ $btnRun.Add_Click({
 
             $items = Fetch-GachaPages -Url $auth.Url -HostUrl $auth.Host -Endpoint $conf.ApiEndpoint -BannerCode $banner.Code -PageCallback { 
                 param($p) 
-                
-                # --- GUI Update ---
+                # Update GUI Text
                 $form.Text = "Fetching $($banner.Name) - Page $p..." 
-                
-                # --- Console Debug Update (เขียนทับบรรทัดเดิม) ---
-                if ($script:DebugMode) {
-                    # `r คือกลับไปต้นบรรทัด เพื่อเขียนทับเลขหน้าเก่า
-                    Write-Host -NoNewline "`r[DEBUG] Fetching Page: $p" -ForegroundColor Cyan
-                }
-
                 [System.Windows.Forms.Application]::DoEvents()
                 if ($script:StopRequested) { throw "STOPPED" }
             }
             
-            # ขึ้นบรรทัดใหม่ใน Console หลังจบ Loop ของ Banner นี้
             if ($script:DebugMode) { Write-Host "" } 
             
             foreach ($item in $items) { 
@@ -973,7 +1018,7 @@ $btnRun.Add_Click({
             Log "  > Found $($items.Count) items." "Gray"
         }
         
-        # Save to memory for Export
+        # Save to memory
         $script:LastFetchedData = $allHistory
         
         # --- CALCULATION ---
@@ -1005,84 +1050,84 @@ $btnRun.Add_Click({
         }
 
         # --- DISPLAY ---
-
-        # 1. เปิดใช้งานแผงกรองข้อมูล (เพื่อให้กดเล่นต่อได้)
         $grpFilter.Enabled = $true
-        
-        # 2. สั่งอัปเดตหน้าจอทันที! (จะโชว์ทั้ง Log สีใหม่ และวาดกราฟทันที)
         Update-FilteredView
 
-        # --- UPDATE PITY GAUGE UI (Current Pity Logic) ---
+        # --- [NEW] UPDATE PITY GAUGE UI (Dynamic Max Pity 80/90) ---
         
-        # 1. คำนวณ Pity ปัจจุบัน (นับถอยหลังจากตัวล่าสุด จนกว่าจะเจอ 5 ดาว)
+        # 1. คำนวณ Pity ปัจจุบัน
         $currentPity = 0
+        $latestGachaType = "" 
+
         if ($allHistory.Count -gt 0) {
-            # $allHistory[0] คือตัวใหม่ล่าสุด
+            # $allHistory[0] คือตัวใหม่ล่าสุด (เพราะตอน Fetch มันเรียง Newest มา)
+            $latestGachaType = $allHistory[0].gacha_type 
             foreach ($item in $allHistory) {
                 if ($item.rank_type -eq $conf.SRank) { 
-                    break # เจอ 5 ดาวแล้ว หยุดนับ
+                    break 
                 }
                 $currentPity++
             }
         }
 
-        # 2. คำนวณความยาวหลอด (เต็มหลอด 550px = 90 pity)
-        $percent = $currentPity / 90
+        # 2. Logic ตรวจสอบ Max Pity (90 หรือ 80)
+        $maxPity = 90
+        $typeLabel = "Character"
+        
+        # รหัสตู้: 302=Genshin Weapon, 12=HSR LC, 3=ZZZ W-Engine, 5=ZZZ Bangboo
+        if ($latestGachaType -match "^(302|12|3|5)$") {
+            $maxPity = 80
+            $typeLabel = "Weapon/LC"
+        }
+
+        # 3. คำนวณความยาวหลอด (เต็มหลอด 550px)
+        $percent = 0
+        if ($maxPity -gt 0) { $percent = $currentPity / $maxPity }
         if ($percent -gt 1) { $percent = 1 }
+        
         $newWidth = [int](550 * $percent)
         
-        # 3. อัปเดต UI
+        # อัปเดต UI
         $script:pnlPityFill.Width = $newWidth
-        
-        # อัปเดตข้อความบนหัวข้อแทน (ชัดเจนกว่า ไม่โดนบัง)
-        $script:lblPityTitle.Text = "Current Pity Progress: $currentPity / 90"
+        $script:lblPityTitle.Text = "Current Pity ($typeLabel): $currentPity / $maxPity"
 
-        # 4. เปลี่ยนสีหลอดตามความเกลือ
-        if ($currentPity -ge 74) {
-            $script:pnlPityFill.BackColor = "Crimson" # แดงเข้ม (Soft Pity)
-            $script:lblPityTitle.ForeColor = "Red"    # ตัวหนังสือแดงด้วย
-        } elseif ($currentPity -ge 50) {
-            $script:pnlPityFill.BackColor = "Gold"    # เหลือง
+        # 4. Logic สีหลอด
+        if ($percent -ge 0.82) { # Soft Pity zone
+            $script:pnlPityFill.BackColor = "Crimson" 
+            $script:lblPityTitle.ForeColor = "Red"    
+        } elseif ($percent -ge 0.55) { 
+            $script:pnlPityFill.BackColor = "Gold"    
             $script:lblPityTitle.ForeColor = "Gold"
-        } else {
-            $script:pnlPityFill.BackColor = "LimeGreen" # เขียว
+        } else { 
+            $script:pnlPityFill.BackColor = "DodgerBlue" 
             $script:lblPityTitle.ForeColor = "White"
         }
-        
-        # หยุด Progress Bar ด้านล่าง
-        $script:progressBar.Style = "Blocks"
-        $script:progressBar.Value = 100
 
-        # --- CALCULATE LUCK STATS ---
+        # --- STATS CALCULATION ---
         $totalPulls = $allHistory.Count
         $total5Star = $highRankHistory.Count
         $avgPity = 0
         
-        # 1. Update Total
         $lblStat1.Text = "Total Pulls: $totalPulls"
 
-        # 2. Update Avg Pity
         if ($total5Star -gt 0) {
-            # สูตร: เอาจำนวนโรลทั้งหมด หารด้วย จำนวน 5 ดาวที่ออก
             $avgPity = "{0:N2}" -f ($totalPulls / $total5Star)
             $script:lblStatAvg.Text = "Avg. Pity: $avgPity"
             
-            # เปลี่ยนสีตามความเฮง
-            if ([double]$avgPity -le 55) { $script:lblStatAvg.ForeColor = "Lime" }   # เฮงจัด
-            elseif ([double]$avgPity -le 73) { $script:lblStatAvg.ForeColor = "Gold" } # ทั่วไป
-            else { $script:lblStatAvg.ForeColor = "OrangeRed" }                       # เกลือ
+            if ([double]$avgPity -le 55) { $script:lblStatAvg.ForeColor = "Lime" }   
+            elseif ([double]$avgPity -le 73) { $script:lblStatAvg.ForeColor = "Gold" } 
+            else { $script:lblStatAvg.ForeColor = "OrangeRed" }                       
         } else {
             $script:lblStatAvg.Text = "Avg. Pity: N/A"
             $script:lblStatAvg.ForeColor = "Gray"
         }
 
-        # 3. Update Cost (Currency)
+        # Cost
         $cost = $totalPulls * 160
         $currencyName = "Primos"
         if ($script:CurrentGame -eq "HSR") { $currencyName = "Jades" }
         elseif ($script:CurrentGame -eq "ZZZ") { $currencyName = "Polychromes" }
         
-        # จัด Format ใส่ลูกน้ำ (เช่น 160,000)
         $costStr = "{0:N0}" -f $cost
         $script:lblStatCost.Text = "Est. Cost: $costStr $currencyName"
         
@@ -1091,14 +1136,11 @@ $btnRun.Add_Click({
             Log "`nSending report to Discord..." "Magenta"
             $discordMsg = Send-DiscordReport -HistoryData $highRankHistory -PityTrackers $pityTrackers -Config $conf -ShowNoMode $ShowNo
             Log "Discord: $discordMsg" "Lime"
-        } else {
-            Log "`nDiscord: Skipped" "Gray"
         }
         
-        # Enable Export Button
         if ($allHistory.Count -gt 0) {
             $btnExport.Enabled = $true
-            $btnExport.BackColor = "RoyalBlue" # เปลี่ยนสีให้รู้ว่ากดได้
+            Apply-ButtonStyle -Button $btnExport -BaseColorName "RoyalBlue" -HoverColorName "CornflowerBlue" -CustomFont $script:fontBold
         }
 
     } catch {
@@ -1114,9 +1156,7 @@ $btnRun.Add_Click({
         $btnStop.Enabled = $false
         $form.Text = "Universal Hoyo Wish Counter (Final)"
         
-        # --- เพิ่มบรรทัดนี้ ---
         if ($script:LastFetchedData.Count -gt 0) { $grpFilter.Enabled = $true }
-        # -------------------
     }
 })
 $btnSaveImg.Add_Click({

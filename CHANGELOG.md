@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.0] - 2026-01-16
+### ✨ The "Modern UI & Precision" Update
+
+### 🎨 UI/UX Redesign (Modernized)
+#### Interactive Toggle Switches
+- Replaced traditional checkboxes in the Settings panel with **Modern Toggle Buttons**.
+- States are now clearly color-coded (e.g., Purple for Discord ON, Gold for View Mode) for better visual feedback.
+#### Clean Dashboard Layout
+- Redesigned the **Configuration Group** with a structured Grid Layout for better readability.
+- Removed the legacy **Loading/Progress Bar** to reduce visual clutter and improve performance.
+- **Sleek Pity Meter:** Redesigned the visual gauge to be slimmer and more aesthetically pleasing.
+
+### 🧠 Core Logic Improvements
+#### Smart Pity Cap Detection
+- The engine now **automatically detects the banner type** based on the latest pull data.
+- Adjusts the Pity Meter calculation dynamically:
+  - **90 Pity** for Character Banners.
+  - **80 Pity** for Weapon / Light Cone / W-Engine Banners.
+#### Real-Time View Updating
+- Toggling between **"Timestamp"** and **"Index [No.]"** modes now triggers an **Instant Refresh** of the Log and Graph.
+- No need to press "Start Fetching" again just to change the display format.
+
 ## [4.1.0] - 2026-01-14
 ### ✨ The "Visual Analytics" Update
 
