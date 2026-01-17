@@ -1514,8 +1514,24 @@ $script:itemForecast.Add_Click({
     $pnlRight = New-Object System.Windows.Forms.Panel; $pnlRight.Location="380,20"; $pnlRight.Size="480,480"; $pnlRight.BackColor="Transparent"; $fSim.Controls.Add($pnlRight)
     $chartSim = New-Object System.Windows.Forms.DataVisualization.Charting.Chart; $chartSim.Dock="Fill"; $chartSim.BackColor="Transparent"; $pnlRight.Controls.Add($chartSim)
     $caSim = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea; $caSim.Name="SimArea"; $caSim.BackColor="Transparent"
-    $caSim.AxisX.LabelStyle.ForeColor="Silver"; $caSim.AxisX.LineColor="Gray"; $caSim.AxisX.MajorGrid.LineColor=[System.Drawing.Color]::FromArgb(20,255,255,255); $caSim.AxisX.Title="Pulls Used"; $caSim.AxisX.TitleForeColor="Gray"; $caSim.AxisX.Interval=20
-    $caSim.AxisY.LabelStyle.ForeColor="DimGray"; $caSim.AxisY.LineColor="Gray"; $caSim.AxisY.MajorGrid.LineColor=[System.Drawing.Color]::FromArgb(20,255,255,255); $caSim.AxisY.LabelStyle.Enabled=$false
+    $caSim.AxisX.LabelStyle.ForeColor="Silver"; 
+    $caSim.AxisX.LineColor="Gray"; 
+    $caSim.AxisX.MajorGrid.LineColor=[System.Drawing.Color]::FromArgb(20,255,255,255); 
+    $caSim.AxisX.Title="Pulls Used"; $caSim.AxisX.TitleForeColor="Gray"; 
+    $caSim.AxisX.Interval=20
+
+    $caSim.AxisY.LabelStyle.ForeColor="DimGray"; 
+    $caSim.AxisY.LineColor="Gray"; 
+    $caSim.AxisY.MajorGrid.LineColor=[System.Drawing.Color]::FromArgb(20,255,255,255); 
+    
+    $caSim.AxisY.Title = "Frequency (Simulations)" # ชื่อป้าย
+    $caSim.AxisY.TitleForeColor = "Silver"
+    $caSim.AxisY.TextOrientation = "Rotated270"      # หมุนแนวตั้ง
+    $caSim.AxisY.TitleFont = $script:fontNormal      # ใช้ฟอนต์ปกติ
+
+    $caSim.AxisY.LabelStyle.Enabled=$false
+    
+    
     $chartSim.ChartAreas.Add($caSim)
     $titleSim = New-Object System.Windows.Forms.DataVisualization.Charting.Title; $titleSim.Text="Probability Distribution"; $titleSim.ForeColor="Gold"; $titleSim.Font=$script:fontBold; $chartSim.Titles.Add($titleSim)
 
@@ -1581,8 +1597,17 @@ $script:itemForecast.Add_Click({
         $pbFill.Width = [int](320 * ($res.WinRate / 100))
 
         # --- UPDATE CHART ---
-        $chartSim.Series.Clear(); $caSim.AxisX.StripLines.Clear(); $chartSim.Legends.Clear()
-        $caSim.AxisX.Minimum = 0; if ($budget -gt 100) { $caSim.AxisX.Maximum = $NaN } else { $caSim.AxisX.Maximum = 100 }
+        $chartSim.Series.Clear(); 
+        $caSim.AxisX.StripLines.Clear(); 
+        $chartSim.Legends.Clear()
+        $caSim.AxisX.Minimum = 0; 
+        if ($budget -gt 100) { 
+            $caSim.AxisX.Maximum = $NaN 
+        } 
+        else 
+        { 
+            $caSim.AxisX.Maximum = 100 
+        }
 
         $leg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend; $leg.Name="Legend1"; $leg.Docking="Bottom"; $leg.Alignment="Center"; $leg.BackColor="Transparent"; $leg.ForeColor="Silver"; $chartSim.Legends.Add($leg)
 
