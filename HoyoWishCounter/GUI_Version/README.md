@@ -102,19 +102,21 @@ We are proud to introduce a powerful new tool integrated directly into the appli
 
 ### ✨ Key Features
 *   **🧠 Smart Auto-Detect:** The simulator automatically pulls your **Current Pity**, **Guaranteed Status (50/50)**, and **Banner Mode** (Character 90 / Weapon 80) from your latest fetch data. No manual entry required!
-*   **🎲 Monte Carlo Engine:** It doesn't just use a formula; it actually simulates pulling gacha **100,000 times** using official game rules (Base Rate, Soft Pity, Hard Pity) to ensure statistical accuracy.
-*   **📊 Visual Insights:**
-    *   **Success Chance %:** Color-coded probability gauge (Green = Safe, Red = Risky).
-    *   **Average Cost:** Estimates how many pulls you typically need.
-    *   **Progress Feedback:** Watch the simulation engine crunch numbers in real-time.
+*   **📊 Probability Histogram (New!):** Visualize your luck distribution! The new interactive graph shows exactly *when* you are most likely to get the 5-star character.
+    *   **🟩 Lucky Zone:** Early pulls before soft pity.
+    *   **🟨 Soft Pity Zone:** The high-probability range (74-85 pulls), clearly marked.
+    *   **🟥 Hard Pity Zone:** The "Salty" range for worst-case scenarios.
+    *   **Markers:** Visual lines indicating exactly where Soft Pity and Hard Pity kick in relative to your current status.
+*   **🎲 Monte Carlo Engine:** It simulates pulling gacha **100,000 times** using official game rules to ensure statistical accuracy.
+*   **🛑 User Control:** Run the simulation or **Stop** it at any time if you need to adjust inputs.
 
 ### 🚀 How to Use
 1.  Fetch your latest history in the main window.
 2.  Go to **Tools > 🔮 Wish Forecast (Simulator)** or press **F8**.
 3.  Enter your available **Primogems** or **Fates**.
-4.  Click **RUN SIMULATION** and wait for the prophecy!
+4.  Click **RUN SIMULATION** and watch the probability graph generate in real-time!
 
-![Simulator Window](../screenshots/GUI_V5_Simulator.png)
+![Simulator Window](../screenshots/GUI_V5_Simulator2.png)
 
 ---
 

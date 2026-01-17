@@ -65,7 +65,7 @@ function Get-GameConfig {
     return $null
 }
 
-# --- 2. FILE OPERATIONS (Trinity: Genshin + ZZZ + HSR) ---
+# --- 2. FILE OPERATIONS (Privacy Enhanced) ---
 function Find-GameCacheFile {
     param([hashtable]$Config, [string]$StagingPath)
 
@@ -76,22 +76,27 @@ function Find-GameCacheFile {
     $FinalPath = $null
     $GamePath = $null
 
+    # Helper function เพื่อซ่อน Path ถ้าไม่ได้เปิด Debug
+    function Get-SafePath($p) {
+        if ($script:DebugMode) { return $p }
+        return "[PATH HIDDEN]"
+    }
+
     # ==========================================
-    # LOGIC A: GENSHIN IMPACT (Legacy output_log.txt)
+    # LOGIC A: GENSHIN IMPACT
     # ==========================================
     if ($Config.Name -match "Genshin") {
         Log-Status "Mode: Genshin Legacy" "Yellow"
-        
         $logLocation = "%userprofile%\AppData\LocalLow\miHoYo\Genshin Impact\output_log.txt"
         $path = [System.Environment]::ExpandEnvironmentVariables($logLocation)
-
         if (-not [System.IO.File]::Exists($path)) {
             $logLocationChina = "%userprofile%\AppData\LocalLow\miHoYo\$([char]0x539f)$([char]0x795e)\output_log.txt"
             $pathChina = [System.Environment]::ExpandEnvironmentVariables($logLocationChina)
             if ([System.IO.File]::Exists($pathChina)) { $path = $pathChina } 
             else { throw "Cannot find 'output_log.txt'." }
         }
-        Log-Status "Found Log: $path" "Gray"
+        # [PRIVACY CHECK]
+        Log-Status "Found Log: $(Get-SafePath $path)" "Gray"
 
         try {
             $logs = Get-Content -Path $path -Encoding UTF8 -ErrorAction Stop
@@ -102,54 +107,48 @@ function Find-GameCacheFile {
         } catch { throw "Error parsing Genshin log." }
 
     # ==========================================
-    # LOGIC B: ZENLESS ZONE ZERO (Special Subsystems Logic)
+    # LOGIC B: ZZZ
     # ==========================================
     } elseif ($Config.Name -match "Zenless") {
         Log-Status "Mode: ZZZ Subsystems" "Yellow"
-
         $AppData = [Environment]::GetFolderPath('ApplicationData')
         $LocalLow = Join-Path $AppData "..\LocalLow"
         $LogPath = $null
-
-        # ZZZ มักจะอยู่ใน miHoYo\ZenlessZoneZero (แต่เช็ค Cognosphere เผื่อไว้)
         foreach ($subFolder in $Config.LogFolders) {
             $TryPath = Join-Path $LocalLow "$subFolder\Player.log"
             if (Test-Path $TryPath) { $LogPath = $TryPath; break }
         }
         if (-not $LogPath) { throw "Player.log not found." }
-        Log-Status "Found Log: $LogPath" "Gray"
+        
+        # [PRIVACY CHECK]
+        Log-Status "Found Log: $(Get-SafePath $LogPath)" "Gray"
 
-        # ** ZZZ SPECIFIC PARSING **
         try {
-            # อ่าน 20 บรรทัดแรก (ต้นฉบับใช้ 16)
             $LogLines = Get-Content $LogPath -First 20 -ErrorAction Stop
             foreach ($line in $LogLines) {
-                # Logic จากสคริปต์ที่คุณให้มา
                 if ($line.StartsWith("[Subsystems] Discovering subsystems at path ")) {
-                    $GamePath = $line.Replace("[Subsystems] Discovering subsystems at path ", "").Replace("UnitySubsystems", "")
-                    # ตัด whitespace และ slash ท้ายออก
-                    $GamePath = $GamePath.Trim()
+                    $GamePath = $line.Replace("[Subsystems] Discovering subsystems at path ", "").Replace("UnitySubsystems", "").Trim()
                     break
                 }
             }
         } catch { throw "Error reading ZZZ log." }
 
     # ==========================================
-    # LOGIC C: HONKAI STAR RAIL (Standard SRS)
+    # LOGIC C: HSR
     # ==========================================
     } else {
         Log-Status "Mode: HSR Standard" "Yellow"
-        
         $AppData = [Environment]::GetFolderPath('ApplicationData')
         $LocalLow = Join-Path $AppData "..\LocalLow"
         $LogPath = $null
-
         foreach ($subFolder in $Config.LogFolders) {
             $TryPath = Join-Path $LocalLow "$subFolder\Player.log"
             if (Test-Path $TryPath) { $LogPath = $TryPath; break }
         }
         if (-not $LogPath) { throw "Player.log not found." }
-        Log-Status "Found Log: $LogPath" "Gray"
+        
+        # [PRIVACY CHECK]
+        Log-Status "Found Log: $(Get-SafePath $LogPath)" "Gray"
 
         try {
             $LogLines = Get-Content $LogPath -First 50 -ErrorAction Stop
@@ -163,57 +162,39 @@ function Find-GameCacheFile {
     }
 
     # ==========================================
-    # COMMON PROCESS: LOCATE CACHE & COPY
+    # COMMON PROCESS
     # ==========================================
-
     if ([string]::IsNullOrWhiteSpace($GamePath)) { throw "Could not extract Game Path from Log." }
-    
-    # Clean Path format (เปลี่ยน / เป็น \)
     $GamePath = $GamePath -replace "/", "\"
-    # ลบ Backslash ตัวท้ายสุดออก (ถ้ามี) เพื่อความชัวร์ในการ Join-Path
     if ($GamePath.EndsWith("\")) { $GamePath = $GamePath.Substring(0, $GamePath.Length - 1) }
     
-    Log-Status "Game installed at: $GamePath" "Lime"
+    # [PRIVACY CHECK]
+    Log-Status "Game Path: $(Get-SafePath $GamePath)" "Lime"
 
-    # หา webCaches (ZZZ ปกติจะอยู่ที่ Root เลย, Genshin/HSR อาจอยู่ใน _Data)
-    $PossibleWebCachePaths = @(
-        "$GamePath\webCaches",
-        "$GamePath\$($Config.DataFolderName)\webCaches"
-    )
+    $PossibleWebCachePaths = @("$GamePath\webCaches", "$GamePath\$($Config.DataFolderName)\webCaches")
     $TargetWebCache = $null
-    foreach ($p in $PossibleWebCachePaths) {
-        if (Test-Path $p) { $TargetWebCache = $p; break }
-    }
+    foreach ($p in $PossibleWebCachePaths) { if (Test-Path $p) { $TargetWebCache = $p; break } }
 
     if (-not $TargetWebCache) { throw "webCaches folder missing. Open Wish History in-game." }
-    Log-Status "Found webCaches at: $TargetWebCache" "Gray"
-
-    # หา data_2 โดยเอาตัวที่ใหม่ที่สุด (Recursive LastWriteTime)
-    # วิธีนี้แก้ปัญหาเรื่องเลข Version ของ ZZZ ได้โดยอัตโนมัติ เพราะโฟลเดอร์เวอร์ชันสูงสุดย่อมใหม่สุด
-    Log-Status "Scanning for latest 'data_2'..." "Cyan"
     
+    # [PRIVACY CHECK]
+    Log-Status "Cache Dir: $(Get-SafePath $TargetWebCache)" "Gray"
+    
+    Log-Status "Scanning for latest 'data_2'..." "Cyan"
     $TargetFiles = Get-ChildItem -Path $TargetWebCache -Filter "data_2" -Recurse -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
 
-    if ($null -eq $TargetFiles -or $TargetFiles.Count -eq 0) {
-        throw "data_2 file not found inside webCaches."
-    }
+    if ($null -eq $TargetFiles -or $TargetFiles.Count -eq 0) { throw "data_2 file not found inside webCaches." }
 
     $FinalPath = $TargetFiles[0].FullName
-    Log-Status "Targeting File: $FinalPath" "Cyan"
+    
+    # [PRIVACY CHECK]
+    Log-Status "Targeting File: $(Get-SafePath $FinalPath)" "Cyan"
 
-    # Copy to Staging
     try {
         if ([string]::IsNullOrWhiteSpace($StagingPath)) { $StagingPath = ".\temp_data_2" }
-        
         $DestFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($StagingPath)
-        $DestDir = Split-Path -Parent $DestFullPath
-        if ([string]::IsNullOrWhiteSpace($DestDir)) { $DestDir = "." }
-
-        if (-not (Test-Path $DestDir)) { New-Item -ItemType Directory -Path $DestDir -Force | Out-Null }
-
         Copy-Item -Path $FinalPath -Destination $DestFullPath -Force
         Log-Status "Auto-Detect Success! File copied." "Green"
-        
         return $DestFullPath
     } catch {
         throw "Copy Failed: $($_.Exception.Message)"
@@ -397,7 +378,7 @@ function Get-GachaStatus {
 }
 
 
-# --- 7. SIMULATION ENGINE (Monte Carlo with Progress) ---
+# --- 7. SIMULATION ENGINE (With Stop Feature) ---
 function Invoke-GachaSimulation {
     param(
         [int]$SimCount = 100000, 
@@ -406,23 +387,29 @@ function Invoke-GachaSimulation {
         [bool]$IsGuaranteed,     
         [int]$HardPityCap = 90,  
         [int]$SoftPityStart = 74,
-        [scriptblock]$ProgressCallback # <--- เพิ่มช่องรับคำสั่งรายงานผล
+        [scriptblock]$ProgressCallback,
+        [ref]$StopFlag # <--- [NEW] ตัวรับคำสั่งหยุด
     )
 
     $SuccessCount = 0
     $TotalPullsUsed = 0
     $BaseRate = 0.6
+    
+    $Distribution = @{}
 
     for ($round = 1; $round -le $SimCount; $round++) {
-        # --- PROGRESS REPORT LOGIC ---
-        # รายงานผลทุกๆ 10% (เช่น ทุก 10,000 รอบ) เพื่อไม่ให้หน่วงเกินไป
-        if ($round % ($SimCount / 10) -eq 0) {
-            if ($ProgressCallback) {
-                # ส่งเลขรอบปัจจุบันกลับไป
-                & $ProgressCallback $round 
+        
+        # [NEW] Check Stop Signal (เช็คทุกๆ 1000 รอบ เพื่อความไว)
+        if ($round % 1000 -eq 0) {
+            if ($StopFlag.Value) { 
+                return @{ IsCancelled = $true } # ส่งสัญญาณกลับว่า "ถูกยกเลิก"
             }
         }
-        # -----------------------------
+
+        # Progress Report (ทุก 10%)
+        if ($round % ($SimCount / 10) -eq 0) {
+            if ($ProgressCallback) { & $ProgressCallback $round }
+        }
 
         $CurrentPity = $StartPity
         $Guaranteed = $IsGuaranteed
@@ -430,7 +417,6 @@ function Invoke-GachaSimulation {
         
         for ($i = 1; $i -le $MyPulls; $i++) {
             $CurrentPity++
-            
             $CurrentRate = $BaseRate
             if ($CurrentPity -ge $SoftPityStart) {
                 $CurrentRate = $BaseRate + (($CurrentPity - $SoftPityStart) * 6.0)
@@ -440,15 +426,16 @@ function Invoke-GachaSimulation {
             $Roll = (Get-Random -Minimum 0.0 -Maximum 100.0)
 
             if ($Roll -le $CurrentRate) {
-                if ($Guaranteed) {
-                    $GotIt = $true; $TotalPullsUsed += $i; break
+                if ($Guaranteed -or (Get-Random -Min 0 -Max 2) -eq 0) {
+                    $GotIt = $true
+                    $TotalPullsUsed += $i
+                    $bucket = [math]::Ceiling($i / 10) * 10
+                    if (-not $Distribution.ContainsKey($bucket)) { $Distribution[$bucket] = 0 }
+                    $Distribution[$bucket]++
+                    break
                 } else {
-                    if ((Get-Random -Minimum 0 -Maximum 2) -eq 0) {
-                        $GotIt = $true; $TotalPullsUsed += $i; break
-                    } else {
-                        $Guaranteed = $true
-                        $CurrentPity = 0 
-                    }
+                    $Guaranteed = $true
+                    $CurrentPity = 0 
                 }
             }
         }
@@ -456,7 +443,9 @@ function Invoke-GachaSimulation {
     }
 
     return @{
+        IsCancelled = $false
         WinRate = ($SuccessCount / $SimCount) * 100
         AvgCost = if ($SuccessCount -gt 0) { $TotalPullsUsed / $SuccessCount } else { 0 }
+        Distribution = $Distribution 
     }
 }

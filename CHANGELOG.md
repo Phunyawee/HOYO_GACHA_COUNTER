@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.1.0] - 2026-01-17
+### 🔮 The "Visual Oracle" Update
+
+This update introduces a comprehensive **Gacha Simulation Engine** paired with **Advanced Data Visualization**. It shifts the tool from a simple tracker to a predictive analytics powerhouse.
+
+### 🚀 New Features
+*   **Wish Forecast (Monte Carlo Simulator):**
+    *   **Simulation Engine:** Runs **100,000 simulations** based on your specific resources to predict outcomes with high statistical accuracy.
+    *   **Auto-Detect:** Automatically pulls `Current Pity`, `Guaranteed Status` (Win/Loss), and `Banner Mode` (Character 90 / Weapon 80) from your fetch history.
+    *   **Stop Button:** Added a user-controllable **STOP** button to cancel the simulation at any time.
+    *   **Action Logging:** Added clear visual delimiters (`---`) and Action Tags in the main log window when simulations start or stop.
+*   **Probability Histogram (Graph):**
+    *   **Visual Distribution:** A new bar chart showing exactly *when* (at which pull count) you are most likely to get the character.
+    *   **Smart Coloring:** Bars are color-coded based on total pity reached:
+        *   🟩 **Lucky (<74):** Early wins.
+        *   🟨 **Soft Pity (74-85):** The standard range.
+        *   🟥 **Hard Pity (>85):** The unlucky range.
+    *   **Context Markers:** Visual strip lines indicating the exact start of **Soft Pity** and **Hard Pity** relative to your current progress.
+    *   **Dynamic Scaling:** The graph axis automatically adjusts to your budget (starts at 0, scales up if >100 pulls).
+*   **Privacy & Security:**
+    *   **Privacy Mode:** When `DebugMode` is off, sensitive file paths (e.g., User folder names) are now hidden in the logs as `[PATH HIDDEN]`.
+
+### 🎨 UI/UX Improvements
+*   **Menu Bar Integration:** Moved the Forecast tool to **Tools > Wish Forecast (F8)** for a cleaner main interface.
+*   **Dark Theme Menu:** Fixed an issue where menu items would turn white (unreadable) when clicked; applied a custom dark renderer.
+*   **Interactive Tooltips:** Hovering over graph bars now displays precise probability percentages and total pity count.
+*   **Help System:** Added a `?` button to explain the simulation logic to users.
+
+### 🔧 Fixes
+*   **Graph Logic:** Fixed an issue where the graph would show a single distorted bar when data was highly concentrated.
+*   **Text Orientation:** Fixed a crash related to vertical text rendering on chart strip lines.
+
+
 ## [5.0.0] - 2026-01-17
 ### 🔮 The "Prophecy" Update (Wish Simulator)
 
