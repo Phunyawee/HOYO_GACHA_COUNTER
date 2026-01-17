@@ -269,9 +269,33 @@ function Fetch-GachaPages {
         if ($resp.retcode -ne 0) { throw "API Error: $($resp.message)" }
         
         $list = $resp.data.list
-        if ($null -eq $list -or $list.Count -eq 0) { 
+
+         if ($null -eq $list -or $list.Count -eq 0) { 
             $isFinished = $true 
         } else {
+           # ==========================================
+            # [FIX] CLEAN DATA (ASCII Safe Mode)
+            # ==========================================
+            # เราใช้รหัส \uXXXX แทนตัวอักษร เพื่อไม่ให้ไฟล์ Script พัง
+            # \u0E2D = อ (ขึ้นต้นคำว่า อาวุธ)
+            # \u0E15 = ต (ขึ้นต้นคำว่า ตัวละคร)
+            # \u00AD = ตัวขยะที่มักเจอในคำว่าอาวุธ
+            # \u0095 = ตัวขยะที่มักเจอในคำว่าตัวละคร
+            
+            foreach ($item in $list) {
+                # 1. Weapon Logic
+                # Matches: "Weapon", "Light Cone", "W-Engine", "อาวุธ"(Thai Code), "Mojibake"(Code)
+                if ($item.item_type -match "Weapon|Light|Engine|\u0E2D|\u00AD") {
+                    $item.item_type = "Weapon"
+                }
+                # 2. Character Logic
+                # Matches: "Character", "ตัวละคร"(Thai Code), "Mojibake"(Code)
+                elseif ($item.item_type -match "Character|\u0E15|\u0095") {
+                    $item.item_type = "Character"
+                }
+            }
+            # ==========================================
+
             $History += $list
             $endId = $list[$list.Count - 1].id
             $page++

@@ -265,6 +265,19 @@ $script:itemForecast.Enabled = $false     # ปิดไว้ก่อน ร�
 $script:itemForecast.ForeColor = "White"
 $menuTools.DropDownItems.Add($script:itemForecast) | Out-Null
 
+# 2. เมนู Table Viewer
+$script:itemTable = New-Object System.Windows.Forms.ToolStripMenuItem("History Table Viewer")
+$script:itemTable.ShortcutKeys = "F9"
+$script:itemTable.ForeColor = "White"
+$script:itemTable.Enabled = $false # รอ Fetch ก่อน
+$menuTools.DropDownItems.Add($script:itemTable) | Out-Null
+
+# 3. เมนู JSON Export
+$script:itemJson = New-Object System.Windows.Forms.ToolStripMenuItem("Export Raw JSON")
+$script:itemJson.ForeColor = "White"
+$script:itemJson.Enabled = $false # รอ Fetch ก่อน
+$menuTools.DropDownItems.Add($script:itemJson) | Out-Null
+
 # เมนูย่อย Reset
 $itemClear = New-Object System.Windows.Forms.ToolStripMenuItem("Reset / Clear All")
 $itemClear.ShortcutKeys = [System.Windows.Forms.Keys]::F5
@@ -281,7 +294,9 @@ $itemClear.Add_Click({
     $script:LastFetchedData = @()
     $script:FilteredData = @()
     $script:progressBar.Value = 0
-    $btnExport.Enabled = $false; $btnExport.BackColor = "DimGray"
+    $btnExport.Enabled = $false; 
+    $btnExport.BackColor = "DimGray"
+
     $lblStat1.Text = "Total Pulls: 0"; $script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.ForeColor = "White"
     $script:lblStatCost.Text = "Est. Cost: 0"
     
@@ -302,6 +317,10 @@ $itemClear.Add_Click({
         $menuExpand.Text = ">> Show Graph"
         $script:isExpanded = $false
     }
+
+    $script:itemForecast.Enabled = $false
+    $script:itemTable.Enabled = $false
+    $script:itemJson.Enabled = $false
 
     # เพิ่มบรรทัดนี้เข้าไปใน Reset Logic (ใน $itemClear.Add_Click)
     $script:lblLuckGrade.Text = "Grade: -"; $script:lblLuckGrade.ForeColor = "DimGray"
@@ -340,7 +359,7 @@ $itemCredits.Add_Click({
     # --- VERSION ---
     $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
     $txtLog.SelectionColor = "DimGray"
-    $txtLog.AppendText("Version 5.0.0`n`n")
+    $txtLog.AppendText("Version 5.1.1`n`n")
 
     # --- DEVELOPER (ใส่ชื่อคุณตรงนี้) ---
     $txtLog.SelectionFont = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
@@ -1195,6 +1214,8 @@ $btnRun.Add_Click({
             $btnExport.Enabled = $true
             Apply-ButtonStyle -Button $btnExport -BaseColorName "RoyalBlue" -HoverColorName "CornflowerBlue" -CustomFont $script:fontBold
             $script:itemForecast.Enabled = $true
+            $script:itemTable.Enabled = $true
+            $script:itemJson.Enabled = $true
         }
 
     } catch {
@@ -1523,7 +1544,7 @@ $script:itemForecast.Add_Click({
     $caSim.AxisY.LabelStyle.ForeColor="DimGray"; 
     $caSim.AxisY.LineColor="Gray"; 
     $caSim.AxisY.MajorGrid.LineColor=[System.Drawing.Color]::FromArgb(20,255,255,255); 
-    
+
     $caSim.AxisY.Title = "Frequency (Simulations)" # ชื่อป้าย
     $caSim.AxisY.TitleForeColor = "Silver"
     $caSim.AxisY.TextOrientation = "Rotated270"      # หมุนแนวตั้ง
@@ -2104,7 +2125,137 @@ $btnDiscordScope.Add_Click({
     $modeText = if ($chkSortDesc.Checked) { "Newest First" } else { "Oldest First" }
     Log "Discord Report Sent ($modeText): $res" "Lime"
 })
+# ==========================================
+#  EVENT: TABLE VIEWER (F9)
+# ==========================================
+$script:itemTable.Add_Click({
+    Log "Action: Open Table Viewer" "Cyan"
 
+    # 1. เช็คข้อมูล (เอาเฉพาะที่ผ่าน Filter หน้าหลักมาแล้ว)
+    $dataSource = $script:FilteredData
+    if ($null -eq $dataSource -or $dataSource.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show("No data to display. Please Fetch or adjust your Date Filter.", "No Data", 0, 48)
+        return
+    }
+
+    # 2. สร้างหน้าต่าง
+    $fTable = New-Object System.Windows.Forms.Form
+    $fTable.Text = "History Table Viewer (Rows: $($dataSource.Count))"
+    $fTable.Size = New-Object System.Drawing.Size(900, 600)
+    $fTable.StartPosition = "CenterParent"
+    $fTable.BackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
+    $fTable.ForeColor = "Black" # Text ใน Grid จะเป็นสีดำ (อ่านง่ายกว่าบนตารางขาว)
+
+    # 3. Search Box Panel (ด้านบน)
+    $pnlTop = New-Object System.Windows.Forms.Panel; $pnlTop.Dock="Top"; $pnlTop.Height=40; $pnlTop.BackColor=[System.Drawing.Color]::FromArgb(50,50,50)
+    $fTable.Controls.Add($pnlTop)
+
+    $lblSearch = New-Object System.Windows.Forms.Label; $lblSearch.Text="Search Name:"; $lblSearch.ForeColor="White"; $lblSearch.Location="10,12"; $lblSearch.AutoSize=$true
+    $pnlTop.Controls.Add($lblSearch)
+
+    $txtSearch = New-Object System.Windows.Forms.TextBox; $txtSearch.Location="100,10"; $txtSearch.Width=250; $txtSearch.BackColor="White"
+    $pnlTop.Controls.Add($txtSearch)
+    
+    $lblHint = New-Object System.Windows.Forms.Label; $lblHint.Text="(Filter applies to this table only)"; $lblHint.ForeColor="Gray"; $lblHint.Location="360,12"; $lblHint.AutoSize=$true
+    $pnlTop.Controls.Add($lblHint)
+
+    # 4. DataGridView (ตาราง)
+    $grid = New-Object System.Windows.Forms.DataGridView
+    $grid.Dock = "Fill"
+    $grid.BackgroundColor = [System.Drawing.Color]::FromArgb(40, 40, 40)
+    $grid.ForeColor = "Black" 
+    $grid.AutoSizeColumnsMode = "Fill"
+    $grid.ReadOnly = $true
+    $grid.AllowUserToAddRows = $false
+    $grid.RowHeadersVisible = $false
+    $grid.SelectionMode = "FullRowSelect"
+    
+    # แปลง Data เป็น DataTable (เพื่อให้ Search ได้)
+    $dt = New-Object System.Data.DataTable
+    [void]$dt.Columns.Add("Time")
+    [void]$dt.Columns.Add("Name")
+    [void]$dt.Columns.Add("Type")
+    [void]$dt.Columns.Add("Rank")
+    [void]$dt.Columns.Add("Banner")
+
+    foreach ($item in $dataSource) {
+        $row = $dt.NewRow()
+        $row["Time"] = $item.time
+        $row["Name"] = $item.name
+        $row["Type"] = $item.item_type
+        $row["Rank"] = $item.rank_type
+        $row["Banner"] = if ($item._BannerName) { $item._BannerName } else { "-" }
+        [void]$dt.Rows.Add($row)
+    }
+
+    $grid.DataSource = $dt
+    $fTable.Controls.Add($grid)
+    $grid.BringToFront()
+
+    # 5. Logic Search (พิมพ์ปุ๊บ กรองปั๊บ)
+    $txtSearch.Add_TextChanged({
+        $val = $txtSearch.Text.Replace("'", "''") # กัน error อักขระพิเศษ
+        try {
+            if ([string]::IsNullOrWhiteSpace($val)) {
+                $dt.DefaultView.RowFilter = ""
+            } else {
+                # กรองเฉพาะชื่อ (Name)
+                $dt.DefaultView.RowFilter = "Name LIKE '%$val%'"
+            }
+            $fTable.Text = "History Table Viewer (Rows: $($dt.DefaultView.Count))"
+        } catch {}
+    })
+    
+    # Style: จัดสี 5 ดาวให้เด่น
+    $grid.Add_CellFormatting({
+        param($sender, $e)
+        if ($e.RowIndex -ge 0 -and $grid.Columns[$e.ColumnIndex].Name -eq "Rank") {
+            if ($e.Value -eq "5") {
+                $grid.Rows[$e.RowIndex].DefaultCellStyle.BackColor = "Gold"
+                $grid.Rows[$e.RowIndex].DefaultCellStyle.ForeColor = "Black"
+            } elseif ($e.Value -eq "4") {
+                $grid.Rows[$e.RowIndex].DefaultCellStyle.BackColor = "MediumPurple"
+                $grid.Rows[$e.RowIndex].DefaultCellStyle.ForeColor = "White"
+            }
+        }
+    })
+
+    $fTable.ShowDialog() | Out-Null
+})
+# ==========================================
+#  EVENT: JSON EXPORT
+# ==========================================
+$script:itemJson.Add_Click({
+    Log "Action: Export Raw JSON" "Cyan"
+
+    # เอาข้อมูลดิบทั้งหมด (ไม่สน Filter)
+    $dataToExport = $script:LastFetchedData
+
+    if ($null -eq $dataToExport -or $dataToExport.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show("No data available. Please Fetch first.", "Error", 0, 16)
+        return
+    }
+
+    $sfd = New-Object System.Windows.Forms.SaveFileDialog
+    $sfd.Filter = "JSON File|*.json"
+    $gName = $script:CurrentGame
+    $dateStr = Get-Date -Format 'yyyyMMdd_HHmm'
+    $sfd.FileName = "${gName}_RawHistory_${dateStr}.json"
+
+    if ($sfd.ShowDialog() -eq "OK") {
+        try {
+            # แปลงเป็น JSON และบันทึก
+            $jsonStr = $dataToExport | ConvertTo-Json -Depth 5 -Compress
+            [System.IO.File]::WriteAllText($sfd.FileName, $jsonStr, [System.Text.Encoding]::UTF8)
+            
+            Log "Saved JSON to: $($sfd.FileName)" "Lime"
+            [System.Windows.Forms.MessageBox]::Show("Export Successful!", "Success", 0, 64)
+        } catch {
+            Log "Export Error: $($_.Exception.Message)" "Red"
+            [System.Windows.Forms.MessageBox]::Show("Error saving file: $($_.Exception.Message)", "Error", 0, 16)
+        }
+    }
+})
 # ============================
 #  CLOSING SPLASH LOGIC (Skip Button Support)
 # ============================

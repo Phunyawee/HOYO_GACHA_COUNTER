@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [5.1.1] - 2026-01-17
+### 💾 The "Data Management" Update
+
+This update focuses on data accessibility and standardization. Users can now view their history in a detailed grid view and export raw data for backups or external use.
+
+### 🚀 New Features
+*   **📄 History Table Viewer (F9):**
+    *   Added a dedicated **Grid View** accessible via **Menu > Tools** or **F9**.
+    *   **Features:** Sortable columns, real-time name search/filtering, and color-coded rows for 5★ (Gold) and 4★ (Purple) items.
+    *   **Context-Aware:** The table respects the Date Filters applied in the main window.
+*   **💾 Raw JSON Export:**
+    *   Added an option to export the full, raw API data structure to a `.json` file.
+    *   Useful for data backups or importing into other analytics sites (e.g., Paimon.moe).
+
+### 🔧 Fixes & Optimizations
+*   **Data Standardization (Encoding Fix):**
+    *   The Engine now automatically detects and fixes **Mojibake (garbled text)** or non-English terms in the `item_type` field (e.g., transforming `à¸...` or `อาวุธ` to `Weapon`).
+    *   This ensures that all exported data (JSON/CSV) uses standard English terms ("Character"/"Weapon"), making it universally compatible with other tools.
+    
+
+
 ## [5.1.0] - 2026-01-17
 ### 🔮 The "Visual Oracle" Update
 
