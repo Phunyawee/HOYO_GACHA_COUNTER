@@ -120,6 +120,23 @@ We are proud to introduce a powerful new tool integrated directly into the appli
 
 ---
 
+## 💰 v5.2.0 - Resource Planner
+> *"A goal without a plan is just a wish."*
+
+To complete the ecosystem, we introduced the **Savings Calculator**. While the Simulator predicts your luck, this Planner predicts your **wallet**. It helps you estimate exactly how many pulls you will accumulate by a specific date.
+
+![Savings Planner](../screenshots/GUI_V5_Planner.png)
+
+### ✨ Key Features
+*   **Flexible Calculator (F10):** accessible via **Menu > Tools**.
+    *   **Target Date Countdown:** Pick a date (e.g., banner end date), and it calculates the days remaining automatically.
+    *   **Customizable Daily Income:** Whether you are F2P (60/day) or a Welkin user (150/day), you can define your own daily rate.
+    *   **Lump Sum Estimation:** Manual input fields for **Abyss, Events, Shop Resets, or Maintenance** compensation. This ensures the tool remains useful even if the game changes its reward structure.
+*   **Real-Time Calculation:** The math happens instantly as you type. No need to spam a "Calculate" button.
+*   **Simulator Integration:** Once you have your projected total, click **"Open Simulator >"** to instantly transfer that budget into the Monte Carlo engine to see your odds.
+
+---
+
 ## 🛠️ Troubleshooting
 
 **Q: Auto-Detect cannot find the file?**

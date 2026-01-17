@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.2.0] - 2026-01-17
+### 💰 The "Master Planner" Update
+
+This update completes the ecosystem by introducing a **Resource Planner**, along with significant visual upgrades to the Simulator Graph to make data easier to read at a glance.
+
+### 🚀 New Features
+*   **💰 Resource Planner (Savings Calculator):**
+    *   **New Tool (F10):** A dedicated calculator to estimate your future Primogems/Fates stash.
+    *   **Flexible Inputs:** Calculate based on Target Date, Daily Income (Customizable rate), and Lump Sum estimates (Abyss, Events, Shop).
+    *   **Simulator Integration:** One-click transfer of your calculated budget directly into the Wish Forecast Simulator.
+*   **📊 Enhanced Graph Visuals:**
+    *   **Context Markers:** Added vertical strip lines to indicate exactly where **Soft Pity** and **Hard Pity** begin relative to your start point.
+    *   **Visual Legend:** Added a clear legend explaining the color coding (Green/Gold/Red).
+    *   **Y-Axis Label:** Added "Frequency" label to clarify what the bar height represents.
+    *   **Improved Scaling:** The graph now always starts at 0 to prevent visual distortion when data is sparse.
+*   **🛑 Simulator Controls:**
+    *   **Stop Button:** Added a panic button to cancel the simulation immediately if you entered the wrong inputs.
+    *   **Action Logs:** The main log window now displays clear `[Action]` tags when simulations start or stop.
+
+### 🔧 Improvements
+*   **Privacy Mode:** Sensitive file paths in the logs are now hidden (`[PATH HIDDEN]`) when Debug Mode is disabled.
+*   **Encoding Fixes:** Standardized internal data handling to prevent "Mojibake" (garbled text) issues with Thai characters in JSON exports and Tables.
+
+
 
 ## [5.1.1] - 2026-01-17
 ### 💾 The "Data Management" Update
@@ -21,7 +45,7 @@ This update focuses on data accessibility and standardization. Users can now vie
 *   **Data Standardization (Encoding Fix):**
     *   The Engine now automatically detects and fixes **Mojibake (garbled text)** or non-English terms in the `item_type` field (e.g., transforming `à¸...` or `อาวุธ` to `Weapon`).
     *   This ensures that all exported data (JSON/CSV) uses standard English terms ("Character"/"Weapon"), making it universally compatible with other tools.
-    
+
 
 
 ## [5.1.0] - 2026-01-17
