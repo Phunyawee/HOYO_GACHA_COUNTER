@@ -1,65 +1,62 @@
-# 🎨 Visual Update Log: Version 4.0.0
+# 🎨 Visual Update Log: Version 6.0.0
 
-> **"Beyond Tracking: The Analytics Era"**
-> Version 4.0 isn't just an update; it's a complete evolution. We've introduced Time Travel (Filtering), Visual Analytics (Graphing), and Industry-Standard Detection Logic (SRS).
+> **"The Ultimate Ecosystem"**
+> Version 6.0.0 transforms the application from a "History Tracker" into a comprehensive **Gacha Management Suite**. We've added professional Settings, Resource Planning, Luck Simulation, and complete Data Control.
 
 ---
 
-## 🆚 The Evolution (Before vs After)
+## 🆚 The Evolution (Then vs Now)
 
-### The Dashboard Interface
-From a static tracker to a dynamic analytics suite.
+### The Interface Overhaul
+While v4.0 introduced analytics, v6.0 refines the experience with a cleaner look, luck grading, and clearer stats.
 
-| Version 3.1.0 (Legacy) | ✨ **Version 4.0.0 (The Update)** |
+| Version 4.0.0 (Analytics Era) | ✨ **Version 6.0.0 (Ultimate Edition)** |
 | :---: | :---: |
-| ![Old GUI](../screenshots/UI_New_Main.png) | ![New UI](../screenshots/GUI_V4_Main.png) |
-| *Standard Pity Tracking* | *Expanded UI with Menu Bar, Graph Toggle, and SRS Logic.* |
+| ![Old GUI](../screenshots/GUI_V4_Main.png) | ![New UI](../screenshots/6.0.0_Main_UI.png) |
+| *Introduced basic graphing & filtering.* | *Added Luck Grade (SS-F), Cost Est, and polished layout.* |
 
 ---
 
-## 🌟 Feature Spotlight (New in v4.0)
+## 🌟 Feature Spotlight (New in v6.0)
 
-### ⏳ 1. Time Machine & Smart Filter
-Stop guessing your monthly stats. Now you can slice your history by date.
+### ⚙️ 1. Professional Preferences Suite (F2)
+Gone is the single-page config. Enter the tabbed, professional settings window.
 
-![Filter Panel](../screenshots/GUI_V4_Filter.png)
+| General & Storage | Appearance & Themes |
+| :---: | :---: |
+| ![Settings General](../screenshots/6.0.0_Settings_General.png) | ![Settings Appearance](../screenshots/6.0.0_Settings_Appearance.png) |
+| **Data Control:** One-click Backup, Cache Cleaning, and Excel/CSV formatting options. | **Personalization:** Real-time "Ghost Mode" (Opacity) and One-click Theme Presets. |
 
-*   **Custom Range:** Select specific dates to analyze specific banners.
-*   **True Pity Engine:** Even when filtering, the tool calculates "True Pity" by checking your *entire* history in the background.
-*   **[SNAP] Reset:** One-click button to align your start date to the nearest Pity 0 (perfect for "Current Banner" stats).
+### 📅 2. The Resource Planner
+Stop guessing. Start planning. Calculate exactly how many pulls you will have by a specific date based on daily income and events.
 
-### 📈 2. Interactive Analytics Graph
-Numbers are good, but visuals are better.
+![Planner](../screenshots/6.0.0_Planner.png)
 
-![Graph Analytics](../screenshots/GUI_V4_Graph.png)
+*   **Target Date:** Set a deadline (e.g., next banner release).
+*   **Income Calculation:** Auto-calculates Welkin/Daily commissions.
+*   **Flexible Inputs:** Add estimated event rewards or abyss clears manually.
 
-*   **Expandable Panel:** Click `>> Show Graph` to reveal a hidden analytics dashboard.
-*   **Color-Coded Luck:** Bars change color based on pull luck:
-    *   <span style="color:lightgreen">**Green**</span>: Early (Lucky!)
-    *   <span style="color:gold">**Gold**</span>: Soft Pity range.
-    *   <span style="color:crimson">**Red**</span>: Hard Pity (Salty...).
-*   **Tooltip Support:** Hover over any bar to see exact details.
+### 🎰 3. Monte Carlo Simulator
+"Will I win the 50/50?" — The simulator runs **100,000 runs** in seconds to tell you the odds based on your *actual* budget.
 
-### 🧠 3. SRS Logic Auto-Detect
-We rewrote the detection engine from scratch.
+![Simulator](../screenshots/6.0.0_Simulator.png)
 
-*   **Old Method:** Checked hardcoded paths (C:\...).
-*   **New SRS Method:** Scans `Player.log` and `output_log.txt` to find the *actual* installation path, supporting **Custom Drives (D:, E:, etc.)** and different game versions instantly.
+*   **Realistic Logic:** Uses the exact Soft Pity (74) and Hard Pity (90) logic from the game.
+*   **Visual Probability:** See the distribution of outcomes in a histogram.
+*   **Win Rate:** Get a precise percentage chance of success.
 
-### 📱 4. Targeted Discord Reporting
-Share exactly what you want, not just the whole history.
+### 🛡️ 4. System Stability & Telemetry
+We made the tool robust for daily use.
 
-![Discord Embed](../screenshots/Discord_V4_Embed.png)
-
-*   **Manual Report Button:** Located in the Filter panel.
-*   **Context Aware:** Sends a report based on your *current filter*.
-*   **Sorting Control:** Choose between **Newest First** or **Oldest First**.
+*   **Auto-Backup:** Your history is automatically backed up to a safe folder every time you fetch data.
+*   **Crash Catcher:** The app now intelligently catches errors and logs them to `debug_session.log` instead of just closing.
+*   **Dev Bypass:** Improved startup logic for developers and power users.
 
 ---
 
-## 🚀 Why upgrade to 4.0.0?
-- **Analysis:** You can now answer questions like *"How was my luck in 2024?"* or *"Did I win 50/50 on the last banner?"* visually.
-- **Reliability:** The new SRS engine finds your files when others fail.
-- **Control:** You decide what data to see and what data to share.
+## 🚀 Why upgrade to 6.0.0?
+- **Ecosystem:** You don't just track history anymore; you plan your future pulls.
+- **Customization:** Make the app look and feel the way *you* want with Themes and Opacity.
+- **Safety:** With Auto-Backup and Data Management, your history is safer than ever.
 
 [🔙 Back to Main README](./README.md)
