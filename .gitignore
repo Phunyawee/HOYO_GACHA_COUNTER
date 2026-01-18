@@ -4,7 +4,7 @@ secrets.json
 .env
 *.key
 auth.dat
-
+config*
 # 2. ไฟล์ขยะของ Windows และ Mac (เผื่อคนอื่นมาเปิด)
 Thumbs.db
 .DS_Store
@@ -18,7 +18,7 @@ Thumbs.db
 *.tmp
 *.csv
 output/
-
+Backups/
 data_*
 temp_data_*
 ZZZ_GachaScriptALL_Debug.ps1

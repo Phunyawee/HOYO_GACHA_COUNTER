@@ -15,6 +15,65 @@ function Log-Status {
 }
 
 # --- 1. CONFIGURATION ---
+
+# กำหนด path ของ config
+$script:ConfigFile = Join-Path $PSScriptRoot "config.json"
+
+
+# ใน HoyoEngine.ps1
+
+function Get-AppConfig {
+    # 1. ตั้งค่า Default ให้ครบ (รวมตัวใหม่ด้วย)
+    $defaultConfig = @{
+        WebhookUrl = ""
+        AutoSendDiscord = $true
+        LastGame = "Genshin"
+        Paths = @{ Genshin=""; HSR=""; ZZZ="" }
+        
+        # [NEW] ค่าใหม่
+        DebugConsole = $false
+        Opacity = 1.0
+        AccentColor = "Cyan"
+        BackupPath = ""
+        CsvSeparator = "," 
+
+        EnableFileLog = $true
+    }
+
+    if (Test-Path $script:ConfigFile) {
+        try {
+            $json = Get-Content $script:ConfigFile -Raw -Encoding UTF8 | ConvertFrom-Json
+            
+            # 2. Logic Merge: เอาค่าจาก JSON ทับลง Default
+            foreach ($key in $json.PSObject.Properties.Name) {
+                if ($defaultConfig.ContainsKey($key)) {
+                    if ($key -eq "Paths") {
+                        foreach ($gKey in $json.Paths.PSObject.Properties.Name) {
+                            $defaultConfig.Paths[$gKey] = $json.Paths.$gKey
+                        }
+                    } else {
+                        $defaultConfig[$key] = $json.$key
+                    }
+                }
+            }
+        } catch {
+            Log-Status "Config Read Error. Using Defaults." "Red"
+        }
+    }
+    return [PSCustomObject]$defaultConfig
+}
+function Save-AppConfig {
+    param($ConfigObj)
+    try {
+        $jsonStr = $ConfigObj | ConvertTo-Json -Depth 2
+        $jsonStr | Set-Content -Path $script:ConfigFile -Encoding UTF8
+        Log-Status "Configuration Saved." "Lime"
+    } catch {
+        Log-Status "Error saving config: $($_.Exception.Message)" "Red"
+        [System.Windows.Forms.MessageBox]::Show("Could not save settings!", "Error", 0, 16)
+    }
+}
+
 function Get-GameConfig {
     param([string]$GameName)
     
@@ -308,10 +367,10 @@ function Fetch-GachaPages {
 function Send-DiscordReport {
     param($HistoryData, $PityTrackers, $Config, [bool]$ShowNoMode)
     
-    if (-not (Test-Path "config.json")) { return "Skipped (No Config)" }
-    $jsonConfig = Get-Content "config.json" -Raw | ConvertFrom-Json
-    $WebhookUrl = $jsonConfig.webhook_url
-    if ([string]::IsNullOrWhiteSpace($WebhookUrl)) { return "Skipped (Empty URL)" }
+    $CurrentAppConfig = Get-AppConfig 
+    $WebhookUrl = $CurrentAppConfig.WebhookUrl
+
+    if ([string]::IsNullOrWhiteSpace($WebhookUrl)) { return "Skipped (Empty Webhook URL)" }
 
     $fields = @()
     foreach ($b in $Config.Banners) {

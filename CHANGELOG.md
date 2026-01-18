@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+# [6.0.0] - 2026-01-19
+## 🌟 Highlights
+This update introduces a complete overhaul of the **Preferences / Settings** system, transforming it into a professional-grade dashboard. We've added robust **Data Management tools**, **Real-time UI customization**, **System Telemetry**, and **Excel compatibility options**, alongside critical bug fixes.
+
+---
+
+## 🆕 New Features
+
+### ⚙️ Ultimate Preferences Window (Redesigned)
+The Settings menu (F2) has been rebuilt with a Tab-based interface for better navigation:
+*   **Tab: General:** Redesigned layout with GroupBoxes to separate "Storage & Export" from "System & Troubleshooting".
+*   **Tab: Appearance:**
+    *   **Theme Presets:** Quickly switch between game-themed colors (Cyber Cyan, Genshin Gold, HSR Purple, ZZZ Orange).
+    *   **Real-time Ghost Mode:** Window opacity now updates instantly while dragging the slider (no save required).
+*   **Tab: Data & Storage (New!):**
+    *   **Open Data Folder:** One-click access to local app files.
+    *   **Force Backup:** Manually trigger a config backup.
+    *   **Maintenance Zone:** Specialized button to clear temporary cache files (`temp_data_2`, `*.tmp`) without affecting your backups.
+
+### 💾 Data Safety & Export
+*   **Active Auto-Backup:** The Auto-Backup feature is now fully functional. Fetching data will automatically create a timestamped backup JSON in your selected folder.
+*   **Excel Compatibility:** Added a **CSV Separator** option in Settings. You can now choose between Comma (`,`) or Semicolon (`;`) to prevent formatting issues in Excel based on your region.
+*   **JSON Export:** Added a dedicated button to export raw history data to JSON format.
+
+### 🛡️ System & Telemetry
+*   **System Logger (Black Box):** Implemented a comprehensive logging system. Actions and errors are now recorded to `debug_session.log` for easier troubleshooting.
+*   **Crash Catcher:** Added a Global Error Trap to catch unhandled exceptions and log the stack trace instead of silently crashing the application.
+*   **Restore Defaults:** Added a button to safely reset all settings to factory defaults.
+
+---
+
+## 🐛 Bug Fixes
+*   **Fixed:** `NullReferenceException` crash when switching from a Custom Color to a Preset Theme.
+*   **Fixed:** Window Opacity not updating correctly due to variable scope issues.
+*   **Fixed:** "Clear Cache" button failing to delete the main `temp_data_2` file (it only deleted `.tmp` files previously).
+*   **Fixed:** `DebugConsole` setting ignoring the config file on startup due to variable initialization order.
+*   **Fixed:** CSV Export ignoring the user-defined separator setting.
+
+---
+
+## 💅 UI/UX Improvements
+*   Improved button labels and tooltips for better clarity.
+*   Smoother splash screen transition upon exit.
+*   Unified styling for all input fields and dropdowns in the Settings window.
+
+
 ## [5.2.0] - 2026-01-17
 ### 💰 The "Master Planner" Update
 

@@ -1,8 +1,32 @@
 # --- CONFIGURATION (DEBUG MODE) ---
 # ตั้งเป็น $true เพื่อให้แสดงข้อความในหน้าต่าง PowerShell (Console) ด้วย
 # ตั้งเป็น $false เพื่อปิด (แสดงแค่ใน GUI)
-$script:DebugMode = $true 
+# --- DEVELOPMENT CONFIGURATION ---
+# ตั้งเป็น $true เพื่อบังคับเปิด Debug (ไม่สน Config) -> เหมาะสำหรับ Dev/Test
+# ตั้งเป็น $false เพื่อให้ระบบไปอ่านค่าจาก Config ของผู้ใช้ (Production)
+$script:DevBypassDebug = $false  
 
+# ค่าเริ่มต้น: ให้เชื่อตัวแปร Bypass ก่อนเสมอ
+$script:DebugMode = $script:DevBypassDebug
+
+# ============================
+#  GLOBAL ERROR TRAP (CRASH CATCHER)
+# ============================
+# 1. ดัก Error ทั่วไปใน PowerShell Scripts
+$global:ErrorActionPreference = "Continue" # อย่าหยุดทำงานถ้าเจอ Error (แต่เราจะจดไว้)
+
+# สร้างตัวแปรดัก Error (Trap)
+trap {
+    # เมื่อเกิด Error แดงๆ ขึ้น Code ในนี้จะทำงานทันที
+    $err = $_.Exception.Message
+    $stack = $_.InvocationInfo.PositionMessage
+    Write-LogFile -Message "CRITICAL ERROR: $err`nLocation: $stack" -Level "CRASH"
+    
+    # (Optional) ถ้าอยากให้แจ้งเตือน User ด้วย
+    # [System.Windows.Forms.MessageBox]::Show("Error Captured: $err", "System Error", 0, 16)
+    
+    continue # สั่งให้โปรแกรมพยายามรันต่อ (ถ้าไหว)
+}
 # # Load Engine
 # $EnginePath = Join-Path $PSScriptRoot "HoyoEngine.ps1"
 # if (-not (Test-Path $EnginePath)) { 
@@ -10,11 +34,34 @@ $script:DebugMode = $true
 #     exit 
 # }
 #. $EnginePath # Load Functions
-
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms.DataVisualization
 Add-Type -AssemblyName PresentationFramework
+
+# ============================
+#  SYSTEM LOGGER (BLACK BOX)
+# ============================
+function Write-LogFile {
+    param($Message, $Level="INFO")
+
+    # 1. เช็ค Config ว่าเปิดอยู่ไหม (ถ้าไม่มี Config ถือว่าเปิดไว้ก่อนกันเหนียว)
+    if ($script:AppConfig -and (-not $script:AppConfig.EnableFileLog)) { return }
+
+    # 2. กำหนดไฟล์ Log (เก็บไว้ที่เดียวกับ Script)
+    $logPath = Join-Path $PSScriptRoot "debug_session.log"
+
+    # 3. สร้างรูปแบบข้อความ: [เวลา] [ระดับความรุนแรง] ข้อความ
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logLine = "[$timestamp] [$Level] $Message"
+
+    # 4. เขียนลงไฟล์ (Append)
+    try {
+        Add-Content -Path $logPath -Value $logLine -ErrorAction SilentlyContinue
+    } catch {
+        # ถ้าเขียนไม่ได้ (เช่นไฟล์ถูกล็อก) ก็ช่างมัน อย่าให้โปรแกรมค้าง
+    }
+}
 
 # ตรวจสอบก่อนว่าเคยโหลดไปหรือยัง (กัน Error เวลารันซ้ำ)
 if (-not ([System.Management.Automation.PSTypeName]'DarkMenuRenderer').Type) {
@@ -58,6 +105,7 @@ function Get-GuiFont ($Family, $Size, $Style="Regular") {
         return New-Object System.Drawing.Font($Fallback, $Size, [System.Drawing.FontStyle]::$Style)
     }
 }
+
 
 # กำหนดตัวแปรแบบ Global ($script:) เพื่อให้ Function อื่น (เช่น Apply-ButtonStyle) มองเห็น
 $script:fontNormal = Get-GuiFont "Segoe UI" 9
@@ -189,6 +237,8 @@ if (Test-Path $splashPath) {
     if (Test-Path (Join-Path $PSScriptRoot "HoyoEngine.ps1")) {
         . (Join-Path $PSScriptRoot "HoyoEngine.ps1")
     }
+
+   
     
     # ช่วง 3: วิ่งให้เต็มหลอด
     for ($i = 41; $i -le 100; $i+=5) {
@@ -210,6 +260,69 @@ if (Test-Path $splashPath) {
 
 # ถ้ากดยกเลิกจังหวะสุดท้ายก่อนปิด Loop
 if ($script:AbortLaunch) { exit }
+
+# 1. โหลด Config
+if (Get-Command "Get-AppConfig" -ErrorAction SilentlyContinue) {
+    $script:AppConfig = Get-AppConfig
+} else {
+    $script:AppConfig = @{ AccentColor = "Cyan"; Opacity = 1.0; AutoSendDiscord = $true; LastGame="Genshin" }
+}
+
+# 2. แปลง Hex Code (#RRGGBB) จาก Config เป็น System.Drawing.Color
+function Get-ColorFromHex {
+    param($Hex)
+    try {
+        return [System.Drawing.ColorTranslator]::FromHtml($Hex)
+    } catch {
+        return [System.Drawing.Color]::Cyan # Fallback
+    }
+}
+
+# 3. [สำคัญ] สร้าง Theme Palette
+# เราจะใช้ตัวแปรพวกนี้แทนการพิมพ์ชื่อสีตรงๆ
+$MainColor = Get-ColorFromHex $script:AppConfig.AccentColor
+
+$script:Theme = @{
+    # Accent: สีหลักของธีม (ใช้กับ Input, Active items, Highlight)
+    Accent     = $MainColor
+    
+    # Text: สีตัวหนังสือทั่วไป
+    TextMain   = [System.Drawing.Color]::White
+    TextSub    = [System.Drawing.Color]::Silver
+    TextDim    = [System.Drawing.Color]::Gray
+    
+    # Functional: สีสถานะ (ไม่ควรเปลี่ยนตามธีม)
+    Success    = [System.Drawing.Color]::Lime
+    Warning    = [System.Drawing.Color]::Gold
+    Error      = [System.Drawing.Color]::Crimson
+    
+    # Background: สีพื้นหลัง
+    BgMain     = [System.Drawing.Color]::FromArgb(30, 30, 30)
+    BgControl  = [System.Drawing.Color]::FromArgb(45, 45, 45)
+}
+
+# 4. ฟังก์ชันอัปเดตธีม (สำหรับกด Save แล้วเปลี่ยนทันที)
+function Apply-Theme {
+    param($NewHex, $NewOpacity)
+    
+    # อัปเดตตัวแปร
+    $NewColorObj = Get-ColorFromHex $NewHex
+    $script:Theme.Accent = $NewColorObj
+    # เติม $script: นำหน้า
+    $script:form.Opacity = $NewOpacity
+    
+    # --- เลือกเปลี่ยนเฉพาะจุดที่เป็น Accent ---
+    
+    # 1. Textbox Input
+    if ($txtPath) { $txtPath.ForeColor = $NewColorObj }
+    
+    # 2. Checkbox ที่สำคัญ
+    if ($chkFilterEnable) { $chkFilterEnable.ForeColor = $NewColorObj }
+    
+    # กลุ่ม Menu
+    if ($menuExpand) { $menuExpand.ForeColor = $NewColorObj }
+    
+}
 
 # --- GUI SETUP ---
 $form = New-Object System.Windows.Forms.Form
@@ -293,7 +406,6 @@ $itemClear.Add_Click({
     $script:lblPityTitle.Text = "Current Pity Progress: 0 / 90"; $script:lblPityTitle.ForeColor = "White"; $script:pnlPityFill.BackColor = "LimeGreen"
     $script:LastFetchedData = @()
     $script:FilteredData = @()
-    $script:progressBar.Value = 0
     $btnExport.Enabled = $false; 
     $btnExport.BackColor = "DimGray"
 
@@ -328,6 +440,14 @@ $itemClear.Add_Click({
     Log "--- System Reset Complete. Ready. ---" "Gray"
 })
 [void]$menuFile.DropDownItems.Add($itemClear)
+
+$itemSettings = New-Object System.Windows.Forms.ToolStripMenuItem("Preferences / Settings")
+$itemSettings.ShortcutKeys = "F2"
+[void]$menuFile.DropDownItems.Add($itemSettings)
+
+$itemSettings.Add_Click({
+    Show-SettingsWindow
+})
 
 # 4. เมนู Planner
 $script:itemPlanner = New-Object System.Windows.Forms.ToolStripMenuItem("Savings Calculator (Planner)")
@@ -398,7 +518,7 @@ $itemCredits.Add_Click({
 # 2. [NEW] ปุ่ม Toggle Expand (ขวาสุด)
 $menuExpand = New-Object System.Windows.Forms.ToolStripMenuItem(">> Show Graph")
 $menuExpand.Alignment = "Right" # สั่งชิดขวา
-$menuExpand.ForeColor = "Cyan"  # สีฟ้าเด่นๆ
+$menuExpand.ForeColor = $script:Theme.Accent  # สีฟ้าเด่นๆ
 $menuExpand.Font = $script:fontBold
 [void]$menuStrip.Items.Add($menuExpand)
 
@@ -428,9 +548,14 @@ $menuExpand.Add_Click({
 })
 
 # --- [FIX] FORCE WHITE TEXT LOOP ---
-# สั่งให้ทุกเมนูย่อยเป็นสีขาว (ถ้า Disabled มันจะเทาเอง)
 foreach ($topItem in $menuStrip.Items) {
-    $topItem.ForeColor = "White"
+    # เช็คว่าถ้าเป็นปุ่ม Expand ให้ข้าม (หรือใช้สี Accent) ถ้าไม่ใช่ให้เป็นขาว
+    if ($topItem -eq $menuExpand) {
+        $topItem.ForeColor = $script:Theme.Accent
+    } else {
+        $topItem.ForeColor = "White"
+    }
+
     foreach ($subItem in $topItem.DropDownItems) {
         $subItem.ForeColor = "White"
     }
@@ -478,7 +603,7 @@ $txtPath = New-Object System.Windows.Forms.TextBox
 $txtPath.Location = New-Object System.Drawing.Point(15, 26); 
 $txtPath.Size = New-Object System.Drawing.Size(340, 25)
 $txtPath.BackColor = [System.Drawing.Color]::FromArgb(45,45,45)
-$txtPath.ForeColor = "Cyan"
+$txtPath.ForeColor = $script:Theme.Accent
 $txtPath.BorderStyle = "FixedSingle"
 $grpSettings.Controls.Add($txtPath)
 
@@ -565,7 +690,7 @@ $lblBanner = New-Object System.Windows.Forms.Label
 $lblBanner.Text = "Target Banner:"
 $lblBanner.AutoSize = $true
 $lblBanner.Location = New-Object System.Drawing.Point(15, 108)
-$lblBanner.ForeColor = "Silver"
+$lblBanner.ForeColor = $script:Theme.TextSub
 $grpSettings.Controls.Add($lblBanner)
 
 $script:cmbBanner = New-Object System.Windows.Forms.ComboBox
@@ -696,7 +821,7 @@ $chkFilterEnable.Text = "Enable Filter"
 $chkFilterEnable.Location = New-Object System.Drawing.Point(15, 22)
 $chkFilterEnable.Size = New-Object System.Drawing.Size(100, 20)
 $chkFilterEnable.AutoSize = $true
-$chkFilterEnable.ForeColor = "Cyan"
+$chkFilterEnable.ForeColor = $script:Theme.Accent
 $chkFilterEnable.Cursor = [System.Windows.Forms.Cursors]::Hand
 $grpFilter.Controls.Add($chkFilterEnable)
 
@@ -893,6 +1018,452 @@ $chart.Titles.Add($title)
 # ============================================
 #  Function
 # ============================================
+function Show-SettingsWindow {
+    # 1. Load Config (ดึงค่าปัจจุบันมา)
+    $conf = Get-AppConfig 
+
+    # --- FORM SETUP ---
+    $fSet = New-Object System.Windows.Forms.Form
+    $fSet.Text = "Preferences & Settings"
+    $fSet.Size = New-Object System.Drawing.Size(550, 500) # ขยายความสูงนิดนึงให้พอดี
+    $fSet.StartPosition = "CenterParent"
+    $fSet.BackColor = [System.Drawing.Color]::FromArgb(35, 35, 35)
+    $fSet.ForeColor = "White"
+    $fSet.FormBorderStyle = "FixedToolWindow"
+
+    # --- TABS ---
+    $tabs = New-Object System.Windows.Forms.TabControl
+    $tabs.Dock = "Top"
+    $tabs.Height = 390
+    $tabs.Appearance = "FlatButtons" 
+    $fSet.Controls.Add($tabs)
+
+    # Helper สร้าง Tab Page
+    function New-Tab($title) {
+        $page = New-Object System.Windows.Forms.TabPage
+        $page.Text = "  $title  " 
+        $page.BackColor = [System.Drawing.Color]::FromArgb(45, 45, 45)
+        $tabs.TabPages.Add($page)
+        return $page
+    }
+
+    # ==================================================
+    # TAB 1: GENERAL (REDESIGNED LAYOUT)
+    # ==================================================
+    $tGen = New-Tab "General"
+
+    # --- GROUP 1: STORAGE & EXPORT ---
+    $grpStorage = New-Object System.Windows.Forms.GroupBox
+    $grpStorage.Text = " Storage & Export Options "
+    $grpStorage.Location = "15, 15"; $grpStorage.Size = "505, 160"
+    $grpStorage.ForeColor = "Silver"
+    $tGen.Controls.Add($grpStorage)
+
+    # 1. Backup Path
+    $lblBk = New-Object System.Windows.Forms.Label
+    $lblBk.Text = "Auto-Backup Folder (Optional):"
+    $lblBk.Location = "20, 30"; $lblBk.AutoSize = $true
+    $lblBk.ForeColor = "White"
+    $grpStorage.Controls.Add($lblBk)
+    
+    $txtBackup = New-Object System.Windows.Forms.TextBox
+    $txtBackup.Location = "20, 55"; $txtBackup.Width = 380
+    $txtBackup.BackColor = [System.Drawing.Color]::FromArgb(60,60,60)
+    $txtBackup.ForeColor = "Cyan"
+    $txtBackup.BorderStyle = "FixedSingle"
+    $txtBackup.Text = $conf.BackupPath
+    $grpStorage.Controls.Add($txtBackup)
+    
+    $btnBrowseBk = New-Object System.Windows.Forms.Button
+    $btnBrowseBk.Text = "Browse..."
+    $btnBrowseBk.Location = "410, 54"; $btnBrowseBk.Size = "75, 25"
+    Apply-ButtonStyle -Button $btnBrowseBk -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+    $btnBrowseBk.Add_Click({
+        $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
+        if ($fbd.ShowDialog() -eq "OK") { $txtBackup.Text = $fbd.SelectedPath }
+    })
+    $grpStorage.Controls.Add($btnBrowseBk)
+
+    # 2. CSV Separator
+    $lblCsv = New-Object System.Windows.Forms.Label
+    $lblCsv.Text = "CSV Export Separator (For Excel Compatibility):"
+    $lblCsv.Location = "20, 100"; $lblCsv.AutoSize = $true
+    $lblCsv.ForeColor = "White"
+    $grpStorage.Controls.Add($lblCsv)
+
+    $cmbCsvSep = New-Object System.Windows.Forms.ComboBox
+    $cmbCsvSep.Location = "20, 125"; $cmbCsvSep.Width = 200
+    $cmbCsvSep.DropDownStyle = "DropDownList"
+    $cmbCsvSep.BackColor = [System.Drawing.Color]::FromArgb(60,60,60)
+    $cmbCsvSep.ForeColor = "White"
+    $cmbCsvSep.FlatStyle = "Flat"
+    
+    [void]$cmbCsvSep.Items.Add("Comma (,)")
+    [void]$cmbCsvSep.Items.Add("Semicolon (;)")
+    
+    if ($conf.CsvSeparator -eq ";") { $cmbCsvSep.SelectedIndex = 1 } else { $cmbCsvSep.SelectedIndex = 0 }
+    $grpStorage.Controls.Add($cmbCsvSep)
+
+    # --- GROUP 2: SYSTEM & DEBUGGING ---
+    $grpSys = New-Object System.Windows.Forms.GroupBox
+    $grpSys.Text = " System & Troubleshooting "
+    $grpSys.Location = "15, 190"; $grpSys.Size = "505, 120"
+    $grpSys.ForeColor = "Silver"
+    $tGen.Controls.Add($grpSys)
+
+    # 3. Debug Console
+    $chkDebug = New-Object System.Windows.Forms.CheckBox
+    $chkDebug.Text = "Enable Debug Console (Show CMD Window)"
+    $chkDebug.Location = "20, 30"; $chkDebug.AutoSize = $true
+    $chkDebug.Checked = $conf.DebugConsole
+    $chkDebug.ForeColor = "White"
+    $grpSys.Controls.Add($chkDebug)
+
+    # 4. File Logging
+    $chkFileLog = New-Object System.Windows.Forms.CheckBox
+    $chkFileLog.Text = "Enable System Logging (Save errors to debug_session.log)"
+    $chkFileLog.Location = "20, 70"; $chkFileLog.AutoSize = $true
+    $chkFileLog.Checked = $conf.EnableFileLog
+    $chkFileLog.ForeColor = "White"
+    $toolTip.SetToolTip($chkFileLog, "Useful for reporting bugs. Saves actions to a text file.")
+    $grpSys.Controls.Add($chkFileLog)
+
+    # ==================================================
+    # TAB 2: APPEARANCE (UPGRADE: Presets + Preview)
+    # ==================================================
+    $tApp = New-Tab "Appearance"
+
+    # --- 1. THEME PRESETS (ส่วนใหม่ที่เพิ่มเข้ามา) ---
+    $lblPreset = New-Object System.Windows.Forms.Label
+    $lblPreset.Text = "Quick Theme Presets:"
+    $lblPreset.Location = "20, 20"; $lblPreset.AutoSize = $true
+    $lblPreset.ForeColor = "Silver"
+    $tApp.Controls.Add($lblPreset)
+
+    $cmbPresets = New-Object System.Windows.Forms.ComboBox
+    $cmbPresets.Location = "150, 18"; $cmbPresets.Width = 200
+    $cmbPresets.DropDownStyle = "DropDownList"
+    $cmbPresets.BackColor = [System.Drawing.Color]::FromArgb(50,50,50)
+    $cmbPresets.ForeColor = "White"
+    $cmbPresets.FlatStyle = "Flat"
+    $tApp.Controls.Add($cmbPresets)
+
+    # สร้างรายการธีม (ชื่อธีม = รหัสสี Hex)
+    $ThemeList = @{
+        "Cyber Cyan (Default)" = "#00FFFF"
+        "Genshin Gold"         = "#FFD700"
+        "HSR Purple"           = "#9370DB" # MediumPurple
+        "ZZZ Orange"           = "#FF4500" # OrangeRed
+        "Dendro Green"         = "#32CD32" # LimeGreen
+        "Cryo Blue"            = "#00BFFF" # DeepSkyBlue
+        "Pyro Red"             = "#DC143C" # Crimson
+        "Monochrome (Gray)"    = "#A9A9A9"
+    }
+
+    # ใส่รายการลง ComboBox
+    foreach ($key in $ThemeList.Keys) { [void]$cmbPresets.Items.Add($key) }
+
+    # [NEW] Logic: ตรวจสอบว่าสีปัจจุบัน ตรงกับ Preset ไหนไหม?
+    $foundMatch = $false
+    foreach ($key in $ThemeList.Keys) {
+        # เปรียบเทียบ Hex Code (แบบไม่สนตัวพิมพ์เล็กใหญ่)
+        if ($ThemeList[$key] -eq $conf.AccentColor) {
+            $cmbPresets.SelectedItem = $key
+            $foundMatch = $true
+            break
+        }
+    }
+
+    # ถ้าสีไม่ตรงกับ Preset ไหนเลย (แปลว่าเป็น Custom)
+    if (-not $foundMatch) {
+        $cmbPresets.Text = "Custom User Color"
+    }
+    # --- 2. CUSTOM PICKER (แบบเดิม แต่ขยับตำแหน่ง) ---
+    $lblCustom = New-Object System.Windows.Forms.Label
+    $lblCustom.Text = "Or Custom Color:"
+    $lblCustom.Location = "20, 60"; $lblCustom.AutoSize = $true
+    $tApp.Controls.Add($lblCustom)
+
+    # กล่องโชว์สี
+    $pnlColorPreview = New-Object System.Windows.Forms.Panel
+    $pnlColorPreview.Location = "150, 58"; $pnlColorPreview.Size = "30, 20"
+    
+    # แปลงสีปัจจุบันมาโชว์
+    try { $startColor = [System.Drawing.ColorTranslator]::FromHtml($conf.AccentColor) } 
+    catch { $startColor = [System.Drawing.Color]::Cyan }
+    $pnlColorPreview.BackColor = $startColor
+    $pnlColorPreview.BorderStyle = "FixedSingle"
+    $tApp.Controls.Add($pnlColorPreview)
+
+    # ปุ่มเลือกสีเอง
+    $btnPickColor = New-Object System.Windows.Forms.Button
+    $btnPickColor.Text = "Pick Color..."
+    $btnPickColor.Location = "190, 55"; $btnPickColor.Size = "100, 28"
+    Apply-ButtonStyle -Button $btnPickColor -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+    $tApp.Controls.Add($btnPickColor)
+
+    # --- 3. LIVE PREVIEW AREA (Mockup เดิมที่ทำไว้) ---
+    $grpPreview = New-Object System.Windows.Forms.GroupBox
+    $grpPreview.Text = "  UI Preview (Simulation)  "
+    $grpPreview.Location = "20, 100"; $grpPreview.Size = "480, 150"
+    $grpPreview.ForeColor = "Silver"
+    $tApp.Controls.Add($grpPreview)
+
+    # 3.1 Mock Menu
+    $lblMockMenu = New-Object System.Windows.Forms.Label
+    $lblMockMenu.Text = ">> Show Graph"
+    $lblMockMenu.Location = "350, 25"; $lblMockMenu.AutoSize = $true
+    $lblMockMenu.Font = $script:fontBold
+    $lblMockMenu.ForeColor = $startColor
+    $grpPreview.Controls.Add($lblMockMenu)
+
+    # 3.2 Mock Input
+    $lblMockInput = New-Object System.Windows.Forms.Label; $lblMockInput.Text = "Input Field Focus:"; $lblMockInput.Location = "20, 30"; $lblMockInput.AutoSize=$true
+    $grpPreview.Controls.Add($lblMockInput)
+
+    $txtMock = New-Object System.Windows.Forms.TextBox
+    $txtMock.Text = "C:\GameData\..."
+    $txtMock.Location = "20, 55"; $txtMock.Width = 250
+    $txtMock.BackColor = [System.Drawing.Color]::FromArgb(45,45,45)
+    $txtMock.BorderStyle = "FixedSingle"
+    $txtMock.ForeColor = $startColor
+    $grpPreview.Controls.Add($txtMock)
+
+    # 3.3 Mock Checkbox
+    $chkMock = New-Object System.Windows.Forms.CheckBox
+    $chkMock.Text = "Active Option"
+    $chkMock.Location = "20, 95"; $chkMock.AutoSize = $true
+    $chkMock.Checked = $true
+    $chkMock.ForeColor = $startColor
+    $grpPreview.Controls.Add($chkMock)
+
+    # --- 4. OPACITY (เอาไว้ที่นี่ที่เดียว) ---
+    $lblOp = New-Object System.Windows.Forms.Label
+    $lblOp.Text = "Window Opacity (Ghost Mode):"
+    $lblOp.Location = "20, 270"; $lblOp.AutoSize = $true
+    $tApp.Controls.Add($lblOp)
+
+    $trackOp = New-Object System.Windows.Forms.TrackBar
+    $trackOp.Location = "20, 295"; $trackOp.Width = 300
+    $trackOp.Minimum = 50; $trackOp.Maximum = 100
+    
+    # ดึงค่าเดิมมาใส่
+    $trackOp.Value = [int]($conf.Opacity * 100)
+    $trackOp.TickStyle = "None"
+    $tApp.Controls.Add($trackOp)
+
+    # [สำคัญ!] ต้องใส่ Event ตรงนี้ด้วย มันถึงจะ Real-time
+    $trackOp.Add_Scroll({
+        $liveVal = $trackOp.Value / 100
+        $script:form.Opacity = $liveVal
+        
+        # (Optional) อัปเดตตัวเลขบอก % หลัง Label
+        $lblOp.Text = "Window Opacity (Ghost Mode): $($trackOp.Value)%"
+    })
+
+    # --- LOGIC การทำงาน ---
+    $script:TempHexColor = $conf.AccentColor # ตัวแปรพักค่าสี
+
+    # Helper Function เพื่ออัปเดตหน้า Preview (จะได้ไม่ต้องเขียนซ้ำ)
+    $UpdatePreview = {
+        param($NewColor)
+        $pnlColorPreview.BackColor = $NewColor
+        $txtMock.ForeColor = $NewColor
+        $chkMock.ForeColor = $NewColor
+        $lblMockMenu.ForeColor = $NewColor
+        
+        # แปลงเป็น Hex เก็บใส่ตัวแปร
+        $script:TempHexColor = "#{0:X2}{1:X2}{2:X2}" -f $NewColor.R, $NewColor.G, $NewColor.B
+    }
+
+    # Event 1: เมื่อเลือก Preset จาก ComboBox
+    $cmbPresets.Add_SelectedIndexChanged({
+        $selectedName = $cmbPresets.SelectedItem
+        
+        # [FIX: เพิ่มบรรทัดนี้] ถ้าค่าเป็น null (เช่น กรณีเลือก Custom Color) ให้จบการทำงานทันที ไม่ต้องเช็คต่อ
+        if ($null -eq $selectedName) { return }
+
+        if ($ThemeList.ContainsKey($selectedName)) {
+            $hex = $ThemeList[$selectedName]
+            $c = [System.Drawing.ColorTranslator]::FromHtml($hex)
+            & $UpdatePreview -NewColor $c
+        }
+    })
+    # Event 2: เมื่อกดปุ่ม Pick Color (Custom)
+    $btnPickColor.Add_Click({
+        $cd = New-Object System.Windows.Forms.ColorDialog
+        try { $cd.Color = $pnlColorPreview.BackColor } catch {}
+
+        if ($cd.ShowDialog() -eq "OK") {
+            & $UpdatePreview -NewColor $cd.Color
+            # รีเซ็ต ComboBox ให้รู้ว่าเราใช้ Custom (Desipired selection)
+            $cmbPresets.SelectedIndex = -1 
+            $cmbPresets.Text = "Custom User Color"
+        }
+    })
+
+    # ==================================================
+    # TAB 3: DISCORD (กู้คืนกลับมาครบถ้วน)
+    # ==================================================
+    $tDis = New-Tab "Integrations"
+    
+    $lblUrl = New-Object System.Windows.Forms.Label; $lblUrl.Text = "Webhook URL:"; $lblUrl.Location="20,20"; $lblUrl.AutoSize=$true
+    $tDis.Controls.Add($lblUrl)
+    
+    $txtWebhook = New-Object System.Windows.Forms.TextBox; $txtWebhook.Location="20,45"; $txtWebhook.Width=400; $txtWebhook.Text=$conf.WebhookUrl
+    $tDis.Controls.Add($txtWebhook)
+    
+    $chkAutoSend = New-Object System.Windows.Forms.CheckBox; $chkAutoSend.Text="Auto-Send Report after fetching"; $chkAutoSend.Location="20,80"; $chkAutoSend.AutoSize=$true; $chkAutoSend.Checked=$conf.AutoSendDiscord
+    $tDis.Controls.Add($chkAutoSend)
+
+    # ==================================================
+    # TAB 4: DATA & MAINTENANCE (NO EMOJI)
+    # ==================================================
+    $tData = New-Tab "Data & Storage"
+
+    # 1. Info Label
+    $lblDataInfo = New-Object System.Windows.Forms.Label
+    $lblDataInfo.Text = "Manage local files, backups, and cache settings."
+    $lblDataInfo.Location = "20, 20"; $lblDataInfo.AutoSize = $true; $lblDataInfo.ForeColor = "Gray"
+    $tData.Controls.Add($lblDataInfo)
+
+    # 2. Open Folder Button (เปิดโฟลเดอร์ที่เก็บไฟล์)
+    $btnOpenFolder = New-Object System.Windows.Forms.Button
+    $btnOpenFolder.Text = "[ Open Data Folder ]"
+    $btnOpenFolder.Location = "20, 50"; $btnOpenFolder.Size = "250, 35"
+    Apply-ButtonStyle -Button $btnOpenFolder -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+    $btnOpenFolder.Add_Click({
+        # สั่งเปิด Explorer
+        Invoke-Item $PSScriptRoot
+    })
+    $tData.Controls.Add($btnOpenFolder)
+
+    # 3. Manual Backup Button (กดเพื่อ Backup Config เดี๋ยวนี้)
+    $btnForceBackup = New-Object System.Windows.Forms.Button
+    $btnForceBackup.Text = ">> Create Config Backup"
+    $btnForceBackup.Location = "20, 95"; $btnForceBackup.Size = "250, 35"
+    Apply-ButtonStyle -Button $btnForceBackup -BaseColorName "RoyalBlue" -HoverColorName "CornflowerBlue" -CustomFont $script:fontNormal
+    $btnForceBackup.Add_Click({
+        $backupDir = Join-Path $PSScriptRoot "Backups"
+        if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
+        
+        $dateStr = Get-Date -Format "yyyyMMdd_HHmmss"
+        if (Test-Path "config.json") {
+            Copy-Item "config.json" -Destination (Join-Path $backupDir "config_backup_$dateStr.json")
+            [System.Windows.Forms.MessageBox]::Show("Backup created successfully inside 'Backups' folder.", "Success", 0, 64)
+        } else {
+             [System.Windows.Forms.MessageBox]::Show("Config file not found. Nothing to backup.", "Info", 0, 48)
+        }
+    })
+    $tData.Controls.Add($btnForceBackup)
+
+    # 4. Danger Zone (ลบ Cache)
+    $grpDanger = New-Object System.Windows.Forms.GroupBox
+    $grpDanger.Text = " Maintenance Zone "
+    $grpDanger.Location = "20, 160"; $grpDanger.Size = "440, 100"
+    $grpDanger.ForeColor = "IndianRed" # สีแดงอ่อนๆ ดูปลอดภัยกว่า Red สด
+    $tData.Controls.Add($grpDanger)
+
+    $lblWarn = New-Object System.Windows.Forms.Label
+    $lblWarn.Text = "Delete temporary files created during fetch process."
+    $lblWarn.Location = "20, 25"; $lblWarn.AutoSize = $true; $lblWarn.ForeColor = "Silver"
+    $grpDanger.Controls.Add($lblWarn)
+
+    $btnClearCache = New-Object System.Windows.Forms.Button
+    $btnClearCache.Text = "Clear Temporary Cache"
+    $btnClearCache.Location = "20, 50"; $btnClearCache.Size = "180, 30"
+    $btnClearCache.BackColor = "Maroon"; $btnClearCache.ForeColor = "White"; $btnClearCache.FlatStyle = "Flat"
+    $btnClearCache.Add_Click({
+        if ([System.Windows.Forms.MessageBox]::Show("Delete temporary cache files (temp_data_2)?", "Confirm Clean Up", 4, 32) -eq "Yes") {
+            
+            # 1. ลบไฟล์ตัวการหลัก (temp_data_2)
+            $targetFile = Join-Path $PSScriptRoot "temp_data_2"
+            if (Test-Path $targetFile) {
+                Remove-Item $targetFile -Force -ErrorAction SilentlyContinue
+            }
+
+            # 2. ลบไฟล์ขยะอื่นๆ (.tmp) เผื่อมี
+            Get-ChildItem -Path $PSScriptRoot -Filter "*.tmp" | Remove-Item -Force -ErrorAction SilentlyContinue
+
+            [System.Windows.Forms.MessageBox]::Show("Cache Cleared. Temporary files removed.", "Done", 0, 64)
+        }
+    })
+    $grpDanger.Controls.Add($btnClearCache)
+
+    # ==================================================
+    # FOOTER (SAVE BUTTON)
+    # ==================================================
+    $btnSave = New-Object System.Windows.Forms.Button
+    $btnSave.Text = "APPLY"
+    $btnSave.Location = "180, 410"; $btnSave.Size = "180, 40"
+    Apply-ButtonStyle -Button $btnSave -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontBold
+    
+    $btnSave.Add_Click({
+        # 1. Update ค่าลง Object (รวบรวมจากทุก Tab)
+        $conf.DebugConsole = $chkDebug.Checked
+        $conf.Opacity = ($trackOp.Value / 100)
+        $conf.BackupPath = $txtBackup.Text
+        $conf.WebhookUrl = $txtWebhook.Text
+        $conf.AutoSendDiscord = $chkAutoSend.Checked
+        
+        # เพิ่มบรรทัดนี้ใน Block Save
+        $conf.EnableFileLog = $chkFileLog.Checked
+
+        # จัดการสี (เอามาจากตัวแปรชั่วคราวที่เราอัปเดตตอนเลือก)
+        $conf.AccentColor = $script:TempHexColor
+
+        # 2. Save ลงไฟล์ JSON
+        Save-AppConfig -ConfigObj $conf
+        $script:AppConfig = $conf # อัปเดต Global
+
+        # 3. [สำคัญ] Apply Theme ทันที!
+        Apply-Theme -NewHex $conf.AccentColor -NewOpacity $conf.Opacity
+        
+        # [FIX] บังคับแก้สีปุ่ม Expand ตรงนี้ด้วย (เผื่อมันไม่เปลี่ยน)
+        if ($menuExpand) {
+             $menuExpand.ForeColor = [System.Drawing.ColorTranslator]::FromHtml($conf.AccentColor)
+        }
+
+        # 4. Apply ค่าอื่นๆ
+        $script:DebugMode = $conf.DebugConsole
+        $chkSendDiscord.Checked = $conf.AutoSendDiscord
+
+        # เพิ่มในส่วน Save
+        $sepChar = if ($cmbCsvSep.SelectedIndex -eq 1) { ";" } else { "," }
+        $conf.CsvSeparator = $sepChar
+        
+        [System.Windows.Forms.MessageBox]::Show("Settings Saved!", "Done", 0, 64)
+        #$fSet.Close()
+    })
+
+    # ==================================================
+    # RESTORE DEFAULTS BUTTON
+    # ==================================================
+    $btnResetDef = New-Object System.Windows.Forms.Button
+    $btnResetDef.Text = "Restore Defaults"
+    $btnResetDef.Location = "20, 415"; $btnResetDef.Size = "120, 30"
+    $btnResetDef.FlatStyle = "Flat"; $btnResetDef.ForeColor = "Gray"; $btnResetDef.FlatAppearance.BorderSize = 0
+    $btnResetDef.Cursor = [System.Windows.Forms.Cursors]::Hand
+    
+    $btnResetDef.Add_Click({
+        if ([System.Windows.Forms.MessageBox]::Show("Reset all settings to default values?", "Confirm Reset", 4, 48) -eq "Yes") {
+            # คืนค่า UI ให้ User เห็น
+            $chkDebug.Checked = $false
+            $trackOp.Value = 100
+            $cmbPresets.SelectedIndex = 0 # Default Theme
+            $txtWebhook.Text = ""
+            $chkAutoSend.Checked = $true
+            $cmbCsvSep.SelectedIndex = 0
+            
+            # แจ้งเตือน
+            [System.Windows.Forms.MessageBox]::Show("Settings reset. Please click 'APPLY' to confirm.", "Info", 0, 64)
+        }
+    })
+    $fSet.Controls.Add($btnResetDef)
+
+    $fSet.Controls.Add($btnSave)
+    $fSet.ShowDialog()
+}
 # Helper สำหรับล้างหน้าจอและคืนค่า Style เริ่มต้น
 function Reset-LogWindow {
     # 1. ล้างข้อความ
@@ -925,6 +1496,9 @@ function Log($msg, $color="Lime") {
         $timeStamp = Get-Date -Format "HH:mm:ss"
         Write-Host "[$timeStamp] $msg" -ForegroundColor $consoleColor
     }
+
+    # [เพิ่มตรงนี้] ส่งไปเก็บลงไฟล์ด้วย
+    Write-LogFile -Message $msg -Level "USER_ACTION"
 
     # --- ส่วนแสดงผลใน GUI (เหมือนเดิม) ---
     $txtLog.SelectionStart = $txtLog.Text.Length
@@ -1027,7 +1601,13 @@ $btnExport.Add_Click({
     
     try {
         # Select เฉพาะ Column ที่จำเป็น
-        $dataToExport | Select-Object time, name, item_type, rank_type, _BannerName, id | Export-Csv -Path $exportPath -NoTypeInformation -Encoding UTF8
+        # 1. ดึงค่าตัวคั่นจาก Config (ถ้าไม่มีให้ใช้ลูกน้ำ , เป็นค่า default)
+
+        $sep = if ($script:AppConfig.CsvSeparator) { $script:AppConfig.CsvSeparator } else { "," }
+
+        # 2. เพิ่ม -Delimiter $sep เข้าไปในคำสั่ง Export-Csv
+        $dataToExport | Select-Object time, name, item_type, rank_type, _BannerName, id | Export-Csv -Path $exportPath -NoTypeInformation -Encoding UTF8 -Delimiter $sep
+
         Log "Saved to: $fileName" "Lime"
         [System.Windows.Forms.MessageBox]::Show("Saved successfully to:`n$exportPath", "Export Done", 0, 64)
     } catch {
@@ -1035,7 +1615,6 @@ $btnExport.Add_Click({
         [System.Windows.Forms.MessageBox]::Show("Export Failed: $_", "Error", 0, 16)
     }
 })
-# 5. START FETCHING
 # 5. START FETCHING
 $btnRun.Add_Click({
     Reset-LogWindow
@@ -1225,6 +1804,31 @@ $btnRun.Add_Click({
             $script:itemJson.Enabled = $true
         }
 
+        # ==========================================
+        # [ADD] AUTO BACKUP LOGIC
+        # ==========================================
+        $bkPath = $script:AppConfig.BackupPath
+        
+        # 1. เช็คว่า User ตั้งค่า Path ไว้ไหม และ Path นั้นมีอยู่จริงไหม
+        if (-not [string]::IsNullOrWhiteSpace($bkPath) -and (Test-Path $bkPath)) {
+            Log "Performing Auto-Backup..." "Magenta"
+            
+            try {
+                # สร้างชื่อไฟล์ตามวันที่ (เช่น Genshin_Backup_20240118.json)
+                $dateStr = Get-Date -Format "yyyyMMdd_HHmm"
+                $bkFileName = "$($script:CurrentGame)_Backup_$dateStr.json"
+                $bkFull = Join-Path $bkPath $bkFileName
+                
+                # แปลงข้อมูลล่าสุดเป็น JSON แล้วบันทึก
+                $jsonStr = $script:LastFetchedData | ConvertTo-Json -Depth 5 -Compress
+                [System.IO.File]::WriteAllText($bkFull, $jsonStr, [System.Text.Encoding]::UTF8)
+                
+                Log "Backup saved to: $bkFileName" "Lime"
+            } catch {
+                Log "Auto-Backup Failed: $($_.Exception.Message)" "Red"
+            }
+        }
+        # ==========================================
     } catch {
         if ($_.Exception.Message -match "STOPPED") {
              Log "`n!!! PROCESS STOPPED BY USER !!!" "Red"
@@ -1510,7 +2114,12 @@ $script:itemForecast.Add_Click({
     $txtFates = New-Object System.Windows.Forms.TextBox; $txtFates.Text="0"; $txtFates.Location="140,178"; $txtFates.Width=100; $txtFates.BackColor="30,30,50"; $txtFates.ForeColor="Cyan"; $txtFates.BorderStyle="FixedSingle"; $txtFates.TextAlign="Center"; $pnlLeft.Controls.Add($txtFates)
 
     $l8 = New-Object System.Windows.Forms.Label; $l8.Text="Total Pulls:"; $l8.Location="30,215"; $l8.AutoSize=$true; $l8.Font=$script:fontBold; $l8.ForeColor="White"; $pnlLeft.Controls.Add($l8)
-    $lblTotalPulls = New-Object System.Windows.Forms.Label; $lblTotalPulls.Text="0"; $lblTotalPulls.Location="140,215"; $lblTotalPulls.AutoSize=$true; $lblTotalPulls.Font=$script:fontBold; $lblTotalPulls.ForeColor="Cyan"; $pnlLeft.Controls.Add($lblTotalPulls)
+    $lblTotalPulls = New-Object System.Windows.Forms.Label; 
+    $lblTotalPulls.Text="0"; $lblTotalPulls.Location="140,215"; 
+    $lblTotalPulls.AutoSize=$true; 
+    $lblTotalPulls.Font=$script:fontBold; 
+    $lblTotalPulls.ForeColor=  $lblTotalPulls.ForeColor="Cyan"; 
+    $pnlLeft.Controls.Add($lblTotalPulls)
 
     $calcAction = { try { $lblTotalPulls.Text = "$([math]::Floor([int]$txtPrimos.Text / 160) + [int]$txtFates.Text)" } catch { $lblTotalPulls.Text="0" } }
     $txtPrimos.Add_TextChanged($calcAction); $txtFates.Add_TextChanged($calcAction)
@@ -2439,6 +3048,10 @@ $script:itemPlanner.Add_Click({
 #  CLOSING SPLASH LOGIC (Skip Button Support)
 # ============================
 $form.Add_FormClosing({
+     if ($script:AppConfig) {
+        $script:AppConfig.LastGame = $script:CurrentGame
+        Save-AppConfig -ConfigObj $script:AppConfig
+    }
     $form.Hide()
 
     # Config
@@ -2527,6 +3140,71 @@ $form.Add_FormClosing({
     }
 })
 
-# Initial
+
+
+# ============================
+#  STARTUP LOGIC (แก้ใหม่ - บังคับค่าตัวแปร)
+# ============================
+
+# 1. โหลด Config
+if (-not $script:AppConfig) { $script:AppConfig = Get-AppConfig }
+
+# [เพิ่มตรงนี้] ถ้ายังไม่มีไฟล์ ให้สร้างไฟล์ Default ทันทีเลย
+if (-not (Test-Path "config.json")) {
+    Save-AppConfig -ConfigObj $script:AppConfig
+}
+
+# LOGIC: ตัดสินใจว่าจะใช้ Debug Mode หรือไม่?
+if ($script:DevBypassDebug) {
+    # กรณี: นักพัฒนากำลังเทส (Force ON)
+    $script:DebugMode = $true
+    
+    # (Optional) แจ้งเตือนใน Log หน่อยจะได้รู้ตัวว่า Bypass อยู่
+    if ($txtLog) {
+        $txtLog.AppendText("`n[DEV SYSTEM] Debug Bypass is ACTIVE (Ignoring Config)`n")
+    }
+} else {
+    # กรณี: ใช้งานจริง (Production) -> เชื่อ Config
+    $script:DebugMode = $script:AppConfig.DebugConsole
+}
+
+# 2. อ่านค่าจาก Config หรือใช้ Default เป็น Genshin
+$targetGame = "Genshin"
+if ($script:AppConfig.LastGame) { 
+    $targetGame = $script:AppConfig.LastGame 
+}
+
+# 3. [สำคัญมาก] ยัดค่าลงตัวแปรระบบตรงๆ เลย (ไม่ต้องรอ Click)
+$script:CurrentGame = $targetGame
+
+# 4. สั่งอัปเดตหน้าตา UI (เปลี่ยนสีปุ่ม) ให้ตรงกับค่าที่ยัดไป
+switch ($targetGame) {
+    "HSR" { 
+        # เปลี่ยนสีปุ่ม HSR
+        $btnHSR.BackColor="MediumPurple"; $btnHSR.ForeColor="White"
+        $btnGenshin.BackColor="Gray"; $btnZZZ.BackColor="Gray"
+    }
+    "ZZZ" { 
+        # เปลี่ยนสีปุ่ม ZZZ
+        $btnZZZ.BackColor="OrangeRed"; $btnZZZ.ForeColor="White"
+        $btnGenshin.BackColor="Gray"; $btnHSR.BackColor="Gray"
+    }
+    Default { 
+        # เปลี่ยนสีปุ่ม Genshin
+        $btnGenshin.BackColor="Gold"; $btnGenshin.ForeColor="Black"
+        $btnHSR.BackColor="Gray"; $btnZZZ.BackColor="Gray"
+        $script:CurrentGame = "Genshin" # กันเหนียว
+    }
+}
+
+# 5. โหลดรายชื่อตู้ของเกมนั้นมารอไว้เลย
 Update-BannerList
+Log "Welcome back! Selected Game: $targetGame" "Cyan"
+
+# 6. Apply Settings อื่นๆ
+$chkSendDiscord.Checked = $script:AppConfig.AutoSendDiscord
+
+# ============================
+#  SHOW UI
+# ============================
 $form.ShowDialog() | Out-Null
