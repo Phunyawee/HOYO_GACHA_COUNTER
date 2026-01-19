@@ -827,22 +827,7 @@ $menuExpand.Add_Click({
     }
 })
 
-# สั่งให้อัปเดตทันทีเมื่อเปลี่ยนตู้ดู
-# หาบรรทัดนี้ในส่วน EVENTS
-$script:cmbBanner.Add_SelectedIndexChanged({
-    # 1. เช็คว่ามีข้อมูลไหม
-    if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
 
-    # 2. Reset หน้าจอ
-    Reset-LogWindow
-    $chart.Series.Clear()
-    
-    # 3. เรียกฟังก์ชันแสดงผล
-    Update-FilteredView
-    
-    # 4. [สำคัญ] บังคับ Refresh อีกรอบเพื่อความชัวร์
-    $form.Refresh()
-})
 # --- [FIX] FORCE WHITE TEXT LOOP ---
 foreach ($topItem in $menuStrip.Items) {
     # เช็คว่าถ้าเป็นปุ่ม Expand ให้ข้าม (หรือใช้สี Accent) ถ้าไม่ใช่ให้เป็นขาว
@@ -1645,14 +1630,115 @@ function Show-SettingsWindow {
         if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
         
         $dateStr = Get-Date -Format "yyyyMMdd_HHmmss"
+        
         if (Test-Path "config.json") {
-            Copy-Item "config.json" -Destination (Join-Path $backupDir "config_backup_$dateStr.json")
+            $destName = "config_backup_$dateStr.json"
+            $destPath = Join-Path $backupDir $destName
+            
+            Copy-Item "config.json" -Destination $destPath
+            
+            # [แก้ตรงนี้] ใช้ฟังก์ชัน Log หลักแทน (ยิงนัดเดียวได้นก 3 ตัว: CMD + UI + File)
+            Log "User manually triggered Config Backup. Saved to: $destName" "Lime"
+            
             [System.Windows.Forms.MessageBox]::Show("Backup created successfully inside 'Backups' folder.", "Success", 0, 64)
         } else {
+             # [แก้ตรงนี้] ใช้ฟังก์ชัน Log หลัก (สีส้ม/แดง)
+             Log "Manual Config Backup failed: config.json not found." "OrangeRed"
+             
              [System.Windows.Forms.MessageBox]::Show("Config file not found. Nothing to backup.", "Info", 0, 48)
         }
     })
     $tData.Controls.Add($btnForceBackup)
+
+    # 4. Restore Button (กู้คืนค่า)
+    $btnRestore = New-Object System.Windows.Forms.Button
+    $btnRestore.Text = "<< Restore Config from File"
+    $btnRestore.Location = "280, 95"; $btnRestore.Size = "180, 35" # วางข้างๆ ปุ่ม Backup
+    Apply-ButtonStyle -Button $btnRestore -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+    
+    $btnRestore.Add_Click({
+        # 1. เปิดหน้าต่างเลือกไฟล์
+        $ofd = New-Object System.Windows.Forms.OpenFileDialog
+        $ofd.Title = "Select Backup File to Restore"
+        $ofd.Filter = "JSON Config|*.json"
+        
+        # พยายามเปิดที่โฟลเดอร์ Backups ก่อน
+        $bkDir = Join-Path $PSScriptRoot "Backups"
+        if (Test-Path $bkDir) { $ofd.InitialDirectory = $bkDir }
+        
+        if ($ofd.ShowDialog() -eq "OK") {
+            try {
+                $targetFile = $ofd.FileName
+                
+                # 2. Validate: ลองอ่านดูว่าเป็น JSON ดีๆ ไหม
+                try {
+                    $jsonContent = Get-Content $targetFile -Raw -Encoding UTF8
+                    $newConf = $jsonContent | ConvertFrom-Json
+                    if (-not $newConf.PSObject.Properties["AccentColor"]) { throw "Invalid Config Format" }
+                } catch {
+                    [System.Windows.Forms.MessageBox]::Show("This is not a valid config file!", "Error", 0, 16)
+                    return
+                }
+
+                # 3. Safety Backup: เก็บอันปัจจุบันไว้ก่อนกันตาย
+                if (Test-Path "config.json") {
+                    Copy-Item "config.json" -Destination "config.json.old" -Force
+                }
+
+                # 4. Restore: เขียนทับเลย
+                Set-Content -Path "config.json" -Value $jsonContent -Encoding UTF8
+                
+                # 5. Hot Reload: อัปเดต UI และตัวแปรระบบ (แก้ใหม่)
+                $chkDebug.Checked = $newConf.DebugConsole
+                $txtBackup.Text = $newConf.BackupPath
+                $txtWebhook.Text = $newConf.WebhookUrl
+                $chkAutoSend.Checked = $newConf.AutoSendDiscord
+                $chkFileLog.Checked = $newConf.EnableFileLog
+                
+                # CSV Sep
+                if ($newConf.CsvSeparator -eq ";") { $cmbCsvSep.SelectedIndex = 1 } else { $cmbCsvSep.SelectedIndex = 0 }
+
+                # Opacity (ต้องสั่งให้หน้าต่างเปลี่ยนความใสทันทีด้วย)
+                $trackOp.Value = [int]($newConf.Opacity * 100)
+                $script:form.Opacity = $newConf.Opacity  # <--- [เพิ่ม] บังคับเปลี่ยนความใสทันที
+                
+                # Theme & Color (หัวใจสำคัญ)
+                $script:TempHexColor = $newConf.AccentColor # <--- [สำคัญมาก] อัปเดตตัวแปรลับให้ตรงกับค่าที่ Restore
+                
+                # แปลง Hex เป็น Color Object เพื่อเอาไปอัปเดตกล่อง Preview
+                try {
+                    $restoredColor = [System.Drawing.ColorTranslator]::FromHtml($newConf.AccentColor)
+                } catch {
+                    $restoredColor = [System.Drawing.Color]::Cyan
+                }
+
+                # อัปเดต Dropdown Preset
+                $foundTheme = $false
+                foreach ($key in $ThemeList.Keys) {
+                    if ($ThemeList[$key] -eq $newConf.AccentColor) {
+                        $cmbPresets.SelectedItem = $key
+                        $foundTheme = $true; break
+                    }
+                }
+                if (-not $foundTheme) { $cmbPresets.Text = "Custom User Color" }
+
+                # สั่งอัปเดตหน้าจอ Preview ใน Settings
+                & $UpdatePreview -NewColor $restoredColor
+
+                # สั่งอัปเดตหน้าจอหลัก (Main Window) ทันที!
+                Apply-Theme -NewHex $newConf.AccentColor -NewOpacity $newConf.Opacity
+                
+                # 6. Log & Notify
+                Log "Configuration Restored from: $($ofd.SafeFileName)" "Lime"
+                [System.Windows.Forms.MessageBox]::Show("Settings restored successfully!`nUI has been updated.", "Restored", 0, 64)
+
+            } catch {
+                Log "Restore Failed: $($_.Exception.Message)" "Red"
+                [System.Windows.Forms.MessageBox]::Show("Error restoring file: $($_.Exception.Message)", "Error", 0, 16)
+            }
+        }
+    })
+    $tData.Controls.Add($btnRestore)
 
     # 4. Danger Zone (ลบ Cache)
     $grpDanger = New-Object System.Windows.Forms.GroupBox
@@ -1682,6 +1768,8 @@ function Show-SettingsWindow {
             # 2. ลบไฟล์ขยะอื่นๆ (.tmp) เผื่อมี
             Get-ChildItem -Path $PSScriptRoot -Filter "*.tmp" | Remove-Item -Force -ErrorAction SilentlyContinue
 
+            Log "Cache cleanup performed (Temp files removed)." "Gray"
+            
             [System.Windows.Forms.MessageBox]::Show("Cache Cleared. Temporary files removed.", "Done", 0, 64)
         }
     })
@@ -1845,6 +1933,8 @@ function Show-SettingsWindow {
         # เพิ่มในส่วน Save
         $sepChar = if ($cmbCsvSep.SelectedIndex -eq 1) { ";" } else { "," }
         $conf.CsvSeparator = $sepChar
+
+        Log "Configuration updated manually by user." "Cyan"
         
         [System.Windows.Forms.MessageBox]::Show("Settings Saved!", "Done", 0, 64)
         #$fSet.Close()
@@ -1869,6 +1959,7 @@ function Show-SettingsWindow {
             $chkAutoSend.Checked = $true
             $cmbCsvSep.SelectedIndex = 0
             
+            Log "User performed Factory Reset on settings." "OrangeRed"
             # แจ้งเตือน
             [System.Windows.Forms.MessageBox]::Show("Settings reset. Please click 'APPLY' to confirm.", "Info", 0, 64)
         }
@@ -2486,26 +2577,27 @@ $btnSaveImg.Add_Click({
         }
     } # End Loop
 })
-
-
 # ==========================================
-#  EVENT: BANNER DROPDOWN CHANGE (Real-time Filter)
+#  EVENT: BANNER DROPDOWN CHANGE
 # ==========================================
-$script:cmbBanner.Add_SelectedIndexChanged({
-    # 1. เช็คก่อนว่ามีข้อมูลให้โชว์ไหม
-    if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
+# เช็คก่อนว่าปุ่มมีตัวตนไหม (กัน Error แดง)
+if ($script:cmbBanner) {
+    $script:cmbBanner.Add_SelectedIndexChanged({
+        # 1. เช็คข้อมูล
+        if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
 
-    # 2. สั่ง Reset หน้าจอ Log และ Graph ก่อน (เคลียร์ของเก่าให้เกลี้ยง)
-    Reset-LogWindow
-    $chart.Series.Clear()
-    
-    # 3. บังคับเรียกฟังก์ชันแสดงผลใหม่
-    Log "Switching view to: $($script:cmbBanner.SelectedItem)" "DimGray"
-    Update-FilteredView
-    
-    # 4. (สำคัญ) สั่ง Force Refresh หน้าจอเผื่อมันค้าง
-    $form.Refresh()
-})
+        # 2. Reset หน้าจอ
+        Reset-LogWindow
+        $chart.Series.Clear()
+        
+        # 3. เรียกฟังก์ชันแสดงผล
+        Log "Switching view to: $($script:cmbBanner.SelectedItem)" "DimGray"
+        Update-FilteredView
+        
+        # 4. Refresh
+        $form.Refresh()
+    })
+}
 # ==========================================
 #  EVENT: MENU FORECAST CLICK
 # ==========================================
@@ -3598,6 +3690,9 @@ $form.Add_FormClosing({
         $script:AppConfig.LastGame = $script:CurrentGame
         Save-AppConfig -ConfigObj $script:AppConfig
     }
+    # [ADD THIS] บันทึกว่าโปรแกรมปิดตัวลง (ลงไฟล์อย่างเดียว)
+    Write-LogFile -Message "Application Shutdown Sequence Initiated." -Level "STOP"
+
     $form.Hide()
 
     # Config

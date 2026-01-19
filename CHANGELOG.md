@@ -1,6 +1,56 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [6.2.0] - 2026-01-20
+
+## 🌟 Highlights
+Version 6.2.0 is the **"Stability & Audit"** update. We have introduced a professional-grade **System Health Monitor**, a robust **Backup/Restore ecosystem** with hot-reloading, and deep **Audit Logging** to track every user action and system error. The UI has been refined for instant feedback, eliminating the need for manual refreshes.
+
+---
+
+## 🆕 New Features
+
+### 🏥 System Health Monitor
+*   **Dashboard:** Added a dedicated section in **Settings > Data** that monitors critical files (`config.json`, `HoyoEngine.ps1`, Databases, Logs).
+*   **Smart Open:** Clicking "OPEN" now launches Windows Explorer with the specific file **highlighted**, resolving issues with relative paths and spaces in folder names.
+*   **Auto-Layout:** The monitor dynamically adjusts its layout based on installed games (only showing databases for games you play).
+
+### ♻️ Advanced Backup & Restore
+*   **Hot-Reload Restore:** The new "Restore Config" button allows users to load a previous `.json` backup. The app instantly updates themes, opacity, and settings without restarting.
+*   **Safety Logic:** Restoring a config automatically creates a `.old` backup of the current settings before overwriting, preventing accidental data loss.
+*   **Manual Backup:** Added a "Force Backup" button with detailed audit logging.
+
+### 🕵️‍♂️ Deep Audit Logging (Telemetry)
+*   **Audit Trails:** The system now logs critical user actions to `Logs\debug_xxxx.log` (e.g., "Settings updated," "Cache cleared," "Backup created," "Application Shutdown").
+*   **Crash Catcher:** Implemented a global error trap that catches startup crashes and logic errors, saving the stack trace to the log file instead of silently failing.
+*   **Log Rotation:** Logs are organized by date and automatically cleaned up after 7 days to save disk space.
+
+### 🖥️ "System Status" Dashboard
+*   **New Popup Window:** The "Check for Updates" menu now opens a dedicated, non-intrusive window displaying the **UI Version** and **Engine Version** separately, with a direct link to the GitHub repository.
+
+---
+
+## ⚡ Improvements
+
+*   **Dual-Mode Splash Screen:**
+    *   **User Mode:** Displays clean, simple loading text.
+    *   **Debug Mode:** Displays detailed technical paths and file operations for developers.
+*   **Dynamic Pity Meter:** The Pity Meter logic has been moved to the core View Engine. It now updates its maximum scale (80 vs 90) and color instantly when switching between Character and Weapon banners.
+*   **Smart Window Title:** The application title now displays the **Total Database count** vs. **Filtered View count** (e.g., `Showing: 50 / 1500 pulls`).
+*   **Settings UX:** Added auto-scroll support for the Data tab using a "Ghost Label" technique to prevent UI elements from being cut off.
+
+---
+
+## 🐛 Bug Fixes
+
+*   **Fixed:** `NullReferenceException` on startup caused by event listeners attaching to the Banner Dropdown before it was created.
+*   **Fixed:** Banner Dropdown requiring a window resize/refresh to update the graph. It now triggers a force refresh immediately upon selection.
+*   **Fixed:** Restore Config not applying the "Accent Color" immediately (requiring a second save).
+*   **Fixed:** `CsvSeparator` missing from the default Engine config, causing crashes on new installations.
+*   **Fixed:** "Clear Cache" button logic to correctly target `temp_data_2` alongside `.tmp` files.
+
+
+
 # [6.1.0] - 2026-01-19
 
 ## 🌟 Highlights
@@ -39,6 +89,7 @@ This update focuses on **Data Persistence** and **Offline Capabilities**. We int
 *   **Fixed:** "Open File" buttons in Settings failing on paths with spaces or relative paths.
 *   **Fixed:** `ShowDialog` cancel action in the Import menu causing script errors.
 *   **Fixed:** Filter Logic where selecting "Weapon Event" would still display Character data in the graph.
+
 
 
 # [6.0.0] - 2026-01-19
@@ -85,6 +136,7 @@ The Settings menu (F2) has been rebuilt with a Tab-based interface for better na
 *   Improved button labels and tooltips for better clarity.
 *   Smoother splash screen transition upon exit.
 *   Unified styling for all input fields and dropdowns in the Settings window.
+
 
 
 ## [5.2.0] - 2026-01-17
