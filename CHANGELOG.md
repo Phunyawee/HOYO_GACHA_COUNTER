@@ -1,6 +1,45 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [6.1.0] - 2026-01-19
+
+## 🌟 Highlights
+This update focuses on **Data Persistence** and **Offline Capabilities**. We introduced the **"Infinity Database"** engine, allowing users to keep their wish history forever (even after game logs expire). We also added an **Offline JSON Viewer**, a **System Health Dashboard**, and significant visual improvements to the Pity Meter and Splash Screen.
+
+---
+
+## 🆕 New Features
+
+### 💾 Infinity Database (Smart Merge Engine)
+*   **True Data Persistence:** The app now uses a "Merge & Deduplicate" logic instead of simply replacing data. This means your history grows indefinitely over time, preserving data even after the game deletes old logs (6+ months).
+*   **MasterDB Architecture:** Data is now stored securely in `UserData\MasterDB_[Game].json`, acting as a permanent local archive.
+*   **Audit-Trail Logging:** The merge process logs detailed statistics (new items vs duplicates) to the system log for full transparency.
+
+### 🛠️ Offline Capabilities & Tools
+*   **Offline JSON Viewer:** Added `Tools > Import History from JSON` (Ctrl+O). You can now load and analyze external JSON files without needing to open the game or fetch data.
+*   **System Health Monitor:** A new dashboard in **Settings > Data** that visualizes the status of essential files (Config, Engine, DB, Logs). Includes "Smart Open" buttons that highlight the specific file in Windows Explorer.
+*   **Smart Log Rotation:** System logs are now organized in a `Logs` folder. The system automatically cleans up logs older than 7 days to save space.
+
+### 📊 Visual & Logic Enhancements
+*   **Dynamic Pity Meter:** The Pity bar now automatically adjusts its maximum scale (80 for Weapons, 90 for Characters) based on the selected banner filter.
+*   **Real-time Banner Filtering:** Switching the banner dropdown now instantly refreshes the Graph and Logs to show *only* that specific banner type (no more mixed data).
+*   **Smart Window Title:** The title bar now displays real-time database statistics (e.g., `Infinity DB | Showing: 50 / 1500 pulls`).
+
+---
+
+## 💅 UI/UX Polish
+*   **System Status Popup:** The "Check for Updates" menu now opens a modern, dark-themed dashboard displaying both UI and Engine versions clearly.
+*   **Dual-Mode Splash Screen:** The startup screen now displays simplified messages for users ("Loading...") but detailed technical paths when in Debug Mode.
+*   **Visual Tweaks:** Changed Splash Screen text color to Black for better visibility. Added auto-scroll support to the Data Settings tab.
+
+---
+
+## 🐛 Bug Fixes
+*   **Fixed:** Banner Dropdown not refreshing the view immediately (required a window resize/refresh previously).
+*   **Fixed:** "Open File" buttons in Settings failing on paths with spaces or relative paths.
+*   **Fixed:** `ShowDialog` cancel action in the Import menu causing script errors.
+*   **Fixed:** Filter Logic where selecting "Weapon Event" would still display Character data in the graph.
+
 
 # [6.0.0] - 2026-01-19
 ## 🌟 Highlights

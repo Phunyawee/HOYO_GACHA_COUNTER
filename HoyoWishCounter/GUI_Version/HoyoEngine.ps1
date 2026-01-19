@@ -18,9 +18,12 @@ function Log-Status {
 
 # กำหนด path ของ config
 $script:ConfigFile = Join-Path $PSScriptRoot "config.json"
+# ==========================================
+#  HOYO ENGINE - CORE LIBRARY
+# ==========================================
+$script:EngineVersion = "6.0.0"  # <--- กำหนดเวอร์ชัน Engine ตรงนี้ที่เดียว
 
 
-# ใน HoyoEngine.ps1
 
 function Get-AppConfig {
     # 1. ตั้งค่า Default ให้ครบ (รวมตัวใหม่ด้วย)
