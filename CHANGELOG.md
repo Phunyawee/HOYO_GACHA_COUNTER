@@ -1,6 +1,82 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [6.4.0] - 2026-01-22
+
+## 🌟 Highlights
+Version 6.4.0 focuses on **"System Integrity & Polish."** We have completely redesigned the **System Health Monitor** into a modern dashboard style, added robust **Input Validation** to prevent user errors, and fixed critical variable scope issues in the UI engine.
+
+---
+
+## 🆕 New Features & Improvements
+
+### 🏥 System Health Dashboard 2.0
+*   **Modern Grid Layout:** completely overhauled the **Settings > Data** interface into a clean table view (Component | Filename | Size | Status).
+*   **File Size Intelligence:** The dashboard now reads and displays file sizes (auto-formatting to KB/MB) to help you monitor database growth.
+*   **Dynamic Scroll:** Fixed UI clipping issues by implementing dynamic height calculation and a "Ghost Anchor," ensuring the scrollbar always reaches the bottom regardless of how many games are installed.
+
+### 🛡️ Safety & Validation
+*   **Smart Input Validation:** The "Start Fetching" button now strictly checks if a file is selected and exists. It provides clear warning popups instead of crashing if the input is empty or invalid.
+*   **Deep Reset:** The "Reset / Clear All" function now wipes the **File Path Input** and **Max/Min Statistics** to ensure a truly clean slate, preventing accidental fetches from the wrong file.
+
+---
+
+## 🐛 Bug Fixes
+
+*   **Critical:** Fixed a `Runtime Exception` in the Settings window caused by variable scope issues in the button hover effect (Corrected logic to use `$this`).
+*   **Fixed:** ZZZ/HSR Local History filter bug where data types (Integer vs String) caused mismatches, resulting in empty graphs when loading from JSON.
+*   **Fixed:** Genshin Impact "Character Event" view missing the specific header tag (`[Character Event Only]`) in the log window.
+*   **Fixed:** Formatting overlap issues in the System Health Monitor when displaying long filenames.
+
+
+
+# [6.3.0] - 2026-01-21
+
+## 🌟 Highlights
+Version 6.3.0 refines the **"Infinity Database"** experience by introducing **Auto-Load Logic**—your history now appears instantly upon opening the app or switching games, no fetching required. We also addressed visual artifacts, improved the Luck Analysis dashboard, and fixed critical UI bugs related to date selection and ZZZ data types.
+
+---
+
+## 🆕 New Features
+
+### ⚡ Instant Auto-Load
+*   **Zero-Wait Startup:** The application now automatically loads your local `MasterDB` history immediately upon launch.
+*   **Seamless Game Switching:** Switching between Genshin, HSR, and ZZZ now instantly swaps the data view without requiring a re-fetch.
+*   **Visual Feedback:** The window title now dynamically displays **"Infinity DB"** status and record counts (e.g., `Showing: 50 / 1500 pulls`).
+
+### 📊 Enhanced Analytics
+*   **Max/Min Pity Indicators:** Added a new section in the Luck Analysis dashboard to track your **Luckiest (Min)** and **Unluckiest (Max)** pulls historically.
+*   **Visual Polish:**
+    *   **Anti-Flicker Rendering:** Implemented `SuspendLayout` and `ResumeLayout` logic during log generation. The list now "snaps" into place instantly without ghosting or visible number scrolling.
+    *   **Instant Pity Reset:** Switching banners now visually resets the Pity Meter to 0 immediately before calculation begins, preventing confusing "leftover" numbers.
+
+### 🏥 System Monitor Upgrades
+*   **Smart "OPEN" Buttons:** In **Settings > Data**, clicking "OPEN" now launches Explorer and **highlights** the specific file (instead of just opening the folder).
+*   **Dynamic Layout:** The Health Monitor now hides database checks for games you aren't currently viewing to reduce clutter.
+*   **Scrollable Interface:** Added auto-scroll support to the Data tab to accommodate the expanded monitoring tools.
+
+---
+
+## ⚡ Improvements
+
+*   **Pro Splash Screen:**
+    *   **Dual Mode:** Displays simplified text for users ("Loading...") but detailed file paths when in Debug Mode.
+    *   **Visuals:** Changed text color to Black/Contrast for better readability on light backgrounds.
+*   **Audit Logging:** Added specific logs for Manual Config Backup and Restore operations (Console + UI + File).
+*   **Global Versioning:** Centralized version control variables (`$AppVersion`, `$EngineVersion`) for consistent display across the Title Bar, Credits, and System Status window.
+
+---
+
+## 🐛 Bug Fixes
+
+*   **Critical:** Fixed an infinite loop bug in the **Date Filter (Calendar)** caused by `DoEvents()` interfering with mouse click events.
+*   **Critical:** Fixed **ZZZ Banner Filter** not updating correctly due to Data Type mismatches (Integer vs. String comparison logic normalized).
+*   **Fixed:** Startup Crash (`NullReferenceException`) caused by the Banner Dropdown event listener initializing before the UI control was created.
+*   **Fixed:** Missing Tooltips for the Luck Grade section.
+*   **Fixed:** Restore Config not updating the internal temporary color variable, causing the next Save to revert changes.
+
+
+
 # [6.2.0] - 2026-01-20
 
 ## 🌟 Highlights

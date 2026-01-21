@@ -173,6 +173,91 @@ function Update-InfinityDatabase {
 
     return $finalList
 }
+
+# ============================
+#  AUTO-LOAD LOCAL HISTORY
+# ============================
+function Load-LocalHistory {
+    param([string]$GameName)
+
+    # 1. Reset ค่าเก่าทิ้งก่อนเสมอ (กันข้อมูลตีกัน)
+    $script:LastFetchedData = @()
+    $script:FilteredData = @()
+    $chart.Series.Clear()
+    $script:pnlPityFill.Width = 0
+    $script:lblPityTitle.Text = "No Data Loaded"
+    $script:lblPityTitle.ForeColor = "Gray"
+    
+    # ปิดปุ่มต่างๆ ก่อน
+    $grpFilter.Enabled = $false
+    $btnExport.Enabled = $false
+    $btnExport.BackColor = "DimGray"
+    $script:itemForecast.Enabled = $false
+    $script:itemTable.Enabled = $false
+    
+    # 2. หาไฟล์ Database
+    $dbPath = Join-Path $PSScriptRoot "UserData\MasterDB_$($GameName).json"
+    
+    # [CASE 1] ไฟล์ไม่มีอยู่จริง (เพิ่งลงโปรแกรม หรือไม่เคยดึงเกมนี้)
+    if (-not (Test-Path $dbPath)) {
+        Log "No local history found for $GameName. Please Fetch data first." "DimGray"
+        # อัปเดต Title Bar ให้รู้ว่าว่างเปล่า
+        $form.Text = "Universal Hoyo Wish Counter v$script:AppVersion | No Data"
+        return
+    }
+
+    # [CASE 2] ไฟล์มีอยู่จริง -> ลองอ่าน
+    try {
+        $jsonContent = Get-Content -Path $dbPath -Raw -Encoding UTF8
+        
+        # [CASE 3] ไฟล์ว่างเปล่า (0 bytes)
+        if ([string]::IsNullOrWhiteSpace($jsonContent)) {
+            Log "Local DB found but empty." "Orange"
+            return
+        }
+
+        $loadedData = $jsonContent | ConvertFrom-Json
+        
+        # [CASE 4] JSON ถูกต้อง แต่ข้างในเป็น Array ว่าง []
+        if ($null -eq $loadedData -or $loadedData.Count -eq 0) {
+            Log "Local DB is valid but contains 0 records." "Orange"
+            return
+        }
+        
+        foreach ($row in $loadedData) {
+            $row.gacha_type = "$($row.gacha_type)".Trim()
+            $row.id = "$($row.id)".Trim()
+            
+            # (กันเหนียว) ถ้า ZZZ ชอบส่งมาเป็น int ก็จะถูกแก้ตรงนี้
+        }
+
+        # --- ถ้าผ่านมาถึงตรงนี้ แปลว่าข้อมูลสมบูรณ์ ---
+        
+        # บังคับเป็น Array เสมอ
+        $script:LastFetchedData = @($loadedData)
+        
+        Log "Loaded local history for $GameName ($($script:LastFetchedData.Count) records)." "Lime"
+        
+        # เปิดใช้งาน UI
+        $grpFilter.Enabled = $true
+        $btnExport.Enabled = $true
+        Apply-ButtonStyle -Button $btnExport -BaseColorName "RoyalBlue" -HoverColorName "CornflowerBlue" -CustomFont $script:fontBold
+        
+        $script:itemForecast.Enabled = $true
+        $script:itemTable.Enabled = $true
+        $script:itemJson.Enabled = $true
+        
+        # สั่งวาดกราฟทันที!
+        Update-FilteredView
+        $form.Refresh()
+
+    } catch {
+        # [CASE 5] ไฟล์พัง (Corrupted JSON)
+        Log "Error loading local DB: $($_.Exception.Message)" "Red"
+        Log "The file might be corrupted. Try Fetching again to repair." "Orange"
+    }
+}
+
 # ตรวจสอบก่อนว่าเคยโหลดไปหรือยัง (กัน Error เวลารันซ้ำ)
 if (-not ([System.Management.Automation.PSTypeName]'DarkMenuRenderer').Type) {
     Add-Type -TypeDefinition @"
@@ -562,8 +647,17 @@ $itemClear.Add_Click({
     $btnExport.Enabled = $false; 
     $btnExport.BackColor = "DimGray"
 
+    # ==========================================
+    # [NEW] Clear Path Input (กัน Fetch ผิดไฟล์)
+    # ==========================================
+    $txtPath.Text = "" 
+    # ==========================================
+
     $lblStat1.Text = "Total Pulls: 0"; $script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.ForeColor = "White"
     $script:lblStatCost.Text = "Est. Cost: 0"
+
+    $script:lblExtremes.Text = "Max: -  Min: -"
+    $script:lblExtremes.ForeColor = "Silver"
     
     # 5. Reset Filter Panel
     $grpFilter.Enabled = $false
@@ -1035,52 +1129,65 @@ $btnStop.FlatAppearance.BorderSize = 0
 $btnStop.Enabled = $false
 $form.Controls.Add($btnStop)
 
-# --- ROW 4.5: STATS DASHBOARD (Y=360) [MODIFIED] ---
+# --- ROW 4.5: STATS DASHBOARD (MODIFIED LAYOUT) ---
 $grpStats = New-Object System.Windows.Forms.GroupBox
 $grpStats.Text = " Luck Analysis (Based on fetched data) "
-$grpStats.Location = New-Object System.Drawing.Point(20, 360); $grpStats.Size = New-Object System.Drawing.Size(550, 60)
+$grpStats.Location = New-Object System.Drawing.Point(20, 360)
+$grpStats.Size = New-Object System.Drawing.Size(550, 60)
 $grpStats.ForeColor = "Silver"
 $form.Controls.Add($grpStats)
 
-# Label 1: Total Pulls (ขยับซ้ายสุด X=15)
+# 1. Total Pulls (ซ้ายสุด)
 $lblStat1 = New-Object System.Windows.Forms.Label
-$lblStat1.Text = "Total Pulls: 0"; $lblStat1.AutoSize = $true
-$lblStat1.Location = New-Object System.Drawing.Point(15, 25); 
+$lblStat1.Text = "Total: 0"; $lblStat1.AutoSize = $true
+$lblStat1.Location = New-Object System.Drawing.Point(15, 25)
 $lblStat1.Font = $script:fontNormal
 $grpStats.Controls.Add($lblStat1)
 
-# Label 2: Avg Pity (ขยับมาที่ X=130)
+# 2. Avg Pity (ขยับมาที่ 100)
 $script:lblStatAvg = New-Object System.Windows.Forms.Label
-$script:lblStatAvg.Text = "Avg. Pity: -"; $script:lblStatAvg.AutoSize = $true
-$script:lblStatAvg.Location = New-Object System.Drawing.Point(130, 25); 
+$script:lblStatAvg.Text = "Avg: -"; $script:lblStatAvg.AutoSize = $true
+$script:lblStatAvg.Location = New-Object System.Drawing.Point(100, 25)
 $script:lblStatAvg.Font = $script:fontBold
 $script:lblStatAvg.ForeColor = "White"
 $grpStats.Controls.Add($script:lblStatAvg)
 
-# [NEW] Label 3: Luck Grade (แทรกตรงกลาง X=260)
+# 3. [NEW] Max / Min Pity (ตรงกลาง 180)
+# เราจะทำเป็น 2 บรรทัดเล็กๆ ซ้อนกัน หรือวางคู่กันก็ได้
+# อันนี้วางคู่กันแบบ Compact: "Max: 90  Min: 2"
+$script:lblExtremes = New-Object System.Windows.Forms.Label
+$script:lblExtremes.Text = "Max: -  Min: -"
+$script:lblExtremes.AutoSize = $true
+$script:lblExtremes.Location = New-Object System.Drawing.Point(190, 25)
+$script:lblExtremes.Font = $script:fontNormal # ใช้ Font ปกติจะได้ไม่แย่งซีน
+$script:lblExtremes.ForeColor = "Silver"
+$grpStats.Controls.Add($script:lblExtremes)
+$toolTip.SetToolTip($script:lblExtremes, "Historical Extremes:`nMax = Unluckiest Pity`nMin = Luckiest Pity")
+
+# 4. Luck Grade (ขยับไป 320)
 $script:lblLuckGrade = New-Object System.Windows.Forms.Label
 $script:lblLuckGrade.Text = "Grade: -"; $script:lblLuckGrade.AutoSize = $true
-$script:lblLuckGrade.Location = New-Object System.Drawing.Point(260, 25); 
+$script:lblLuckGrade.Location = New-Object System.Drawing.Point(320, 25)
 $script:lblLuckGrade.Font = $script:fontBold
 $script:lblLuckGrade.ForeColor = "DimGray"
-$script:lblLuckGrade.Cursor = [System.Windows.Forms.Cursors]::Help # เปลี่ยนเมาส์เป็นรูปเครื่องหมาย ?
+$script:lblLuckGrade.Cursor = [System.Windows.Forms.Cursors]::Help
 $grpStats.Controls.Add($script:lblLuckGrade)
 
-# ใส่ Tooltip อธิบายเกณฑ์
 $gradeInfo = "Luck Grading Criteria (Global Standard):`n`n" +
-             "SS : Avg < 50   (Godlike)`n" +
-             " A : 50 - 60    (Lucky)`n" +
-             " B : 61 - 73    (Average)`n" +
-             " C : 74 - 76    (Salty)`n" +
-             " F : > 76       (Cursed)"
+                 "SS : Avg < 50   (Godlike)`n" +
+                 " A : 50 - 60    (Lucky)`n" +
+                 " B : 61 - 73    (Average)`n" +
+                 " C : 74 - 76    (Salty)`n" +
+                 " F : > 76       (Cursed)"
+                 
 $toolTip.SetToolTip($script:lblLuckGrade, $gradeInfo)
 
-# Label 4: Cost (ขยับไปขวาสุด X=390)
+# 5. Cost (ขวาสุด 410)
 $script:lblStatCost = New-Object System.Windows.Forms.Label
-$script:lblStatCost.Text = "Est. Cost: 0"; $script:lblStatCost.AutoSize = $true
-$script:lblStatCost.Location = New-Object System.Drawing.Point(390, 25); 
+$script:lblStatCost.Text = "Cost: 0"; $script:lblStatCost.AutoSize = $true
+$script:lblStatCost.Location = New-Object System.Drawing.Point(410, 25)
 $script:lblStatCost.Font = $script:fontNormal
-$script:lblStatCost.ForeColor = "Gold" 
+$script:lblStatCost.ForeColor = "Gold"
 $grpStats.Controls.Add($script:lblStatCost)
 
 # ============================================
@@ -1601,7 +1708,7 @@ function Show-SettingsWindow {
     # TAB 4: DATA & MAINTENANCE (NO EMOJI)
     # ==================================================
     $tData = New-Tab "Data & Storage"
-     $tData.AutoScroll = $true  # <--- [เพิ่มบรรทัดนี้] ใส่ Scrollbar ให้ทันทีถ้าของล้น
+    $tData.AutoScroll = $true  # เปิด Scrollbar
 
     # 1. Info Label
     $lblDataInfo = New-Object System.Windows.Forms.Label
@@ -1609,18 +1716,15 @@ function Show-SettingsWindow {
     $lblDataInfo.Location = "20, 20"; $lblDataInfo.AutoSize = $true; $lblDataInfo.ForeColor = "Gray"
     $tData.Controls.Add($lblDataInfo)
 
-    # 2. Open Folder Button (เปิดโฟลเดอร์ที่เก็บไฟล์)
+    # 2. Open Folder Button
     $btnOpenFolder = New-Object System.Windows.Forms.Button
     $btnOpenFolder.Text = "[ Open Data Folder ]"
     $btnOpenFolder.Location = "20, 50"; $btnOpenFolder.Size = "250, 35"
     Apply-ButtonStyle -Button $btnOpenFolder -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
-    $btnOpenFolder.Add_Click({
-        # สั่งเปิด Explorer
-        Invoke-Item $PSScriptRoot
-    })
+    $btnOpenFolder.Add_Click({ Invoke-Item $PSScriptRoot })
     $tData.Controls.Add($btnOpenFolder)
 
-    # 3. Manual Backup Button (กดเพื่อ Backup Config เดี๋ยวนี้)
+    # 3. Manual Backup Button
     $btnForceBackup = New-Object System.Windows.Forms.Button
     $btnForceBackup.Text = ">> Create Config Backup"
     $btnForceBackup.Location = "20, 95"; $btnForceBackup.Size = "250, 35"
@@ -1630,108 +1734,65 @@ function Show-SettingsWindow {
         if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
         
         $dateStr = Get-Date -Format "yyyyMMdd_HHmmss"
-        
         if (Test-Path "config.json") {
             $destName = "config_backup_$dateStr.json"
             $destPath = Join-Path $backupDir $destName
-            
             Copy-Item "config.json" -Destination $destPath
-            
-            # [แก้ตรงนี้] ใช้ฟังก์ชัน Log หลักแทน (ยิงนัดเดียวได้นก 3 ตัว: CMD + UI + File)
             Log "User manually triggered Config Backup. Saved to: $destName" "Lime"
-            
             [System.Windows.Forms.MessageBox]::Show("Backup created successfully inside 'Backups' folder.", "Success", 0, 64)
         } else {
-             # [แก้ตรงนี้] ใช้ฟังก์ชัน Log หลัก (สีส้ม/แดง)
              Log "Manual Config Backup failed: config.json not found." "OrangeRed"
-             
-             [System.Windows.Forms.MessageBox]::Show("Config file not found. Nothing to backup.", "Info", 0, 48)
+             [System.Windows.Forms.MessageBox]::Show("Config file not found.", "Info", 0, 48)
         }
     })
     $tData.Controls.Add($btnForceBackup)
 
-    # 4. Restore Button (กู้คืนค่า)
+    # 4. Restore Button
     $btnRestore = New-Object System.Windows.Forms.Button
     $btnRestore.Text = "<< Restore Config from File"
-    $btnRestore.Location = "280, 95"; $btnRestore.Size = "180, 35" # วางข้างๆ ปุ่ม Backup
+    $btnRestore.Location = "280, 95"; $btnRestore.Size = "180, 35"
     Apply-ButtonStyle -Button $btnRestore -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
-    
     $btnRestore.Add_Click({
-        # 1. เปิดหน้าต่างเลือกไฟล์
         $ofd = New-Object System.Windows.Forms.OpenFileDialog
         $ofd.Title = "Select Backup File to Restore"
         $ofd.Filter = "JSON Config|*.json"
-        
-        # พยายามเปิดที่โฟลเดอร์ Backups ก่อน
         $bkDir = Join-Path $PSScriptRoot "Backups"
         if (Test-Path $bkDir) { $ofd.InitialDirectory = $bkDir }
         
         if ($ofd.ShowDialog() -eq "OK") {
             try {
                 $targetFile = $ofd.FileName
-                
-                # 2. Validate: ลองอ่านดูว่าเป็น JSON ดีๆ ไหม
-                try {
-                    $jsonContent = Get-Content $targetFile -Raw -Encoding UTF8
-                    $newConf = $jsonContent | ConvertFrom-Json
-                    if (-not $newConf.PSObject.Properties["AccentColor"]) { throw "Invalid Config Format" }
-                } catch {
-                    [System.Windows.Forms.MessageBox]::Show("This is not a valid config file!", "Error", 0, 16)
-                    return
-                }
+                $jsonContent = Get-Content $targetFile -Raw -Encoding UTF8
+                $newConf = $jsonContent | ConvertFrom-Json
+                if (-not $newConf.PSObject.Properties["AccentColor"]) { throw "Invalid Config Format" }
 
-                # 3. Safety Backup: เก็บอันปัจจุบันไว้ก่อนกันตาย
-                if (Test-Path "config.json") {
-                    Copy-Item "config.json" -Destination "config.json.old" -Force
-                }
-
-                # 4. Restore: เขียนทับเลย
+                if (Test-Path "config.json") { Copy-Item "config.json" -Destination "config.json.old" -Force }
                 Set-Content -Path "config.json" -Value $jsonContent -Encoding UTF8
                 
-                # 5. Hot Reload: อัปเดต UI และตัวแปรระบบ (แก้ใหม่)
+                # Hot Reload Settings
                 $chkDebug.Checked = $newConf.DebugConsole
                 $txtBackup.Text = $newConf.BackupPath
                 $txtWebhook.Text = $newConf.WebhookUrl
                 $chkAutoSend.Checked = $newConf.AutoSendDiscord
                 $chkFileLog.Checked = $newConf.EnableFileLog
-                
-                # CSV Sep
                 if ($newConf.CsvSeparator -eq ";") { $cmbCsvSep.SelectedIndex = 1 } else { $cmbCsvSep.SelectedIndex = 0 }
-
-                # Opacity (ต้องสั่งให้หน้าต่างเปลี่ยนความใสทันทีด้วย)
+                
                 $trackOp.Value = [int]($newConf.Opacity * 100)
-                $script:form.Opacity = $newConf.Opacity  # <--- [เพิ่ม] บังคับเปลี่ยนความใสทันที
+                $script:form.Opacity = $newConf.Opacity
+                $script:TempHexColor = $newConf.AccentColor
                 
-                # Theme & Color (หัวใจสำคัญ)
-                $script:TempHexColor = $newConf.AccentColor # <--- [สำคัญมาก] อัปเดตตัวแปรลับให้ตรงกับค่าที่ Restore
-                
-                # แปลง Hex เป็น Color Object เพื่อเอาไปอัปเดตกล่อง Preview
-                try {
-                    $restoredColor = [System.Drawing.ColorTranslator]::FromHtml($newConf.AccentColor)
-                } catch {
-                    $restoredColor = [System.Drawing.Color]::Cyan
-                }
-
-                # อัปเดต Dropdown Preset
+                try { $restoredColor = [System.Drawing.ColorTranslator]::FromHtml($newConf.AccentColor) } catch { $restoredColor = [System.Drawing.Color]::Cyan }
                 $foundTheme = $false
                 foreach ($key in $ThemeList.Keys) {
-                    if ($ThemeList[$key] -eq $newConf.AccentColor) {
-                        $cmbPresets.SelectedItem = $key
-                        $foundTheme = $true; break
-                    }
+                    if ($ThemeList[$key] -eq $newConf.AccentColor) { $cmbPresets.SelectedItem = $key; $foundTheme = $true; break }
                 }
                 if (-not $foundTheme) { $cmbPresets.Text = "Custom User Color" }
 
-                # สั่งอัปเดตหน้าจอ Preview ใน Settings
                 & $UpdatePreview -NewColor $restoredColor
-
-                # สั่งอัปเดตหน้าจอหลัก (Main Window) ทันที!
                 Apply-Theme -NewHex $newConf.AccentColor -NewOpacity $newConf.Opacity
                 
-                # 6. Log & Notify
                 Log "Configuration Restored from: $($ofd.SafeFileName)" "Lime"
-                [System.Windows.Forms.MessageBox]::Show("Settings restored successfully!`nUI has been updated.", "Restored", 0, 64)
-
+                [System.Windows.Forms.MessageBox]::Show("Settings restored successfully!", "Restored", 0, 64)
             } catch {
                 Log "Restore Failed: $($_.Exception.Message)" "Red"
                 [System.Windows.Forms.MessageBox]::Show("Error restoring file: $($_.Exception.Message)", "Error", 0, 16)
@@ -1740,11 +1801,11 @@ function Show-SettingsWindow {
     })
     $tData.Controls.Add($btnRestore)
 
-    # 4. Danger Zone (ลบ Cache)
+    # 5. Maintenance Zone
     $grpDanger = New-Object System.Windows.Forms.GroupBox
     $grpDanger.Text = " Maintenance Zone "
     $grpDanger.Location = "20, 160"; $grpDanger.Size = "440, 100"
-    $grpDanger.ForeColor = "IndianRed" # สีแดงอ่อนๆ ดูปลอดภัยกว่า Red สด
+    $grpDanger.ForeColor = "IndianRed"
     $tData.Controls.Add($grpDanger)
 
     $lblWarn = New-Object System.Windows.Forms.Label
@@ -1757,104 +1818,125 @@ function Show-SettingsWindow {
     $btnClearCache.Location = "20, 50"; $btnClearCache.Size = "180, 30"
     $btnClearCache.BackColor = "Maroon"; $btnClearCache.ForeColor = "White"; $btnClearCache.FlatStyle = "Flat"
     $btnClearCache.Add_Click({
-        if ([System.Windows.Forms.MessageBox]::Show("Delete temporary cache files (temp_data_2)?", "Confirm Clean Up", 4, 32) -eq "Yes") {
-            
-            # 1. ลบไฟล์ตัวการหลัก (temp_data_2)
+        if ([System.Windows.Forms.MessageBox]::Show("Delete temporary cache files?", "Confirm", 4, 32) -eq "Yes") {
             $targetFile = Join-Path $PSScriptRoot "temp_data_2"
-            if (Test-Path $targetFile) {
-                Remove-Item $targetFile -Force -ErrorAction SilentlyContinue
-            }
-
-            # 2. ลบไฟล์ขยะอื่นๆ (.tmp) เผื่อมี
+            if (Test-Path $targetFile) { Remove-Item $targetFile -Force -ErrorAction SilentlyContinue }
             Get-ChildItem -Path $PSScriptRoot -Filter "*.tmp" | Remove-Item -Force -ErrorAction SilentlyContinue
-
             Log "Cache cleanup performed (Temp files removed)." "Gray"
-            
-            [System.Windows.Forms.MessageBox]::Show("Cache Cleared. Temporary files removed.", "Done", 0, 64)
+            [System.Windows.Forms.MessageBox]::Show("Cache Cleared.", "Done", 0, 64)
         }
     })
     $grpDanger.Controls.Add($btnClearCache)
 
     # ==================================================
-    # SYSTEM HEALTH MONITOR (SMART AUTO-LAYOUT)
+    # SYSTEM HEALTH MONITOR (MODERN GRID LAYOUT)
     # ==================================================
     $grpHealth = New-Object System.Windows.Forms.GroupBox
-    $grpHealth.Text = " System Health Monitor "
-    $grpHealth.Location = "20, 270"; $grpHealth.Size = "440, 160" # ขยายความสูงเผื่อไว้
+    $grpHealth.Text = " System Integrity Dashboard "
+    $grpHealth.Location = "20, 270"
+    $grpHealth.Size = "440, 100" # ความสูงเริ่มต้น (เดี๋ยวดีดตัวอัตโนมัติ)
     $grpHealth.ForeColor = "Silver"
     $tData.Controls.Add($grpHealth)
 
-    # ตัวแปรช่วยนับบรรทัด (เริ่มที่ 25px)
-    $script:HealthY = 25 
+    # --- TABLE HEADERS (หัวตารางแบบโปร่ง) ---
+    function Add-Header($text, $x) {
+        $h = New-Object System.Windows.Forms.Label
+        $h.Text = $text
+        $h.Location = "$x, 25"; $h.AutoSize = $true
+        $h.ForeColor = "DimGray"
+        $h.Font = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
+        $grpHealth.Controls.Add($h)
+    }
+    # จัดตำแหน่ง Header ใหม่
+    Add-Header "COMPONENT" 20
+    Add-Header "FILENAME" 140
+    Add-Header "SIZE" 260
+    Add-Header "STATUS" 320
+    # (ปุ่ม OPEN ไม่ต้องมี Header)
 
-    # ==================================================
-    # [TRICK] DUMMY LABEL (ดัน Scrollbar ให้ยาวขึ้น)
-    # ==================================================
-    $lblGhost = New-Object System.Windows.Forms.Label
-    $lblGhost.Text = ""  # ไม่ต้องมีข้อความ
-    $lblGhost.Size = New-Object System.Drawing.Size(10, 50) # สูง 50px เพื่อเว้นที่
-    
-    # คำนวณตำแหน่ง: เอา (Y ของกล่อง Health) + (ความสูงกล่อง) + (ที่ว่างที่อยากได้)
-    # 270 (Y) + 130 (Height) = 400
-    # วางเริ่มที่ 410 เพื่อดันลงไปอีก
-    $lblGhost.Location = New-Object System.Drawing.Point(0, 410)
-    
-    $tData.Controls.Add($lblGhost)
+    # เริ่มต้นที่บรรทัดแรก (เว้นที่ให้ Header 30px)
+    $script:HealthY = 50
 
-    # Helper Function: Auto-Layout
+    # --- ROW RENDERER ---
     function Add-HealthCheck {
         param($LabelText, $FilePath, $IsOptional=$false)
         
         $exists = Test-Path $FilePath
-        
-        # [SMART LOGIC]
-        # ถ้าเป็นไฟล์ Optional (เช่น DB เกมอื่น) แล้วไม่มีไฟล์ -> ไม่ต้องโชว์ให้รก
-        # แต่ถ้าเป็นไฟล์สำคัญ (Config/Engine) หรือ DB เกมปัจจุบัน -> ต้องโชว์เสมอ (แม้จะ Missing)
         if ($IsOptional -and (-not $exists)) { return }
 
-        # ดึงชื่อไฟล์
-        $fileName = Split-Path $FilePath -Leaf
-        
-        # 1. Description
+        # 1. Component Name (ขาว)
         $lbl = New-Object System.Windows.Forms.Label
         $lbl.Text = $LabelText
         $lbl.Location = "20, $script:HealthY"; $lbl.AutoSize = $true
         $lbl.ForeColor = "White"
+        $lbl.Font = New-Object System.Drawing.Font("Segoe UI", 9)
         $grpHealth.Controls.Add($lbl)
 
-        # 2. Filename
+        # 2. Filename (เทา - ตัดคำ)
+        $fileName = Split-Path $FilePath -Leaf
+        if ($fileName.Length -gt 15) { $fileName = $fileName.Substring(0, 12) + "..." }
+        
         $lblFile = New-Object System.Windows.Forms.Label
-        $lblFile.Text = "($fileName)"
-        $lblFile.Location = "150, $script:HealthY"; $lblFile.AutoSize = $true
-        $lblFile.ForeColor = "DimGray"; $lblFile.Font = New-Object System.Drawing.Font("Consolas", 8)
+        $lblFile.Text = "$fileName"
+        $lblFile.Location = "140, $script:HealthY"; $lblFile.AutoSize = $true
+        $lblFile.ForeColor = "Gray"
+        $lblFile.Font = New-Object System.Drawing.Font("Consolas", 9)
         $grpHealth.Controls.Add($lblFile)
         
-        # 3. Status
+        # 3. Size (ฟ้า)
+        $sizeTxt = "-"
+        if ($exists) {
+            try {
+                $item = Get-Item $FilePath
+                if ($item.PSIsContainer) { $sizeTxt = "DIR" } 
+                else {
+                    $kb = $item.Length / 1KB
+                    if ($kb -gt 1024) { $sizeTxt = "{0:N1} MB" -f ($kb/1024) } 
+                    else { $sizeTxt = "{0:N0} KB" -f $kb }
+                }
+            } catch { $sizeTxt = "?" }
+        }
+        $lblSize = New-Object System.Windows.Forms.Label
+        $lblSize.Text = $sizeTxt
+        $lblSize.Location = "260, $script:HealthY"; $lblSize.AutoSize = $true
+        $lblSize.ForeColor = [System.Drawing.Color]::FromArgb(80, 200, 255) # ฟ้าสว่าง
+        $lblSize.Font = New-Object System.Drawing.Font("Consolas", 9)
+        $grpHealth.Controls.Add($lblSize)
+
+        # 4. Status (เขียว/แดง)
         $lblStat = New-Object System.Windows.Forms.Label
         $lblStat.AutoSize = $true
-        $lblStat.Location = "310, $script:HealthY"
-        $lblStat.Font = $script:fontBold
+        $lblStat.Location = "320, $script:HealthY"
+        $lblStat.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
         
         if ($exists) {
             $lblStat.Text = "OK"
-            $lblStat.ForeColor = "Lime"
+            $lblStat.ForeColor = "LimeGreen"
         } else {
             $lblStat.Text = "MISSING"
-            $lblStat.ForeColor = "Red"
+            $lblStat.ForeColor = "Crimson"
         }
         $grpHealth.Controls.Add($lblStat)
         
-        # 4. Button
+        # 5. Action Button (ทำเป็นปุ่มเล็กๆ Minimal)
         if ($exists) {
             $btnLoc = New-Object System.Windows.Forms.Button
             $btnLoc.Text = "OPEN"
-            $btnLoc.Size = "50, 22"
-            $btnLoc.Location = "370, " + ($script:HealthY - 3)
-            $btnLoc.FlatStyle = "Flat"; $btnLoc.ForeColor = "Cyan"
-            $btnLoc.Font = New-Object System.Drawing.Font("Segoe UI", 8)
-            $btnLoc.FlatAppearance.BorderSize = 1; $btnLoc.FlatAppearance.BorderColor = "DimGray"
+            $btnLoc.Size = "45, 22"
+            # จัดตำแหน่ง Y ให้ตรงกับ Text (-2 px เพื่อ center)
+            $btnLoc.Location = "380, " + ($script:HealthY - 2)
+            $btnLoc.FlatStyle = "Flat"
+            $btnLoc.ForeColor = "Silver"
+            $btnLoc.BackColor = [System.Drawing.Color]::FromArgb(45, 45, 45)
+            $btnLoc.Font = New-Object System.Drawing.Font("Segoe UI", 7)
+            $btnLoc.FlatAppearance.BorderSize = 1
+            $btnLoc.FlatAppearance.BorderColor = "DimGray"
             $btnLoc.Cursor = [System.Windows.Forms.Cursors]::Hand
             
+            # Hover Effect (เปลี่ยนสีขอบเมื่อชี้)
+            # [FIX] ใช้ $this แทน $btnLoc เพื่ออ้างอิงปุ่มปัจจุบันอย่างถูกต้อง
+            $btnLoc.Add_MouseEnter({ $this.ForeColor = "White"; $this.FlatAppearance.BorderColor = "Cyan" })
+            $btnLoc.Add_MouseLeave({ $this.ForeColor = "Silver"; $this.FlatAppearance.BorderColor = "DimGray" })
             $clickAction = { 
                 try {
                     $fullPath = (Resolve-Path $FilePath).Path
@@ -1866,32 +1948,41 @@ function Show-SettingsWindow {
             $grpHealth.Controls.Add($btnLoc)
         }
 
-        # ขยับบรรทัดลงมา 25px เตรียมรอตัวถัดไป
-        $script:HealthY += 25
+        # เพิ่มระยะห่างบรรทัด (30px) ให้ดูไม่อึดอัด
+        $script:HealthY += 30
     }
 
-    # --- รายการที่จะโชว์ ---
+    # --- ITEMS LIST ---
+    Add-HealthCheck "Config"   (Join-Path $PSScriptRoot "config.json")
+    Add-HealthCheck "Engine"   (Join-Path $PSScriptRoot "HoyoEngine.ps1")
     
-    # 1. ไฟล์ระบบ (บังคับโชว์)
-    Add-HealthCheck "Configuration"  (Join-Path $PSScriptRoot "config.json")
-    Add-HealthCheck "Engine Library" (Join-Path $PSScriptRoot "HoyoEngine.ps1")
-    
-    # 2. Database (โชว์แบบฉลาด)
-    # เช็คทุกเกม: ถ้ามีไฟล์ -> โชว์หมด / ถ้าไม่มีไฟล์ -> โชว์เฉพาะเกมปัจจุบัน (ให้รู้ว่าหาย)
     $gamesToCheck = @("Genshin", "HSR", "ZZZ")
-    
     foreach ($g in $gamesToCheck) {
         $dbPath = Join-Path $PSScriptRoot "UserData\MasterDB_$($g).json"
-        
-        # Logic: เป็น Optional ไหม?
-        # ถ้าเป็นเกมปัจจุบัน = ไม่ Optional (ต้องโชว์สถานะ แม้จะ Missing)
-        # ถ้าเป็นเกมอื่น = Optional (ถ้าไม่มีก็ซ่อนไป)
         $isOpt = ($g -ne $script:CurrentGame)
-        
         Add-HealthCheck "DB ($g)" $dbPath -IsOptional $isOpt
     }
 
     Add-HealthCheck "System Logs" (Join-Path $PSScriptRoot "Logs")
+    
+    # ==================================================
+    # [FIX] DYNAMIC HEIGHT & SCROLL PADDING
+    # ==================================================
+    
+    # 1. ปรับความสูง GroupBox ให้คลุมทุกบรรทัด + Padding 10px
+    $grpHealth.Height = $script:HealthY + 10
+
+    # 2. ปรับตำแหน่ง Ghost Label ให้ต่ำกว่าก้นกล่อง 50px
+    # สูตร: Y ของกล่อง (270) + ความสูงกล่องใหม่ + 50
+    $ghostY = 270 + $grpHealth.Height + 50
+    
+    $lblGhost = New-Object System.Windows.Forms.Label
+    $lblGhost.Text = ""
+    $lblGhost.Size = New-Object System.Drawing.Size(10, 20)
+    $lblGhost.Location = New-Object System.Drawing.Point(0, $ghostY)
+    
+    $tData.Controls.Add($lblGhost)
+    
     # ==================================================
     # FOOTER (SAVE BUTTON)
     # ==================================================
@@ -2041,29 +2132,43 @@ if (-not (Test-Path "config.json")) {
 # ============================
 
 # 1. Switch Game
+# 1. Switch Game: Genshin
 $btnGenshin.Add_Click({ 
     $btnGenshin.BackColor="Gold"; $btnGenshin.ForeColor="Black"
     $btnHSR.BackColor="Gray"; $btnZZZ.BackColor="Gray"
     $script:CurrentGame = "Genshin"
+    
     Log "Switched to Genshin Impact" "Cyan"
     Update-BannerList
-    $btnExport.Enabled = $false
+    
+    # [ADD THIS] โหลดข้อมูลทันที
+    Load-LocalHistory -GameName "Genshin"
 })
+
+# 2. Switch Game: HSR
 $btnHSR.Add_Click({ 
     $btnHSR.BackColor="MediumPurple"; $btnHSR.ForeColor="White"
     $btnGenshin.BackColor="Gray"; $btnZZZ.BackColor="Gray"
     $script:CurrentGame = "HSR"
+    
     Log "Switched to Honkai: Star Rail" "Cyan"
     Update-BannerList
-    $btnExport.Enabled = $false
+    
+    # [ADD THIS] โหลดข้อมูลทันที
+    Load-LocalHistory -GameName "HSR"
 })
+
+# 3. Switch Game: ZZZ
 $btnZZZ.Add_Click({ 
     $btnZZZ.BackColor="OrangeRed"; $btnZZZ.ForeColor="White"
     $btnGenshin.BackColor="Gray"; $btnHSR.BackColor="Gray"
     $script:CurrentGame = "ZZZ"
+    
     Log "Switched to Zenless Zone Zero" "Cyan"
     Update-BannerList
-    $btnExport.Enabled = $false
+    
+    # [ADD THIS] โหลดข้อมูลทันที
+    Load-LocalHistory -GameName "ZZZ"
 })
 # 2. File
 $btnAuto.Add_Click({
@@ -2126,6 +2231,27 @@ $btnRun.Add_Click({
 
     $conf = Get-GameConfig $script:CurrentGame
     $targetFile = $txtPath.Text
+
+    # ==========================================
+    # [NEW] VALIDATION CHECK (ดักจับ Error)
+    # ==========================================
+    
+    # 1. เช็คว่าช่องว่างไหม? (User ลืมเลือก)
+    if ([string]::IsNullOrWhiteSpace($targetFile)) {
+        Log "[WARNING] User attempted to fetch without selecting a file." "Orange"
+        
+        [System.Windows.Forms.MessageBox]::Show("Please select a 'data_2' file first!`nOr click 'Auto Find' to detect it automatically.", "Missing File", 0, 48) # 48 = Icon ตกใจ
+        return # <--- สำคัญ! สั่งหยุดตรงนี้ ไม่ทำต่อ
+    }
+
+    # 2. เช็คว่าไฟล์มีตัวตนจริงไหม? (User อาจพิมพ์มั่ว หรือไฟล์หาย)
+    if (-not (Test-Path $targetFile)) {
+        Log "[WARNING] File not found at path: $targetFile" "OrangeRed"
+        
+        [System.Windows.Forms.MessageBox]::Show("The selected file does not exist!`nPlease check the path again.", "Invalid Path", 0, 16) # 16 = Icon Error
+        return # <--- สำคัญ! สั่งหยุดตรงนี้
+    }
+
     $ShowNo = $chkShowNo.Checked
     $SendDiscord = $chkSendDiscord.Checked
     
@@ -2581,23 +2707,34 @@ $btnSaveImg.Add_Click({
 #  EVENT: BANNER DROPDOWN CHANGE
 # ==========================================
 # เช็คก่อนว่าปุ่มมีตัวตนไหม (กัน Error แดง)
-if ($script:cmbBanner) {
-    $script:cmbBanner.Add_SelectedIndexChanged({
-        # 1. เช็คข้อมูล
-        if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
+$script:cmbBanner.Add_SelectedIndexChanged({
+    # 1. เช็คข้อมูล
+    if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
 
-        # 2. Reset หน้าจอ
-        Reset-LogWindow
-        $chart.Series.Clear()
-        
-        # 3. เรียกฟังก์ชันแสดงผล
-        Log "Switching view to: $($script:cmbBanner.SelectedItem)" "DimGray"
-        Update-FilteredView
-        
-        # 4. Refresh
-        $form.Refresh()
-    })
-}
+    # ==================================================
+    # [ADD THIS] RESET UI INSTANTLY (กันเลขผิดโผล่)
+    # ==================================================
+    # สั่งให้หลอด Pity หดเหลือ 0 และขึ้นข้อความรอทันที
+    $script:pnlPityFill.Width = 0
+    $script:lblPityTitle.Text = "Updating..." 
+    $script:lblPityTitle.ForeColor = "DimGray"
+    
+    # สั่งวาดหน้าจอทันที 1 รอบ (เพื่อให้ตาเห็นว่ามันถูกรีเซ็ตแล้ว)
+    $form.Refresh() 
+    # ==================================================
+
+    # 2. เริ่มกระบวนการคำนวณ
+    Reset-LogWindow
+    $chart.Series.Clear()
+    
+    Log "Switching view to: $($script:cmbBanner.SelectedItem)" "DimGray"
+    
+    # ฟังก์ชันนี้ใช้เวลาคำนวณนิดนึง...
+    Update-FilteredView 
+    
+    # 3. พอคำนวณเสร็จ มันจะเอาเลขใหม่มาแปะแทนคำว่า "Updating..." เอง
+    $form.Refresh()
+})
 # ==========================================
 #  EVENT: MENU FORECAST CLICK
 # ==========================================
@@ -2839,11 +2976,15 @@ function Update-FilteredView {
     if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
 
     $conf = Get-GameConfig $script:CurrentGame
-    Reset-LogWindow
+    
+    # [MOVED] ย้าย Reset มาไว้บนสุดเลย เพื่อเคลียร์หน้าจอรอก่อน
+    Reset-LogWindow 
 
     # =========================================================
-    # 1. PREPARE DATA (กรองวันที่ + กรองประเภทตู้)
+    # 1. PREPARE DATA & HEADER MESSAGE
     # =========================================================
+    
+    $headerMsg = "" # ตัวแปรเก็บข้อความหัวเรื่อง
     
     # 1.1 กรองวันที่ (Date Filter)
     if ($chkFilterEnable.Checked) {
@@ -2853,10 +2994,12 @@ function Update-FilteredView {
         $tempData = $script:LastFetchedData | Where-Object { 
             [DateTime]$_.time -ge $startDate -and [DateTime]$_.time -le $endDate 
         }
-        Log "--- FILTERED VIEW ($($startDate.ToString('yyyy-MM-dd')) to $($endDate.ToString('yyyy-MM-dd'))) ---" "Cyan"
+        # เก็บข้อความไว้ก่อน (ยังไม่พิมพ์)
+        $headerMsg = "--- FILTERED VIEW ($($startDate.ToString('yyyy-MM-dd')) to $($endDate.ToString('yyyy-MM-dd'))) ---"
     } else {
         $tempData = $script:LastFetchedData
-        Log "--- FULL HISTORY VIEW ---" "Cyan"
+        # เก็บข้อความไว้ก่อน
+        $headerMsg = "--- FULL HISTORY VIEW ---"
     }
 
     # 1.2 [NEW] กรองประเภทตู้ (Banner Type Filter)
@@ -2874,17 +3017,22 @@ function Update-FilteredView {
                 Log "View Scope: Character Event Only" "Gray"
             } 
             else {
-                $tempData = $tempData | Where-Object { $_.gacha_type -eq $targetCode }
+                # ZZZ/HSR/Weapon
+                $tempData = $tempData | Where-Object { 
+                    "$($_.gacha_type)" -eq "$targetCode"
+                }
                 Log "View Scope: $selectedBanner Only" "Gray"
             }
+
+            # [FIXED] ย้ายมาไว้ตรงนี้! (ทำงานกับทุกตู้ ไม่ว่าจะ Genshin Char หรือตู้ไหนๆ)
+            $headerMsg += " [$selectedBanner Only]"
         }
     }
 
-    # ส่งต่อข้อมูลที่กรองแล้วเข้าตัวแปรหลัก
     $script:FilteredData = $tempData
 
     # =========================================================
-    # 2. คำนวณ Stats พื้นฐาน (Count, Cost)
+    # 2. STATS (เหมือนเดิม)
     # =========================================================
     $totalPulls = $script:FilteredData.Count
     $lblStat1.Text = "Total Pulls: $totalPulls"
@@ -2894,25 +3042,21 @@ function Update-FilteredView {
     $script:lblStatCost.Text = "Est. Cost: $(" {0:N0}" -f $cost) $currencyName"
 
     # =========================================================
-    # 3. เตรียมคำนวณ Pity
+    # 3. PREPARE PITY (เหมือนเดิม)
     # =========================================================
     $sortedItems = $script:FilteredData | Sort-Object { [decimal]$_.id } 
-    
     $pityTrackers = @{} 
     foreach ($b in $conf.Banners) { $pityTrackers[$b.Code] = 0 }
 
-    # [Logic: True Pity Offset] 
     if ($chkFilterEnable.Checked -and $radModeAbs.Checked) {
         if ($sortedItems.Count -gt 0) {
             $firstItemInScope = $sortedItems[0]
             $allHistorySorted = $script:LastFetchedData | Sort-Object { [decimal]$_.id }
-            
             foreach ($item in $allHistorySorted) {
                 if ($item.id -eq $firstItemInScope.id) { break }
-                $code = [string]$item.gacha_type
+                $code = "$($item.gacha_type)".Trim()
                 if ($script:CurrentGame -eq "Genshin" -and $code -eq "400") { $code = "301" }
                 if (-not $pityTrackers.ContainsKey($code)) { $pityTrackers[$code] = 0 }
-
                 $pityTrackers[$code]++
                 if ($item.rank_type -eq $conf.SRank) { $pityTrackers[$code] = 0 }
             }
@@ -2920,14 +3064,17 @@ function Update-FilteredView {
     }
 
     # =========================================================
-    # 4. Loop หา 5 ดาว
+    # 4. CALCULATION LOOP (เหมือนเดิม)
     # =========================================================
     $highRankCount = 0
     $pitySum = 0
-    $displayList = @() 
-
+    $displayList = @()
+    $localMax = 0
+    $localMin = 100
+    
     foreach ($item in $sortedItems) {
-        $code = [string]$item.gacha_type
+        $code = "$($item.gacha_type)".Trim()
+        
         if ($script:CurrentGame -eq "Genshin" -and $code -eq "400") { $code = "301" }
         if (-not $pityTrackers.ContainsKey($code)) { $pityTrackers[$code] = 0 }
 
@@ -2935,30 +3082,36 @@ function Update-FilteredView {
         
         if ($item.rank_type -eq $conf.SRank) {
             $highRankCount++
-            $pitySum += $pityTrackers[$code]
+            $currentVal = $pityTrackers[$code]
+            $pitySum += $currentVal
+            
+            if ($currentVal -gt $localMax) { $localMax = $currentVal }
+            if ($currentVal -lt $localMin) { $localMin = $currentVal }
             
             $displayList += [PSCustomObject]@{
                 Time = $item.time
                 Name = $item.name
                 Banner = $item._BannerName
-                Pity = $pityTrackers[$code]
+                Pity = $currentVal
             }
             $pityTrackers[$code] = 0 
         }
     }
 
     # =========================================================
-    # 5. Stats: Avg Pity & Grade
+    # 5. STATS DISPLAY (เหมือนเดิม)
     # =========================================================
     if ($highRankCount -gt 0) {
         $avg = $pitySum / $highRankCount
-        $script:lblStatAvg.Text = "Avg. Pity: $(" {0:N2}" -f $avg)"
+        $script:lblStatAvg.Text = "Avg: $(" {0:N2}" -f $avg)"
         
         if ($avg -le 55) { $script:lblStatAvg.ForeColor = "Lime" }
         elseif ($avg -le 73) { $script:lblStatAvg.ForeColor = "Gold" }
         else { $script:lblStatAvg.ForeColor = "OrangeRed" }
 
-        # Grade
+        $script:lblExtremes.Text = "Max: $localMax  Min: $localMin"
+        if ($localMax -ge 80) { $script:lblExtremes.ForeColor = "Salmon" } else { $script:lblExtremes.ForeColor = "Silver" }
+
         $grade = ""; $gColor = "White"
         if ($avg -lt 50)     { $grade = "SS"; $gColor = "Cyan" }
         elseif ($avg -le 60) { $grade = "A";  $gColor = "Lime" }
@@ -2970,16 +3123,29 @@ function Update-FilteredView {
         $script:lblLuckGrade.ForeColor = $gColor
 
     } else {
-        $script:lblStatAvg.Text = "Avg. Pity: -"
+        $script:lblStatAvg.Text = "Avg: -"
         $script:lblStatAvg.ForeColor = "White"
+        $script:lblExtremes.Text = "Max: -  Min: -"
+        $script:lblExtremes.ForeColor = "DimGray"
         $script:lblLuckGrade.Text = "Grade: -"
         $script:lblLuckGrade.ForeColor = "DimGray"
     }
 
     # =========================================================
-    # 6. แสดงผล Log Window & Graph
+    # [FIXED] 6. RENDERING PHASE (Freeze -> Header -> Content)
     # =========================================================
+    
+    # ล้างอีกทีเพื่อความชัวร์ (เพราะบางที Log ข้างบนอาจจะพ่นอะไรออกมา)
+    Reset-LogWindow 
+    
     if ($displayList.Count -gt 0) {
+        
+        $txtLog.SuspendLayout()
+        
+        # [NEW] พิมพ์ Header ที่เราเก็บไว้ตอนแรก
+        $txtLog.SelectionColor = "Cyan"
+        $txtLog.AppendText("$headerMsg`n")
+        
         # Helper: Print Line
         function Print-Line($h, $idx) {
             $pColor = "Lime"
@@ -3015,87 +3181,60 @@ function Update-FilteredView {
             }
         }
         
+        $txtLog.ResumeLayout()
+        $txtLog.SelectionStart = 0
+        $txtLog.ScrollToCaret()
+        
         Update-Chart -DataList $chartData
 
     } else {
-        Log "No 5-Star items found in this range/banner." "Gray"
-        # อย่าลืมเคลียร์กราฟด้วยถ้าไม่มี 5 ดาว
+        # กรณีไม่มี 5 ดาวเลย
+        $txtLog.SelectionColor = "Cyan"
+        $txtLog.AppendText("$headerMsg`n")
+        $txtLog.SelectionColor = "Gray"
+        $txtLog.AppendText("No 5-Star items found in this range/banner.`n")
+        
         Update-Chart -DataList @()
     }
-
-    # =========================================================
-    # [FIXED] 7. อัปเดต Title Bar (ย้ายมาอยู่นอกสุด)
-    # =========================================================
-    $dbStatus = "Infinity DB"
-    if ($chkFilterEnable.Checked) { $dbStatus = "Filtered View" }
     
-    # โชว์จำนวนแถวข้อมูลทั้งหมด (Total) vs ข้อมูลที่เห็น (View)
-    $totalRecords = $script:LastFetchedData.Count
-    
-    # ป้องกัน error กรณี FilteredData เป็น null
-    $viewRecords = 0
-    if ($script:FilteredData) { $viewRecords = $script:FilteredData.Count }
-    
-    # อัปเดตชื่อหน้าต่าง
-    $form.Text = "Universal Hoyo Wish Counter v$script:AppVersion | $dbStatus | Showing: $viewRecords / $totalRecords pulls"
-    
-    # =========================================================
-    # [NEW] 7. UPDATE DYNAMIC PITY METER (เปลี่ยนตามตู้ที่เลือก)
-    # =========================================================
-    
-    # 1. เรียงข้อมูลจาก ใหม่ -> เก่า (เพื่อหาตัวล่าสุด)
-    # (ใช้ FilteredData ที่ผ่านการกรองตู้มาแล้ว ดังนั้นข้อมูลจะตรงเป๊ะ)
+    # 7. Update Window Title & Dynamic Pity Meter
+    # ... (ส่วน Pity Meter และ Window Title คงเดิม) ...
     $pitySource = $script:FilteredData | Sort-Object { [decimal]$_.id } -Descending
-    
     $currentPity = 0
-    $latestType = "301" # Default Character
-
-    # 2. นับจำนวนโรลจากตัวล่าสุด จนกว่าจะเจอ 5 ดาว
+    $latestType = "301"
     if ($pitySource.Count -gt 0) {
-        $latestType = $pitySource[0].gacha_type
+        $latestType = "$($pitySource[0].gacha_type)".Trim()
         foreach ($row in $pitySource) {
             if ($row.rank_type -eq $conf.SRank) { break }
             $currentPity++
         }
-    } else {
-        $currentPity = 0
     }
-
-    # 3. กำหนด Max Pity (90 หรือ 80) ตามประเภทตู้
+    
     $maxPity = 90
     $typeLabel = "Character"
+    if ($latestType -match "^(302|12|3|5)$") { $maxPity = 80; $typeLabel = "Weapon/LC" }
     
-    # รหัสตู้: 302=Genshin Weapon, 12=HSR LC, 3=ZZZ W-Engine, 5=ZZZ Bangboo
-    if ($latestType -match "^(302|12|3|5)$") {
-        $maxPity = 80
-        $typeLabel = "Weapon/LC"
-    }
-
-    # 4. อัปเดต UI หลอดสี
     $percent = 0
     if ($maxPity -gt 0) { $percent = $currentPity / $maxPity }
     if ($percent -gt 1) { $percent = 1 }
-    
-    # 550 คือความกว้างเต็มของ Panel
-    $newWidth = [int](550 * $percent) 
+    $newWidth = [int](550 * $percent)
     
     $script:pnlPityFill.Width = $newWidth
     $script:lblPityTitle.Text = "Current Pity ($typeLabel): $currentPity / $maxPity"
+    
+    if ($percent -ge 0.82) { $script:pnlPityFill.BackColor = "Crimson"; $script:lblPityTitle.ForeColor = "Red" }
+    elseif ($percent -ge 0.55) { $script:pnlPityFill.BackColor = "Gold"; $script:lblPityTitle.ForeColor = "Gold" }
+    else { $script:pnlPityFill.BackColor = "DodgerBlue"; $script:lblPityTitle.ForeColor = "White" }
 
-    # 5. เปลี่ยนสีตามความอันตราย
-    if ($percent -ge 0.82) { # Soft Pity zone (แดง)
-        $script:pnlPityFill.BackColor = "Crimson" 
-        $script:lblPityTitle.ForeColor = "Red"    
-    } elseif ($percent -ge 0.55) { # ครึ่งทาง (ทอง)
-        $script:pnlPityFill.BackColor = "Gold"    
-        $script:lblPityTitle.ForeColor = "Gold"
-    } else { # ปลอดภัย (ฟ้า)
-        $script:pnlPityFill.BackColor = "DodgerBlue" 
-        $script:lblPityTitle.ForeColor = "White"
-    }
+    $dbStatus = "Infinity DB"
+    if ($chkFilterEnable.Checked) { $dbStatus = "Filtered View" }
+    $totalRecords = $script:LastFetchedData.Count
+    $viewRecords = 0
+    if ($script:FilteredData) { $viewRecords = $script:FilteredData.Count }
+    
+    $form.Text = "Universal Hoyo Wish Counter v$script:AppVersion | $dbStatus | Showing: $viewRecords / $totalRecords pulls"
     
     $form.Refresh()
-    [System.Windows.Forms.Application]::DoEvents()
 }
 
 # ตัวแปร Global (ประกาศไว้นอกฟังก์ชันเพื่อให้แน่ใจว่ามีอยู่จริง)
@@ -3855,6 +3994,10 @@ try {
 } catch {
     # ถ้าลบไม่ได้ก็ช่างมัน
 }
+
+# [ADD THIS] 7. โหลดข้อมูล Local History ของเกมล่าสุดทันที!
+Log "Welcome back! Selected Game: $targetGame" "Cyan"
+Load-LocalHistory -GameName $script:CurrentGame
 
 # ============================
 #  SHOW UI
