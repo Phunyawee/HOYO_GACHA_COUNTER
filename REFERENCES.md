@@ -26,6 +26,11 @@ This project extends functionality based on data, logic, and visual assets from 
   - **Game Icons:** [HoYoLab Article](https://www.hoyolab.com/article/35337701)
   - **Bangboo Assets:** [Zenless Zone Zero Wiki (Fandom)](https://zenless-zone-zero.fandom.com/wiki/Bangboo)
 
+
+### 🎨 Assets & Resources
+*   **Icons & UI:** Designed using standard Windows Forms assets.
+*   **Audio (SFX):** Sound effects for Startup, Error, and Legendary drops provided by [Pixabay](https://pixabay.com/).
+
 ---
 > *All credits go to the original creators of these fantastic tools and artworks.*
 > *[← Back to Main README](./README.md)*

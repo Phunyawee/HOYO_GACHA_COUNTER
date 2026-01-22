@@ -21,7 +21,7 @@ $script:ConfigFile = Join-Path $PSScriptRoot "config.json"
 # ==========================================
 #  HOYO ENGINE - CORE LIBRARY
 # ==========================================
-$script:EngineVersion = "6.0.0"  # <--- กำหนดเวอร์ชัน Engine ตรงนี้ที่เดียว
+$script:EngineVersion = "6.5.0"  # <--- กำหนดเวอร์ชัน Engine ตรงนี้ที่เดียว
 
 
 
@@ -41,6 +41,7 @@ function Get-AppConfig {
         CsvSeparator = "," 
 
         EnableFileLog = $true
+        EnableSound = $true
     }
 
     if (Test-Path $script:ConfigFile) {

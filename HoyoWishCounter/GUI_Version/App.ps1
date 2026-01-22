@@ -9,7 +9,7 @@ $script:DevBypassDebug = $false
 # ค่าเริ่มต้น: ให้เชื่อตัวแปร Bypass ก่อนเสมอ
 $script:DebugMode = $script:DevBypassDebug
 # --- VERSION CONTROL ---
-$script:AppVersion = "6.0.0"    # <--- แก้เลขเวอร์ชัน GUI ตรงนี้ที่เดียว จบ!
+$script:AppVersion = "6.5.0"    # <--- แก้เลขเวอร์ชัน GUI ตรงนี้ที่เดียว จบ!
 # ============================
 #  GLOBAL ERROR TRAP (CRASH CATCHER)
 # ============================
@@ -68,6 +68,35 @@ function Write-LogFile {
     try {
         Add-Content -Path $logPath -Value $logLine -ErrorAction SilentlyContinue
     } catch {}
+}
+# ============================
+#  AUDIO ENGINE (SOUND SYSTEM)
+# ============================
+function Play-Sound {
+    param([string]$EventName)
+
+    # 1. เช็ค Config (ถ้าปิดเสียงอยู่ หรือไม่มี Config ก็จบเลย)
+    if ($script:AppConfig -and (-not $script:AppConfig.EnableSound)) { return }
+
+    # 2. เตรียมโฟลเดอร์
+    $soundDir = Join-Path $PSScriptRoot "Sounds"
+    if (-not (Test-Path $soundDir)) {
+        New-Item -ItemType Directory -Path $soundDir -Force | Out-Null
+    }
+
+    # 3. หาไฟล์เสียง (.wav เท่านั้น)
+    # ชื่อไฟล์ต้องตรงกับ EventName เช่น "startup.wav", "error.wav"
+    $soundFile = Join-Path $soundDir "$EventName.wav"
+
+    if (Test-Path $soundFile) {
+        try {
+            # ใช้ .NET SoundPlayer (เล่นไฟล์เล็กๆ ได้เร็วมาก)
+            $player = New-Object System.Media.SoundPlayer $soundFile
+            $player.Play() # Play() = เล่นแล้วไปต่อเลยไม่รอยาว, PlaySync() = รอจบ
+        } catch {
+            Write-LogFile -Message "Audio Error: $($_.Exception.Message)" -Level "WARN"
+        }
+    }
 }
 # ============================
 #  SMART MERGE ENGINE (INFINITY DB)
@@ -1516,6 +1545,14 @@ function Show-SettingsWindow {
     $toolTip.SetToolTip($chkFileLog, "Useful for reporting bugs. Saves actions to a text file.")
     $grpSys.Controls.Add($chkFileLog)
 
+
+    # 5. Enable Sound Effects
+    $chkSound = New-Object System.Windows.Forms.CheckBox
+    $chkSound.Text = "Enable Audio Feedback (Sound Effects)"
+    $chkSound.Location = "20, 95"; $chkSound.AutoSize = $true # ขยับ Y ลงมาหน่อย
+    $chkSound.Checked = $conf.EnableSound
+    $chkSound.ForeColor = "White"
+    $grpSys.Controls.Add($chkSound)
     # ==================================================
     # TAB 2: APPEARANCE (UPGRADE: Presets + Preview)
     # ==================================================
@@ -1998,6 +2035,7 @@ function Show-SettingsWindow {
         $conf.BackupPath = $txtBackup.Text
         $conf.WebhookUrl = $txtWebhook.Text
         $conf.AutoSendDiscord = $chkAutoSend.Checked
+        $conf.EnableSound = $chkSound.Checked
         
         # เพิ่มบรรทัดนี้ใน Block Save
         $conf.EnableFileLog = $chkFileLog.Checked
@@ -2239,7 +2277,7 @@ $btnRun.Add_Click({
     # 1. เช็คว่าช่องว่างไหม? (User ลืมเลือก)
     if ([string]::IsNullOrWhiteSpace($targetFile)) {
         Log "[WARNING] User attempted to fetch without selecting a file." "Orange"
-        
+        Play-Sound "error"
         [System.Windows.Forms.MessageBox]::Show("Please select a 'data_2' file first!`nOr click 'Auto Find' to detect it automatically.", "Missing File", 0, 48) # 48 = Icon ตกใจ
         return # <--- สำคัญ! สั่งหยุดตรงนี้ ไม่ทำต่อ
     }
@@ -2323,6 +2361,19 @@ $btnRun.Add_Click({
         $script:LastFetchedData = $mergedHistory
         
         Log "Database Synced! Total History: $($script:LastFetchedData.Count) records." "Lime"
+        
+         # [NEW] AUDIO LOGIC: เช็คว่าในก้อนใหม่ ($allHistory) มี 5 ดาวไหม?
+        $hasGold = $false
+        foreach ($item in $allHistory) {
+            if ($item.rank_type -eq $conf.SRank) { $hasGold = $true; break }
+        }
+
+        if ($hasGold) {
+            Log "GOLDEN GLOW DETECTED!" "Gold"
+            Play-Sound "legendary"  # เสียงวิ้งๆ ทองแตก
+        } else {
+            Play-Sound "success"    # เสียงติ๊ดธรรมดา
+        }
         
         # --- CALCULATION ---
         if ($script:StopRequested) { throw "STOPPED" }
@@ -4002,4 +4053,5 @@ Load-LocalHistory -GameName $script:CurrentGame
 # ============================
 #  SHOW UI
 # ============================
+Play-Sound "startup"
 $form.ShowDialog() | Out-Null

@@ -1,6 +1,29 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [6.5.0] - 2026-01-22
+
+## 🌟 Highlights
+Version 6.5.0 is the **"Multimedia & Stability"** update. The application now features a robust **Audio Feedback System**, providing sound effects for startup, errors, and—most importantly—a special "Legendary" sound when a 5-star is detected during a fetch! We also rewrote the log rendering engine to eliminate visual flickering and ghosting.
+
+---
+
+## 🆕 New Features
+
+### 🔊 Audio Feedback System (Sound Engine)
+*   **Interactive Audio:** The app can now play `.wav` sound effects located in the `Sounds` folder to provide instant feedback.
+*   **Smart Triggers:**
+    *   **Startup:** System ready sound.
+    *   **Success:** Notification when data fetching/loading completes.
+    *   **Error:** Auditory warning when validation fails or a crash is caught.
+    *   **✨ Legendary Drop:** A special sound effect plays automatically when a new 5-Star item is detected during a fetch session!
+*   **Settings Toggle:** Added an "Enable Audio Feedback" option in **Settings > General** for users who prefer silence.
+
+### ⚡ Visual Core (Anti-Flicker)
+*   **Instant Rendering:** Rewrote the Log Window rendering logic using `SuspendLayout` and `ResumeLayout`. The history list now appears instantly as a complete block, eliminating the "scrolling numbers" artifact and screen flickering.
+*   **Loading Indicators:** Replaced the distracting "..." animation with a cleaner, faster loading phase for better performance on large databases.
+
+
 # [6.4.0] - 2026-01-22
 
 ## 🌟 Highlights
