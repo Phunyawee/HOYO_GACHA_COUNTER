@@ -127,7 +127,7 @@ function Load-LocalHistory {
     
     # [CASE 1] ไฟล์ไม่มีอยู่จริง (เพิ่งลงโปรแกรม หรือไม่เคยดึงเกมนี้)
     if (-not (Test-Path $dbPath)) {
-        Log "No local history found for $GameName. Please Fetch data first." "DimGray"
+        WriteGUI-Log "No local history found for $GameName. Please Fetch data first." "DimGray"
         # อัปเดต Title Bar ให้รู้ว่าว่างเปล่า
         $form.Text = "Universal Hoyo Wish Counter v$script:AppVersion | No Data"
         return
@@ -139,7 +139,7 @@ function Load-LocalHistory {
         
         # [CASE 3] ไฟล์ว่างเปล่า (0 bytes)
         if ([string]::IsNullOrWhiteSpace($jsonContent)) {
-            Log "Local DB found but empty." "Orange"
+            WriteGUI-Log "Local DB found but empty." "Orange"
             return
         }
 
@@ -147,7 +147,7 @@ function Load-LocalHistory {
         
         # [CASE 4] JSON ถูกต้อง แต่ข้างในเป็น Array ว่าง []
         if ($null -eq $loadedData -or $loadedData.Count -eq 0) {
-            Log "Local DB is valid but contains 0 records." "Orange"
+            WriteGUI-Log "Local DB is valid but contains 0 records." "Orange"
             return
         }
         
@@ -163,7 +163,7 @@ function Load-LocalHistory {
         # บังคับเป็น Array เสมอ
         $script:LastFetchedData = @($loadedData)
         
-        Log "Loaded local history for $GameName ($($script:LastFetchedData.Count) records)." "Lime"
+        WriteGUI-Log "Loaded local history for $GameName ($($script:LastFetchedData.Count) records)." "Lime"
         
         # เปิดใช้งาน UI
         $grpFilter.Enabled = $true
@@ -180,7 +180,7 @@ function Load-LocalHistory {
 
     } catch {
         # [CASE 5] ไฟล์พัง (Corrupted JSON)
-        Log "Error loading local DB: $($_.Exception.Message)" "Red"
-        Log "The file might be corrupted. Try Fetching again to repair." "Orange"
+        WriteGUI-Log "Error loading local DB: $($_.Exception.Message)" "Red"
+        WriteGUI-Log "The file might be corrupted. Try Fetching again to repair." "Orange"
     }
 }

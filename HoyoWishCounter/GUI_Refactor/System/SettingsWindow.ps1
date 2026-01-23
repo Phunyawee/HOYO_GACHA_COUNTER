@@ -338,10 +338,10 @@ function Show-SettingsWindow {
             $destName = "config_backup_$dateStr.json"
             $destPath = Join-Path $backupDir $destName
             Copy-Item "config.json" -Destination $destPath
-            Log "User manually triggered Config Backup. Saved to: $destName" "Lime"
+            WriteGUI-Log "User manually triggered Config Backup. Saved to: $destName" "Lime"
             [System.Windows.Forms.MessageBox]::Show("Backup created successfully inside 'Backups' folder.", "Success", 0, 64)
         } else {
-             Log "Manual Config Backup failed: config.json not found." "OrangeRed"
+             WriteGUI-Log "Manual Config Backup failed: config.json not found." "OrangeRed"
              [System.Windows.Forms.MessageBox]::Show("Config file not found.", "Info", 0, 48)
         }
     })
@@ -391,10 +391,10 @@ function Show-SettingsWindow {
                 & $UpdatePreview -NewColor $restoredColor
                 Apply-Theme -NewHex $newConf.AccentColor -NewOpacity $newConf.Opacity
                 
-                Log "Configuration Restored from: $($ofd.SafeFileName)" "Lime"
+                WriteGUI-Log "Configuration Restored from: $($ofd.SafeFileName)" "Lime"
                 [System.Windows.Forms.MessageBox]::Show("Settings restored successfully!", "Restored", 0, 64)
             } catch {
-                Log "Restore Failed: $($_.Exception.Message)" "Red"
+                WriteGUI-Log "Restore Failed: $($_.Exception.Message)" "Red"
                 [System.Windows.Forms.MessageBox]::Show("Error restoring file: $($_.Exception.Message)", "Error", 0, 16)
             }
         }
@@ -422,7 +422,7 @@ function Show-SettingsWindow {
             $targetFile = Join-Path $PSScriptRoot "temp_data_2"
             if (Test-Path $targetFile) { Remove-Item $targetFile -Force -ErrorAction SilentlyContinue }
             Get-ChildItem -Path $PSScriptRoot -Filter "*.tmp" | Remove-Item -Force -ErrorAction SilentlyContinue
-            Log "Cache cleanup performed (Temp files removed)." "Gray"
+            WriteGUI-Log "Cache cleanup performed (Temp files removed)." "Gray"
             [System.Windows.Forms.MessageBox]::Show("Cache Cleared.", "Done", 0, 64)
         }
     })
@@ -626,7 +626,7 @@ function Show-SettingsWindow {
         $sepChar = if ($cmbCsvSep.SelectedIndex -eq 1) { ";" } else { "," }
         $conf.CsvSeparator = $sepChar
 
-        Log "Configuration updated manually by user." "Cyan"
+        WriteGUI-Log "Configuration updated manually by user." "Cyan"
         
         [System.Windows.Forms.MessageBox]::Show("Settings Saved!", "Done", 0, 64)
         #$fSet.Close()
@@ -651,7 +651,7 @@ function Show-SettingsWindow {
             $chkAutoSend.Checked = $true
             $cmbCsvSep.SelectedIndex = 0
             
-            Log "User performed Factory Reset on settings." "OrangeRed"
+            WriteGUI-Log "User performed Factory Reset on settings." "OrangeRed"
             # แจ้งเตือน
             [System.Windows.Forms.MessageBox]::Show("Settings reset. Please click 'APPLY' to confirm.", "Info", 0, 64)
         }

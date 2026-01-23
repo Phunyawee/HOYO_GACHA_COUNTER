@@ -56,7 +56,7 @@ function Reset-LogWindow {
     }
 }
 
-function Log($msg, $color="Lime") { 
+function WriteGUI-Log($msg, $color="Lime") { 
     try {
         # --- 1. ส่วนแสดงผลใน Debug Console (PowerShell Window) ---
         if ($script:DebugMode) {

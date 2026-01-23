@@ -295,7 +295,7 @@ $script:itemImportJson.ForeColor = "Gold"      # สีทองให้ดู�
 $menuTools.DropDownItems.Add($script:itemImportJson) | Out-Null
 
 $script:itemImportJson.Add_Click({
-    Log "Action: Import JSON File..." "Cyan"
+    WriteGUI-Log "Action: Import JSON File..." "Cyan"
     
     # 1. เลือกไฟล์
     $ofd = New-Object System.Windows.Forms.OpenFileDialog
@@ -310,7 +310,7 @@ $script:itemImportJson.Add_Click({
             $importedData = $jsonContent | ConvertFrom-Json
             
             if ($null -eq $importedData -or $importedData.Count -eq 0) {
-                Log "Error: Selected JSON is empty." "Red"
+                WriteGUI-Log "Error: Selected JSON is empty." "Red"
                 [System.Windows.Forms.MessageBox]::Show("JSON file is empty or invalid.", "Error", 0, 48)
                 return
             }
@@ -319,8 +319,8 @@ $script:itemImportJson.Add_Click({
             
             # Reset & Update UI
             Reset-LogWindow
-            Log "Successfully loaded: $($ofd.SafeFileName)" "Lime"
-            Log "Total Items: $($script:LastFetchedData.Count)" "Gray"
+            WriteGUI-Log "Successfully loaded: $($ofd.SafeFileName)" "Lime"
+            WriteGUI-Log "Total Items: $($script:LastFetchedData.Count)" "Gray"
             
             $grpFilter.Enabled = $true
             $btnExport.Enabled = $true
@@ -341,12 +341,12 @@ $script:itemImportJson.Add_Click({
             [System.Windows.Forms.MessageBox]::Show("Data Loaded Successfully!", "Import Complete", 0, 64)
 
         } catch {
-            Log "Import Error: $($_.Exception.Message)" "Red"
+            WriteGUI-Log "Import Error: $($_.Exception.Message)" "Red"
             [System.Windows.Forms.MessageBox]::Show("Failed to read JSON: $($_.Exception.Message)", "Error", 0, 16)
         }
     } else {
         # --- [NEW] กรณี User กด Cancel หรือปิดหน้าต่าง ---
-        Log "Import cancelled by user." "DimGray"
+        WriteGUI-Log "Import cancelled by user." "DimGray"
     }
 })
 
@@ -358,7 +358,7 @@ $itemClear.Add_Click({
     Reset-LogWindow
     
     # 3. เริ่ม Write-GuiLogข้อความ Reset
-    Log ">>> User requested RESET. Clearing all data... <<<" "OrangeRed"
+    WriteGUI-Log ">>> User requested RESET. Clearing all data... <<<" "OrangeRed"
     
     # 4. Reset ค่าตัวแปรอื่นๆ ตามเดิม
     $script:pnlPityFill.Width = 0
@@ -405,7 +405,7 @@ $itemClear.Add_Click({
     # เพิ่มบรรทัดนี้เข้าไปใน Reset Logic (ใน $itemClear.Add_Click)
     $script:lblLuckGrade.Text = "Grade: -"; $script:lblLuckGrade.ForeColor = "DimGray"
 
-    Log "--- System Reset Complete. Ready. ---" "Gray"
+    WriteGUI-Log "--- System Reset Complete. Ready. ---" "Gray"
 })
 [void]$menuFile.DropDownItems.Add($itemClear)
 
@@ -623,13 +623,13 @@ $script:isExpanded = $false
 # Event คลิกปุ่มนี้
 $menuExpand.Add_Click({
     if ($script:isExpanded) {
-        Log "Action: Collapse Graph Panel (Hide)" "DimGray"
+        WriteGUI-Log "Action: Collapse Graph Panel (Hide)" "DimGray"
         # ยุบกลับ
         $form.Width = 600
         $menuExpand.Text = ">> Show Graph"
         $script:isExpanded = $false
     } else {
-        Log "Action: Expand Graph Panel (Show)" "Cyan"  
+        WriteGUI-Log "Action: Expand Graph Panel (Show)" "Cyan"  
         # ขยายออก
         $form.Width = 1200
         $menuExpand.Text = "<< Hide Graph"
@@ -1088,7 +1088,7 @@ $btnSaveImg.BringToFront()
 $cmbChartType.Add_SelectedIndexChanged({ 
     $type = $cmbChartType.SelectedItem
     # [NEW] สั่ง Write-GuiLogบอกว่า user เปลี่ยนไปดูกราฟแบบไหน
-    Log "User switched chart view to: [$type]" "DimGray"
+    WriteGUI-Log "User switched chart view to: [$type]" "DimGray"
     
     if ($chart.Visible) { Update-Chart -DataList $script:CurrentChartData }
 })
@@ -1149,7 +1149,7 @@ $btnGenshin.Add_Click({
     $btnHSR.BackColor="Gray"; $btnZZZ.BackColor="Gray"
     $script:CurrentGame = "Genshin"
     
-    Log "Switched to Genshin Impact" "Cyan"
+    WriteGUI-Log "Switched to Genshin Impact" "Cyan"
     Update-BannerList
     
     # [ADD THIS] โหลดข้อมูลทันที
@@ -1162,7 +1162,7 @@ $btnHSR.Add_Click({
     $btnGenshin.BackColor="Gray"; $btnZZZ.BackColor="Gray"
     $script:CurrentGame = "HSR"
     
-    Log "Switched to Honkai: Star Rail" "Cyan"
+    WriteGUI-Log "Switched to Honkai: Star Rail" "Cyan"
     Update-BannerList
     
     # [ADD THIS] โหลดข้อมูลทันที
@@ -1175,7 +1175,7 @@ $btnZZZ.Add_Click({
     $btnGenshin.BackColor="Gray"; $btnHSR.BackColor="Gray"
     $script:CurrentGame = "ZZZ"
     
-    Log "Switched to Zenless Zone Zero" "Cyan"
+    WriteGUI-Log "Switched to Zenless Zone Zero" "Cyan"
     Update-BannerList
     
     # [ADD THIS] โหลดข้อมูลทันที
@@ -1184,14 +1184,14 @@ $btnZZZ.Add_Click({
 # 2. File
 $btnAuto.Add_Click({
     $conf = Get-GameConfig $script:CurrentGame
-    Log "Attempting to auto-detect data_2..." "Yellow"
+    WriteGUI-Log "Attempting to auto-detect data_2..." "Yellow"
     try {
         $found = Find-GameCacheFile -Config $conf -StagingPath $script:StagingFile
         $txtPath.Text = $found
-        Log "File found! Copied to Staging." "Lime"
+        WriteGUI-Log "File found! Copied to Staging." "Lime"
     } catch {
         [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, "Not Found", 0, 48)
-        Log "Auto-detect failed." "Red"
+        WriteGUI-Log "Auto-detect failed." "Red"
     }
 })
 $btnBrowse.Add_Click({
@@ -1202,7 +1202,7 @@ $btnBrowse.Add_Click({
 # 3. Stop
 $btnStop.Add_Click({
     $script:StopRequested = $true
-    Log ">>> STOP COMMAND RECEIVED! <<<" "Red"
+    WriteGUI-Log ">>> STOP COMMAND RECEIVED! <<<" "Red"
 })
 # 4. Export CSV (Fixed: Support Filter + No Emoji)
 $btnExport.Add_Click({
@@ -1229,10 +1229,10 @@ $btnExport.Add_Click({
         # 2. เพิ่ม -Delimiter $sep เข้าไปในคำสั่ง Export-Csv
         $dataToExport | Select-Object time, name, item_type, rank_type, _BannerName, id | Export-Csv -Path $exportPath -NoTypeInformation -Encoding UTF8 -Delimiter $sep
 
-        Log "Saved to: $fileName" "Lime"
+        WriteGUI-Log "Saved to: $fileName" "Lime"
         [System.Windows.Forms.MessageBox]::Show("Saved successfully to:`n$exportPath", "Export Done", 0, 64)
     } catch {
-        Log "Export Failed: $_" "Red"
+        WriteGUI-Log "Export Failed: $_" "Red"
         [System.Windows.Forms.MessageBox]::Show("Export Failed: $_", "Error", 0, 16)
     }
 })
@@ -1249,7 +1249,7 @@ $btnRun.Add_Click({
     
     # 1. เช็คว่าช่องว่างไหม? (User ลืมเลือก)
     if ([string]::IsNullOrWhiteSpace($targetFile)) {
-        Log "[WARNING] User attempted to fetch without selecting a file." "Orange"
+        WriteGUI-Log "[WARNING] User attempted to fetch without selecting a file." "Orange"
         Play-Sound "error"
         [System.Windows.Forms.MessageBox]::Show("Please select a 'data_2' file first!`nOr click 'Auto Find' to detect it automatically.", "Missing File", 0, 48) # 48 = Icon ตกใจ
         return # <--- สำคัญ! สั่งหยุดตรงนี้ ไม่ทำต่อ
@@ -1257,7 +1257,7 @@ $btnRun.Add_Click({
 
     # 2. เช็คว่าไฟล์มีตัวตนจริงไหม? (User อาจพิมพ์มั่ว หรือไฟล์หาย)
     if (-not (Test-Path $targetFile)) {
-        Log "[WARNING] File not found at path: $targetFile" "OrangeRed"
+        WriteGUI-Log "[WARNING] File not found at path: $targetFile" "OrangeRed"
         
         [System.Windows.Forms.MessageBox]::Show("The selected file does not exist!`nPlease check the path again.", "Invalid Path", 0, 16) # 16 = Icon Error
         return # <--- สำคัญ! สั่งหยุดตรงนี้
@@ -1289,9 +1289,9 @@ $btnRun.Add_Click({
     }
 
     try {
-        Log "Extracting AuthKey..." "Yellow"
+        WriteGUI-Log "Extracting AuthKey..." "Yellow"
         $auth = Get-AuthLinkFromFile -FilePath $targetFile -Config $conf
-        Log "AuthKey Found!" "Lime"
+        WriteGUI-Log "AuthKey Found!" "Lime"
         
         $allHistory = @()
 
@@ -1299,7 +1299,7 @@ $btnRun.Add_Click({
         foreach ($banner in $TargetBanners) {
             if ($script:StopRequested) { throw "STOPPED" }
 
-            Log "Fetching: $($banner.Name)..." "Magenta"
+            WriteGUI-Log "Fetching: $($banner.Name)..." "Magenta"
 
             $items = Fetch-GachaPages -Url $auth.Url -HostUrl $auth.Host -Endpoint $conf.ApiEndpoint -BannerCode $banner.Code -PageCallback { 
                 param($p) 
@@ -1315,16 +1315,16 @@ $btnRun.Add_Click({
                 $item | Add-Member -MemberType NoteProperty -Name "_BannerName" -Value $banner.Name -Force
             }
             $allHistory += $items
-            Log "  > Found $($items.Count) items." "Gray"
+            WriteGUI-Log "  > Found $($items.Count) items." "Gray"
         }
         
         # Save to memory
-        Log "  > Found $($allHistory.Count) items from server." "Gray"
+        WriteGUI-Log "  > Found $($allHistory.Count) items from server." "Gray"
         
         # ==========================================
         # [UPDATE] SMART MERGE SYSTEM
         # ==========================================
-        Log "Synchronizing with Infinity Database..." "Cyan"
+        WriteGUI-Log "Synchronizing with Infinity Database..." "Cyan"
         
         # เรียกใช้ฟังก์ชันที่เราเพิ่งสร้าง
         # มันจะคืนค่า "ข้อมูลทั้งหมด (เก่า+ใหม่)" กลับมา
@@ -1333,7 +1333,7 @@ $btnRun.Add_Click({
         # อัปเดตตัวแปรหลักของโปรแกรม ให้ใช้ข้อมูลชุดใหญ่ (Infinity) แทนข้อมูลชุดเล็ก
         $script:LastFetchedData = $mergedHistory
         
-        Log "Database Synced! Total History: $($script:LastFetchedData.Count) records." "Lime"
+        WriteGUI-Log "Database Synced! Total History: $($script:LastFetchedData.Count) records." "Lime"
         
          # [NEW] AUDIO LOGIC: เช็คว่าในก้อนใหม่ ($allHistory) มี 5 ดาวไหม?
         $hasGold = $false
@@ -1342,7 +1342,7 @@ $btnRun.Add_Click({
         }
 
         if ($hasGold) {
-            Log "GOLDEN GLOW DETECTED!" "Gold"
+            WriteGUI-Log "GOLDEN GLOW DETECTED!" "Gold"
             Play-Sound "legendary"  # เสียงวิ้งๆ ทองแตก
         } else {
             Play-Sound "success"    # เสียงติ๊ดธรรมดา
@@ -1350,7 +1350,7 @@ $btnRun.Add_Click({
         
         # --- CALCULATION ---
         if ($script:StopRequested) { throw "STOPPED" }
-        Log "`nCalculating Pity..." "Green"
+        WriteGUI-Log "`nCalculating Pity..." "Green"
         
         $sortedItems = $allHistory | Sort-Object { [decimal]$_.id }
         $pityTrackers = @{}
@@ -1460,9 +1460,9 @@ $btnRun.Add_Click({
         
         # === DISCORD ===
         if ($SendDiscord) {
-            Log "`nSending report to Discord..." "Magenta"
+            WriteGUI-Log "`nSending report to Discord..." "Magenta"
             $discordMsg = Send-DiscordReport -HistoryData $highRankHistory -PityTrackers $pityTrackers -Config $conf -ShowNoMode $ShowNo
-            Log "Discord: $discordMsg" "Lime"
+            WriteGUI-Log "Discord: $discordMsg" "Lime"
         }
         
         if ($allHistory.Count -gt 0) {
@@ -1480,7 +1480,7 @@ $btnRun.Add_Click({
         
         # 1. เช็คว่า User ตั้งค่า Path ไว้ไหม และ Path นั้นมีอยู่จริงไหม
         if (-not [string]::IsNullOrWhiteSpace($bkPath) -and (Test-Path $bkPath)) {
-            Log "Performing Auto-Backup..." "Magenta"
+            WriteGUI-Log "Performing Auto-Backup..." "Magenta"
             
             try {
                 # สร้างชื่อไฟล์ตามวันที่ (เช่น Genshin_Backup_20240118.json)
@@ -1492,9 +1492,9 @@ $btnRun.Add_Click({
                 $jsonStr = $script:LastFetchedData | ConvertTo-Json -Depth 5 -Compress
                 [System.IO.File]::WriteAllText($bkFull, $jsonStr, [System.Text.Encoding]::UTF8)
                 
-                Log "Backup saved to: $bkFileName" "Lime"
+                WriteGUI-Log "Backup saved to: $bkFileName" "Lime"
             } catch {
-                Log "Auto-Backup Failed: $($_.Exception.Message)" "Red"
+                WriteGUI-Log "Auto-Backup Failed: $($_.Exception.Message)" "Red"
             }
         }
         # ==========================================
@@ -1502,9 +1502,9 @@ $btnRun.Add_Click({
         
     } catch {
         if ($_.Exception.Message -match "STOPPED") {
-             Log "`n!!! PROCESS STOPPED BY USER !!!" "Red"
+             WriteGUI-Log "`n!!! PROCESS STOPPED BY USER !!!" "Red"
         } else {
-             Log "ERROR: $($_.Exception.Message)" "Red"
+             WriteGUI-Log "ERROR: $($_.Exception.Message)" "Red"
              [System.Windows.Forms.MessageBox]::Show($_.Exception.Message, "Error", 0, 16)
         }
     } finally {
@@ -1517,7 +1517,7 @@ $btnRun.Add_Click({
     }
 })
 $btnSaveImg.Add_Click({
-    Log "User clicked [Save Image] button." "Magenta"
+    WriteGUI-Log "User clicked [Save Image] button." "Magenta"
     
     if (-not $chart.Visible) { 
         [System.Windows.Forms.MessageBox]::Show("No graph to save!", "Error", 0, 16)
@@ -1683,7 +1683,7 @@ $btnSaveImg.Add_Click({
                             $format = [System.Drawing.Imaging.ImageFormat]::Jpeg 
                         }
                         $previewBmp.Save($sfd.FileName, $format)
-                        Log "Image saved to: $($sfd.FileName)" "Lime"
+                        WriteGUI-Log "Image saved to: $($sfd.FileName)" "Lime"
                         [System.Windows.Forms.MessageBox]::Show("Saved!", "Success", 0, 64)
                         
                         $state.Action = "Save" # อัปเดต state
@@ -1715,14 +1715,14 @@ $btnSaveImg.Add_Click({
                 $loop = $false # จบงาน
             } elseif ($state.Action -eq "Back") {
                 # วนลูปต่อ (กลับไปหน้า Input พร้อมค่า $memName เดิม)
-                Log "User requested Back to Edit." "DimGray"
+                WriteGUI-Log "User requested Back to Edit." "DimGray"
             } else {
                 # กดปิดหน้าต่าง Preview (กากบาท)
                 $loop = $false
             }
 
         } catch {
-            Log "Error: $($_.Exception.Message)" "Red"
+            WriteGUI-Log "Error: $($_.Exception.Message)" "Red"
             $loop = $false
         }
     } # End Loop
@@ -1751,7 +1751,7 @@ $script:cmbBanner.Add_SelectedIndexChanged({
     Reset-LogWindow
     $chart.Series.Clear()
     
-    Log "Switching view to: $($script:cmbBanner.SelectedItem)" "DimGray"
+    WriteGUI-Log "Switching view to: $($script:cmbBanner.SelectedItem)" "DimGray"
     
     # ฟังก์ชันนี้ใช้เวลาคำนวณนิดนึง...
     Update-FilteredView 
@@ -1763,7 +1763,7 @@ $script:cmbBanner.Add_SelectedIndexChanged({
 #  EVENT: MENU FORECAST CLICK
 # ==========================================
 $script:itemForecast.Add_Click({
-    Log "Action: Open Forecast Simulator Window" "Cyan"
+    WriteGUI-Log "Action: Open Forecast Simulator Window" "Cyan"
 
     # 1. AUTO-DETECT DATA
     $currentPity = 0; $isGuaranteed = $false; $mode = "Character (90)"; $hardCap = 90; $softCap = 74
@@ -1779,7 +1779,7 @@ $script:itemForecast.Add_Click({
         }
         $lastType = $script:LastFetchedData[0].gacha_type
         if ($lastType -match "^(302|12|3|5)$") { $mode = "Weapon/LC (80)"; $hardCap = 80; $softCap = 64 }
-        Log "[Forecast] Auto-Detected: Pity=$currentPity, Guaranteed=$isGuaranteed, Mode=$mode" "Gray"
+        WriteGUI-Log "[Forecast] Auto-Detected: Pity=$currentPity, Guaranteed=$isGuaranteed, Mode=$mode" "Gray"
     }
 
     # 2. UI SETUP
@@ -1877,8 +1877,8 @@ $script:itemForecast.Add_Click({
     # --- [NEW] STOP BUTTON LOGIC ---
     $btnStopSim.Add_Click({
         $script:SimStopRequested = $true
-        Log "----------------------------------------" "DimGray"
-        Log "[Action] Simulation CANCELLED by User!" "Red"
+        WriteGUI-Log "----------------------------------------" "DimGray"
+        WriteGUI-Log "[Action] Simulation CANCELLED by User!" "Red"
     })
 
     # [NEW] Check Global Prefill (รับค่าจาก Planner)
@@ -1898,8 +1898,8 @@ $script:itemForecast.Add_Click({
         $btnSim.Enabled = $false; $btnStopSim.Enabled = $true # เปิดปุ่ม Stop
         $script:SimStopRequested = $false # Reset Flag
         
-        Log "----------------------------------------" "DimGray"
-        Log "[Action] Initializing Simulation ($budget Pulls)..." "Cyan"
+        WriteGUI-Log "----------------------------------------" "DimGray"
+        WriteGUI-Log "[Action] Initializing Simulation ($budget Pulls)..." "Cyan"
         [System.Windows.Forms.Application]::DoEvents()
         
         # Call Engine (Pass ref Flag)
@@ -1914,13 +1914,13 @@ $script:itemForecast.Add_Click({
                                           param($r)
                                           $pct=($r/100000)*100
                                           $btnSim.Text="Running... $pct%"
-                                          Log "[Forecast] Simulating: $pct%" "Gray"
+                                          WriteGUI-Log "[Forecast] Simulating: $pct%" "Gray"
                                           [System.Windows.Forms.Application]::DoEvents()
                                       }
         
         # Check if Cancelled
         if ($res.IsCancelled) {
-             Log "[Forecast] Process Aborted." "Red"
+             WriteGUI-Log "[Forecast] Process Aborted." "Red"
              $lblChance.Text = "Cancelled"
              $lblCost.Text = "-"
              $pbFill.Width = 0
@@ -1936,7 +1936,7 @@ $script:itemForecast.Add_Click({
         $lblChance.Text = "Success Chance: $winRate%"
         $lblCost.Text = "Avg. Cost: ~$('{0:N0}' -f $res.AvgCost) pulls"
         
-        Log "[Forecast] COMPLETE! WinRate=$winRate%, AvgCost=$('{0:N0}' -f $res.AvgCost)" "Lime"
+        WriteGUI-Log "[Forecast] COMPLETE! WinRate=$winRate%, AvgCost=$('{0:N0}' -f $res.AvgCost)" "Lime"
         
         if ($res.WinRate -ge 80) { $lblChance.ForeColor="Lime"; $pbFill.BackColor="Lime" }
         elseif ($res.WinRate -ge 50) { $lblChance.ForeColor="Gold"; $pbFill.BackColor="Gold" }
@@ -2039,13 +2039,13 @@ $btnSmartSnap.Add_Click({
                 # ตัวถัดไป (ซึ่งใหม่กว่ามัน 1 step) คือจุดเริ่มนับ 1
                 $snapItem = $allDesc[$i - 1]
                 $dtpStart.Value = [DateTime]$snapItem.time
-                Log "Snapped Start Date to: $($snapItem.time)" "Lime"
+                WriteGUI-Log "Snapped Start Date to: $($snapItem.time)" "Lime"
                 $found = $true
             }
             break
         }
     }
-    if (-not $found) { Log "Could not find a reset point in the past." "Red" }
+    if (-not $found) { WriteGUI-Log "Could not find a reset point in the past." "Red" }
 })
 
 # ==========================================
@@ -2054,7 +2054,7 @@ $btnSmartSnap.Add_Click({
 $btnDiscordScope.Add_Click({
     if ($null -eq $script:LastFetchedData) { return }
 
-    Log "Preparing Discord Report..." "Magenta"
+    WriteGUI-Log "Preparing Discord Report..." "Magenta"
 
     # 1. กำหนด Scope วันที่
     $startDate = [DateTime]::MinValue
@@ -2074,9 +2074,9 @@ $btnDiscordScope.Add_Click({
     if ($script:cmbBanner.SelectedIndex -gt 0) {
         $selIndex = $script:cmbBanner.SelectedIndex - 1
         $targetBannerCode = $conf.Banners[$selIndex].Code
-        Log "Filter Mode: Specific Banner ($($conf.Banners[$selIndex].Name))" "Gray"
+        WriteGUI-Log "Filter Mode: Specific Banner ($($conf.Banners[$selIndex].Name))" "Gray"
     } else {
-        Log "Filter Mode: All Banners" "Gray"
+        WriteGUI-Log "Filter Mode: All Banners" "Gray"
     }
 
     # 3. คำนวณ Pity (ต้องคำนวณจากทั้งหมดเสมอ เพื่อให้เลข Pity ถูกต้อง)
@@ -2153,9 +2153,9 @@ $btnDiscordScope.Add_Click({
     # 5. ส่ง
     if ($finalList.Count -gt 0) {
         $res = Send-DiscordReport -HistoryData $finalList -PityTrackers $pityTrackers -Config $conf -ShowNoMode $chkShowNo.Checked
-        Log "Discord Report Sent ($logSort): $res" "Lime"
+        WriteGUI-Log "Discord Report Sent ($logSort): $res" "Lime"
     } else {
-        Log "No 5-Star data found in selected scope." "Orange"
+        WriteGUI-Log "No 5-Star data found in selected scope." "Orange"
         [System.Windows.Forms.MessageBox]::Show("No 5-Star records found matching your Filter & Banner selection.", "Report Empty", 0, 48)
     }
 })
@@ -2163,7 +2163,7 @@ $btnDiscordScope.Add_Click({
 #  EVENT: TABLE VIEWER (F9)
 # ==========================================
 $script:itemTable.Add_Click({
-    Log "Action: Open Table Viewer" "Cyan"
+    WriteGUI-Log "Action: Open Table Viewer" "Cyan"
 
     # 1. เช็คข้อมูล (เอาเฉพาะที่ผ่าน Filter หน้าหลักมาแล้ว)
     $dataSource = $script:FilteredData
@@ -2260,7 +2260,7 @@ $script:itemTable.Add_Click({
 #  EVENT: JSON EXPORT
 # ==========================================
 $script:itemJson.Add_Click({
-    Log "Action: Export Raw JSON" "Cyan"
+    WriteGUI-Log "Action: Export Raw JSON" "Cyan"
 
     # เอาข้อมูลดิบทั้งหมด (ไม่สน Filter)
     $dataToExport = $script:LastFetchedData
@@ -2282,10 +2282,10 @@ $script:itemJson.Add_Click({
             $jsonStr = $dataToExport | ConvertTo-Json -Depth 5 -Compress
             [System.IO.File]::WriteAllText($sfd.FileName, $jsonStr, [System.Text.Encoding]::UTF8)
             
-            Log "Saved JSON to: $($sfd.FileName)" "Lime"
+            WriteGUI-Log "Saved JSON to: $($sfd.FileName)" "Lime"
             [System.Windows.Forms.MessageBox]::Show("Export Successful!", "Success", 0, 64)
         } catch {
-            Log "Export Error: $($_.Exception.Message)" "Red"
+            WriteGUI-Log "Export Error: $($_.Exception.Message)" "Red"
             [System.Windows.Forms.MessageBox]::Show("Error saving file: $($_.Exception.Message)", "Error", 0, 16)
         }
     }
@@ -2295,7 +2295,7 @@ $script:itemJson.Add_Click({
 #  EVENT: SAVINGS CALCULATOR (Flexible Version)
 # ==========================================
 $script:itemPlanner.Add_Click({
-    Log "Action: Open Savings Calculator" "Cyan"
+    WriteGUI-Log "Action: Open Savings Calculator" "Cyan"
 
     # 1. UI SETUP
     $fPlan = New-Object System.Windows.Forms.Form
@@ -2609,7 +2609,7 @@ switch ($targetGame) {
 
 # 5. โหลดรายชื่อตู้ของเกมนั้นมารอไว้เลย
 Update-BannerList
-Log "Welcome back! Selected Game: $targetGame" "Cyan"
+WriteGUI-Log "Welcome back! Selected Game: $targetGame" "Cyan"
 
 # 6. Apply Settings อื่นๆ
 $chkSendDiscord.Checked = $script:AppConfig.AutoSendDiscord
@@ -2626,7 +2626,7 @@ try {
 }
 
 # [ADD THIS] 7. โหลดข้อมูล Local History ของเกมล่าสุดทันที!
-Log "Welcome back! Selected Game: $targetGame" "Cyan"
+WriteGUI-Log "Welcome back! Selected Game: $targetGame" "Cyan"
 Load-LocalHistory -GameName $script:CurrentGame
 
 # ============================

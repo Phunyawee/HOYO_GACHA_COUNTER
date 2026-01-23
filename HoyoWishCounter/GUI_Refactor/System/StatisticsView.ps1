@@ -48,14 +48,14 @@ function Update-FilteredView {
             # GENSHIN SPECIAL: 301 ต้องรวม 400
             if ($script:CurrentGame -eq "Genshin" -and $targetCode -eq "301") {
                 $tempData = $tempData | Where-Object { $_.gacha_type -eq "301" -or $_.gacha_type -eq "400" }
-                Log "View Scope: Character Event Only" "Gray"
+                WriteGUI-Log "View Scope: Character Event Only" "Gray"
             } 
             else {
                 # ZZZ/HSR/Weapon
                 $tempData = $tempData | Where-Object { 
                     "$($_.gacha_type)" -eq "$targetCode"
                 }
-                Log "View Scope: $selectedBanner Only" "Gray"
+                WriteGUI-Log "View Scope: $selectedBanner Only" "Gray"
             }
 
             # [FIXED] ย้ายมาไว้ตรงนี้! (ทำงานกับทุกตู้ ไม่ว่าจะ Genshin Char หรือตู้ไหนๆ)
