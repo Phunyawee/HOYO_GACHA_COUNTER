@@ -57,8 +57,8 @@ function Log-Status {
     }
 
     # 2. ส่งเข้าหน้าจอ GUI
-    if (Get-Command "Log" -ErrorAction SilentlyContinue) {
-        Log $msg $color
+    if (Get-Command "WriteGUI-Log" -ErrorAction SilentlyContinue) {
+        WriteGUI-Log $msg $color
     } else {
         # 3. Fallback
         try {
