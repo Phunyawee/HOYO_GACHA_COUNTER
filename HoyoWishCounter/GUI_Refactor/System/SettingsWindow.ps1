@@ -22,13 +22,28 @@ function Show-SettingsWindow {
     $tGen = New-Tab "General"
     
     $grpStorage = New-Object System.Windows.Forms.GroupBox; $grpStorage.Text = " Storage "; $grpStorage.Location = "15, 15"; $grpStorage.Size = "505, 160"; $grpStorage.ForeColor = "Silver"; $tGen.Controls.Add($grpStorage)
-    $lblBk = New-Object System.Windows.Forms.Label; $lblBk.Text = "Auto-Backup Folder:"; $lblBk.Location = "20, 30"; $lblBk.AutoSize = $true; $lblBk.ForeColor = "White"; $grpStorage.Controls.Add($lblBk)
-    $txtBackup = New-Object System.Windows.Forms.TextBox; $txtBackup.Location = "20, 55"; $txtBackup.Width = 380; $txtBackup.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtBackup.ForeColor = "Cyan"; $txtBackup.BorderStyle = "FixedSingle"; $txtBackup.Text = $conf.BackupPath; $grpStorage.Controls.Add($txtBackup)
-    $btnBrowseBk = New-Object System.Windows.Forms.Button; $btnBrowseBk.Text = "..."; $btnBrowseBk.Location = "410, 54"; $btnBrowseBk.Size = "75, 25"; Apply-ButtonStyle -Button $btnBrowseBk -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
-    $btnBrowseBk.Add_Click({ $fbd = New-Object System.Windows.Forms.FolderBrowserDialog; if ($fbd.ShowDialog() -eq "OK") { $txtBackup.Text = $fbd.SelectedPath } }); $grpStorage.Controls.Add($btnBrowseBk)
     
-    $lblCsv = New-Object System.Windows.Forms.Label; $lblCsv.Text = "CSV Separator:"; $lblCsv.Location = "20, 100"; $lblCsv.AutoSize = $true; $lblCsv.ForeColor = "White"; $grpStorage.Controls.Add($lblCsv)
-    $cmbCsvSep = New-Object System.Windows.Forms.ComboBox; $cmbCsvSep.Location = "20, 125"; $cmbCsvSep.Width = 200; $cmbCsvSep.DropDownStyle = "DropDownList"; $cmbCsvSep.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $cmbCsvSep.ForeColor = "White"; $cmbCsvSep.FlatStyle = "Flat"
+    # [NEW] Checkbox เปิด/ปิด Backup (เพิ่มตรงนี้)
+    $chkEnableBk = New-Object System.Windows.Forms.CheckBox; $chkEnableBk.Text = "Enable Auto-Backup System"; $chkEnableBk.Location = "20, 25"; $chkEnableBk.AutoSize = $true; $chkEnableBk.ForeColor = "LimeGreen"
+    # Logic: ถ้าไม่มีคีย์นี้ใน Config ให้ถือว่าเป็น True ไว้ก่อน, ถ้ามีก็เอาตามค่าจริง
+    $chkEnableBk.Checked = if ($conf.PSObject.Properties["EnableAutoBackup"] -and $conf.EnableAutoBackup -eq $false) { $false } else { $true }
+    $chkEnableBk.Add_CheckedChanged({ $txtBackup.Enabled = $chkEnableBk.Checked; $btnBrowseBk.Enabled = $chkEnableBk.Checked }) # กดปิดแล้วช่องสีเทา
+    $grpStorage.Controls.Add($chkEnableBk)
+
+    # ขยับตำแหน่งของเดิมลงมา (Y จาก 30->55, 55->80)
+    $lblBk = New-Object System.Windows.Forms.Label; $lblBk.Text = "Backup Folder Path:"; $lblBk.Location = "20, 55"; $lblBk.AutoSize = $true; $lblBk.ForeColor = "White"; $grpStorage.Controls.Add($lblBk)
+    $txtBackup = New-Object System.Windows.Forms.TextBox; $txtBackup.Location = "20, 80"; $txtBackup.Width = 380; $txtBackup.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtBackup.ForeColor = "Cyan"; $txtBackup.BorderStyle = "FixedSingle"; $txtBackup.Text = $conf.BackupPath; $grpStorage.Controls.Add($txtBackup)
+    # สั่ง Disable ถ้า Checkbox ไม่ได้ติ๊ก
+    $txtBackup.Enabled = $chkEnableBk.Checked 
+
+    $btnBrowseBk = New-Object System.Windows.Forms.Button; $btnBrowseBk.Text = "..."; $btnBrowseBk.Location = "410, 79"; $btnBrowseBk.Size = "75, 25"; Apply-ButtonStyle -Button $btnBrowseBk -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+    $btnBrowseBk.Add_Click({ $fbd = New-Object System.Windows.Forms.FolderBrowserDialog; if ($fbd.ShowDialog() -eq "OK") { $txtBackup.Text = $fbd.SelectedPath } })
+    $btnBrowseBk.Enabled = $chkEnableBk.Checked 
+    $grpStorage.Controls.Add($btnBrowseBk)
+    
+    # CSV Separator ขยับลงนิดหน่อย (Y=115, 135)
+    $lblCsv = New-Object System.Windows.Forms.Label; $lblCsv.Text = "CSV Separator:"; $lblCsv.Location = "20, 115"; $lblCsv.AutoSize = $true; $lblCsv.ForeColor = "White"; $grpStorage.Controls.Add($lblCsv)
+    $cmbCsvSep = New-Object System.Windows.Forms.ComboBox; $cmbCsvSep.Location = "130, 112"; $cmbCsvSep.Width = 100; $cmbCsvSep.DropDownStyle = "DropDownList"; $cmbCsvSep.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $cmbCsvSep.ForeColor = "White"; $cmbCsvSep.FlatStyle = "Flat"
     [void]$cmbCsvSep.Items.Add("Comma (,)"); [void]$cmbCsvSep.Items.Add("Semicolon (;)")
     if ($conf.CsvSeparator -eq ";") { $cmbCsvSep.SelectedIndex = 1 } else { $cmbCsvSep.SelectedIndex = 0 }
     $grpStorage.Controls.Add($cmbCsvSep)
@@ -67,9 +82,36 @@ function Show-SettingsWindow {
 
     # ================= TAB 3: INTEGRATIONS =================
     $tDis = New-Tab "Integrations"
-    $lblUrl = New-Object System.Windows.Forms.Label; $lblUrl.Text = "Webhook URL:"; $lblUrl.Location="20,20"; $lblUrl.AutoSize=$true; $tDis.Controls.Add($lblUrl)
-    $txtWebhook = New-Object System.Windows.Forms.TextBox; $txtWebhook.Location="20,45"; $txtWebhook.Width=400; $txtWebhook.Text=$conf.WebhookUrl; $tDis.Controls.Add($txtWebhook)
-    $chkAutoSend = New-Object System.Windows.Forms.CheckBox; $chkAutoSend.Text="Auto-Send Report"; $chkAutoSend.Location="20,80"; $chkAutoSend.AutoSize=$true; $chkAutoSend.Checked=$conf.AutoSendDiscord; $tDis.Controls.Add($chkAutoSend)
+    
+    # --- Discord Section ---
+    $grpDisc = New-Object System.Windows.Forms.GroupBox; $grpDisc.Text = " Discord Webhook "; $grpDisc.Location = "15, 15"; $grpDisc.Size = "505, 120"; $grpDisc.ForeColor = "Silver"; $tDis.Controls.Add($grpDisc)
+    
+    $lblUrl = New-Object System.Windows.Forms.Label; $lblUrl.Text = "Webhook URL:"; $lblUrl.Location = "20, 25"; $lblUrl.AutoSize = $true; $lblUrl.ForeColor = "White"; $grpDisc.Controls.Add($lblUrl)
+    $txtWebhook = New-Object System.Windows.Forms.TextBox; $txtWebhook.Location = "20, 50"; $txtWebhook.Width = 460; $txtWebhook.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtWebhook.ForeColor = "Cyan"; $txtWebhook.BorderStyle = "FixedSingle"; $txtWebhook.Text = $conf.WebhookUrl; $grpDisc.Controls.Add($txtWebhook)
+    
+    $chkAutoSend = New-Object System.Windows.Forms.CheckBox; $chkAutoSend.Text = "Auto-Send Report to Discord"; $chkAutoSend.Location = "20, 85"; $chkAutoSend.AutoSize = $true; $chkAutoSend.ForeColor = "White"; $chkAutoSend.Checked = $conf.AutoSendDiscord; $grpDisc.Controls.Add($chkAutoSend)
+
+    # --- [UPDATE] Email Section ---
+    $grpMail = New-Object System.Windows.Forms.GroupBox; $grpMail.Text = " Email Notifications "; $grpMail.Location = "15, 150"; $grpMail.Size = "505, 120"; $grpMail.ForeColor = "Silver"; $tDis.Controls.Add($grpMail)
+
+    $lblMail = New-Object System.Windows.Forms.Label; $lblMail.Text = "Recipient Email (To):"; $lblMail.Location = "20, 30"; $lblMail.AutoSize = $true; $lblMail.ForeColor = "White"; $grpMail.Controls.Add($lblMail)
+    
+    $txtEmail = New-Object System.Windows.Forms.TextBox
+    $txtEmail.Location = "20, 55"; $txtEmail.Width = 300
+    $txtEmail.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtEmail.ForeColor = "Yellow"; $txtEmail.BorderStyle = "FixedSingle"
+    if ($conf.PSObject.Properties["NotificationEmail"]) { $txtEmail.Text = $conf.NotificationEmail }
+    $grpMail.Controls.Add($txtEmail)
+
+    # [NEW] Checkbox Auto-Send Email
+    $chkAutoEmail = New-Object System.Windows.Forms.CheckBox
+    $chkAutoEmail.Text = "Auto-Send Report to Email"
+    $chkAutoEmail.Location = "20, 85"
+    $chkAutoEmail.AutoSize = $true
+    $chkAutoEmail.ForeColor = "White"
+    # Logic เช็คค่าเดิม (ถ้าไม่มี ให้ Default เป็น False ไว้ก่อนเพื่อความปลอดภัย)
+    if ($conf.PSObject.Properties["AutoSendEmail"]) { $chkAutoEmail.Checked = $conf.AutoSendEmail } else { $chkAutoEmail.Checked = $false }
+    $grpMail.Controls.Add($chkAutoEmail)
+
 
     # ================= TAB 4: DATA & MAINTENANCE =================
     $tData = New-Tab "Data & Storage"; $tData.AutoScroll = $true
@@ -308,6 +350,28 @@ function Show-SettingsWindow {
     # ================= SAVE & EXIT =================
     $btnSave = New-Object System.Windows.Forms.Button; $btnSave.Text = "APPLY SETTINGS"; $btnSave.Location = "180, 500"; $btnSave.Size = "180, 40"; Apply-ButtonStyle -Button $btnSave -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontBold
     $btnSave.Add_Click({
+        # [NEW] จัดการค่าใหม่ (ใช้ Add-Member เผื่อคีย์เก่ายังไม่มี)
+        if (-not $conf.PSObject.Properties["EnableAutoBackup"]) {
+            $conf | Add-Member -NotePropertyName "EnableAutoBackup" -NotePropertyValue $chkEnableBk.Checked
+        } else {
+            $conf.EnableAutoBackup = $chkEnableBk.Checked
+        }
+
+         # 2. [NEW] จัดการ Email (เพิ่มตรงนี้)
+        if (-not $conf.PSObject.Properties["NotificationEmail"]) { 
+            $conf | Add-Member -NotePropertyName "NotificationEmail" -NotePropertyValue $txtEmail.Text 
+        } else { 
+            $conf.NotificationEmail = $txtEmail.Text 
+        }
+
+        # 3. [NEW] Auto-Send Email (ตัวใหม่ล่าสุด)
+        if (-not $conf.PSObject.Properties["AutoSendEmail"]) { 
+            $conf | Add-Member -NotePropertyName "AutoSendEmail" -NotePropertyValue $chkAutoEmail.Checked 
+        } else { 
+            $conf.AutoSendEmail = $chkAutoEmail.Checked 
+        }
+
+
         $conf.DebugConsole=$chkDebug.Checked; $conf.Opacity=($trackOp.Value/100); $conf.BackupPath=$txtBackup.Text; $conf.WebhookUrl=$txtWebhook.Text; $conf.AutoSendDiscord=$chkAutoSend.Checked; $conf.EnableSound=$chkSound.Checked; $conf.EnableFileLog=$chkFileLog.Checked; $conf.AccentColor=$script:TempHexColor; $conf.CsvSeparator=if($cmbCsvSep.SelectedIndex-eq 1){";"}else{","}
         
         # [FIX] บันทึกไฟล์ที่ Path ใหม่ ($AppRoot\Settings)
@@ -323,5 +387,55 @@ function Show-SettingsWindow {
     $btnReset=New-Object System.Windows.Forms.Button; $btnReset.Text="Defaults"; $btnReset.Location="20,505"; $btnReset.Size="80,30"; $btnReset.FlatStyle="Flat"; $btnReset.ForeColor="Gray"; $btnReset.FlatAppearance.BorderSize=0
     $btnReset.Add_Click({if([System.Windows.Forms.MessageBox]::Show("Reset?","Confirm",4)-eq"Yes"){$chkDebug.Checked=$false;$trackOp.Value=100;$cmbPresets.SelectedIndex=0; [System.Windows.Forms.MessageBox]::Show("Reset done. Click APPLY.")}}); $fSet.Controls.Add($btnReset)
 
+
+    # ==================================================
+    # [FIX] AUTO REFRESH JSON WHEN SWITCHING TABS
+    # ==================================================
+    $tabs.Add_SelectedIndexChanged({
+        # เช็คว่า Tab ที่เลือกคือ "Advanced" หรือไม่
+        if ($tabs.SelectedTab.Text -match "Advanced") {
+            
+            # 1. ดึงค่าปัจจุบันจาก Tab General (UI -> Object)
+            $conf.BackupPath = $txtBackup.Text
+            if (-not $conf.PSObject.Properties["EnableAutoBackup"]) { 
+                $conf | Add-Member -NotePropertyName "EnableAutoBackup" -NotePropertyValue $chkEnableBk.Checked 
+            } else { 
+                $conf.EnableAutoBackup = $chkEnableBk.Checked 
+            }
+            $conf.CsvSeparator = if ($cmbCsvSep.SelectedIndex -eq 1) { ";" } else { "," }
+            $conf.DebugConsole = $chkDebug.Checked
+            $conf.EnableFileLog = $chkFileLog.Checked
+            $conf.EnableSound = $chkSound.Checked
+
+            # 2. ดึงค่าจาก Tab Appearance
+            # (สีเอาจาก TempHexColor ล่าสุด, Opacity เอาจาก TrackBar)
+            $conf.AccentColor = $script:TempHexColor
+            $conf.Opacity = ($trackOp.Value / 100)
+
+            # 3. ดึงค่าจาก Tab Integrations (Discord + Email ใหม่)
+            $conf.WebhookUrl = $txtWebhook.Text
+            $conf.AutoSendDiscord = $chkAutoSend.Checked
+            
+            # จัดการ Email
+            if (-not $conf.PSObject.Properties["NotificationEmail"]) { 
+                $conf | Add-Member -NotePropertyName "NotificationEmail" -NotePropertyValue $txtEmail.Text 
+            } else { 
+                $conf.NotificationEmail = $txtEmail.Text 
+            }
+            # จัดการ AutoSendEmail
+            if (-not $conf.PSObject.Properties["AutoSendEmail"]) { 
+                $conf | Add-Member -NotePropertyName "AutoSendEmail" -NotePropertyValue $chkAutoEmail.Checked 
+            } else { 
+                $conf.AutoSendEmail = $chkAutoEmail.Checked 
+            }
+
+            # 4. [สำคัญ] เขียน JSON ใหม่ลงกล่องข้อความ
+            $txtJson.Text = $conf | ConvertTo-Json -Depth 5
+            
+            # แอบบอก User หน่อยว่ารีเฟรชแล้ว (Optional)
+            # Write-Host "JSON View Refreshed form UI inputs."
+        }
+    })
+    
     $fSet.ShowDialog()
 }
