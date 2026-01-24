@@ -1,26 +1,70 @@
+# File: System/LogCreate.ps1
+
+# คำนวณ Path ทิ้งไว้เลยครั้งเดียว
+if ($script:AppRoot) { 
+    $Global:LogRoot = Join-Path $script:AppRoot "Logs" 
+} else { 
+    $Global:LogRoot = Join-Path $PSScriptRoot "..\Logs" 
+}
+
+# สร้างโฟลเดอร์รอไว้เลย
+if (-not (Test-Path $Global:LogRoot)) { New-Item -ItemType Directory -Path $Global:LogRoot -Force | Out-Null }
+
 function Write-LogFile {
-    param($Message, $Level="INFO")
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Message,
+        
+        [string]$Level="INFO"
+    )
+
+    # --- Config ความกว้างของ Label ---
+    # ตั้งเผื่อไว้สำหรับคำยาวสุด เช่น "USER_ACTION" (11 ตัว) -> ตั้งเผื่อเป็น 12 หรือ 14
+    $MaxLabelWidth = $Level.Length
 
     # 1. เช็ค Config
-    if ($script:AppConfig -and (-not $script:AppConfig.EnableFileLog)) { return }
+    if ($script:AppConfig -and (-not $script:AppConfig.EnableFileLog) -and ($Level -notin @("CRASH", "FATAL"))) { return }
 
-    # 2. กำหนดโฟลเดอร์ Logs (แยกเป็นสัดส่วน)
-    $RootBase = if ($script:AppRoot) { $script:AppRoot } else { (Join-Path $PSScriptRoot "..") }
-    $LogDir = Join-Path $RootBase "logs"
-    if (-not (Test-Path $logDir)) {
-        New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+    # 2. เตรียม Path
+    if (-not $Global:LogRoot) { $Global:LogRoot = "$PSScriptRoot\Logs" }
+    if (-not (Test-Path -Path $Global:LogRoot)) { New-Item -ItemType Directory -Path $Global:LogRoot -Force | Out-Null }
+    $dateStr = Get-Date -Format "yyyy-MM-dd"
+    $logFile = Join-Path $Global:LogRoot "debug_$dateStr.log"
+
+    # 3. Format ข้อความ (Logic จัดความสวยงาม)
+    $upperLevel = $Level.ToUpper()
+    
+    # ถ้าข้อความยาวกว่ากรอบที่ตั้งไว้ ให้ตัดคำ (หรือจะเลือกปล่อยยาวก็ได้ แต่แบบนี้ปีกกาจะตรงกว่า)
+    if ($upperLevel.Length -gt $MaxLabelWidth) {
+        $cleanLevel = $upperLevel.Substring(0, $MaxLabelWidth)
+    } else {
+        # คำนวณ Padding เพื่อจัดกึ่งกลาง (Center Alignment)
+        $padTotal = $MaxLabelWidth - $upperLevel.Length
+        $padLeft  = [math]::Floor($padTotal / 2) # ปัดเศษลง
+        $padRight = $padTotal - $padLeft
+
+        # สร้าง string ที่มีช่องว่างซ้ายขวา
+        $cleanLevel = (" " * $padLeft) + $upperLevel + (" " * $padRight)
     }
 
-    # 3. กำหนดชื่อไฟล์ตาม "วันที่ปัจจุบัน" (Daily Rotation)
-    $dateStr = Get-Date -Format "yyyy-MM-dd"
-    $logPath = Join-Path $logDir "debug_$dateStr.log"
-
-    # 4. Format ข้อความ
     $timestamp = Get-Date -Format "HH:mm:ss"
-    $logLine = "[$timestamp] [$Level] $Message"
+    
+    # ผลลัพธ์ปีกกาจะตรงกันเป๊ะ ไม่ว่าคำข้างในจะสั้นหรือยาว (ตราบที่ไม่เกิน MaxWidth)
+    $logLine = "[$timestamp] [$cleanLevel] $Message"
 
-    # 5. เขียนไฟล์
-    try {
-        Add-Content -Path $logPath -Value $logLine -ErrorAction SilentlyContinue
-    } catch {}
+    # 4. เขียนไฟล์
+    $retryCount = 0
+    while ($retryCount -lt 3) {
+        try {
+            Add-Content -Path $logFile -Value $logLine -Encoding UTF8 -ErrorAction Stop
+            break
+        } catch {
+            Start-Sleep -Milliseconds 50; $retryCount++
+        }
+    }
+}
+
+# แจ้ง Boot Trace ว่า Log หลักพร้อมแล้ว
+if (Get-Command "Write-BootTrace" -ErrorAction SilentlyContinue) {
+    Write-BootTrace "Main Logger Initialized (Restriction Removed)."
 }

@@ -20,6 +20,8 @@ Thumbs.db
 output/
 Backups/
 UserData/
+Logs/
+boot_trace.*
 data_*
 temp_data_*
 ZZZ_GachaScriptALL_Debug.ps1

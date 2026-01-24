@@ -13,8 +13,8 @@ A simple, safe, and lightweight tool to extract Gacha Links and calculate Pity H
 
 ## ✨ Universal Version Features (Recommended)
 - 🎮 **3-in-1 Support:** One app works for all 3 games.
+- 🏗️ **New Architecture:** Completely refactored codebase (v7.0+) for better stability.
 - 🖥️ **Modern GUI:** User-friendly interface (Windows Forms). No more command line typing.
-- 🔍 **Auto-Detect:** Automatically finds the game cache file for you.
 - 📊 **Smart Tracker:** View 5-Star/S-Rank history, pity count, and **Export to CSV**.
 - 💬 **Discord Integration:** Sends beautiful reports to your Discord Webhook.
 
@@ -26,10 +26,14 @@ A simple, safe, and lightweight tool to extract Gacha Links and calculate Pity H
 ## 🚀 Choose Your Version
 
 ### ⭐ Option 1: Universal Tool (Recommended)
-The latest version featuring a **Full GUI**, **Auto-Detect Cache**, **CSV Export**, and **Discord Support** for all 3 games.
+The latest version featuring a **Modular Architecture**, **Full GUI**, and **Auto-Detect Cache**.
+
+> ⚠️ **Important Note:**
+> *   ✅ **Active:** Please use the **`GUI_REFACTOR`** folder. This is the new standard (v7.0+) with improved performance.
+> *   ❌ **Discontinued:** The `GUI_VERSION` folder is no longer supported or updated.
 
 #### 📂 [CLICK HERE to Open Universal Tool](./HoyoWishCounter)
-*(Go here for the best experience)*
+*(Navigate here and select the **GUI_REFACTOR** folder)*
 
 ---
 

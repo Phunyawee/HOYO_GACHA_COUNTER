@@ -1,7 +1,7 @@
 # ==============================================================================
 # HOYO ENGINE - Core Logic Library & Bootstrapper
 # ==============================================================================
-$script:EngineVersion = "6.5.0"
+$script:EngineVersion = "7.0.0"
 Add-Type -AssemblyName System.Web
 
 # รายชื่อ Module ที่ต้องการโหลด (เรียงตามลำดับความสำคัญ)

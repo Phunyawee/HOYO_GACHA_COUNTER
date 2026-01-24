@@ -35,6 +35,30 @@ function Get-ColorFromHex {
     }
 }
 
+# 3. [สำคัญ] สร้าง Theme Palette
+# เราจะใช้ตัวแปรพวกนี้แทนการพิมพ์ชื่อสีตรงๆ
+$MainColor = Get-ColorFromHex $script:AppConfig.AccentColor
+
+$script:Theme = @{
+    # Accent: สีหลักของธีม (ใช้กับ Input, Active items, Highlight)
+    Accent     = $MainColor
+    
+    # Text: สีตัวหนังสือทั่วไป
+    TextMain   = [System.Drawing.Color]::White
+    TextSub    = [System.Drawing.Color]::Silver
+    TextDim    = [System.Drawing.Color]::Gray
+    
+    # Functional: สีสถานะ (ไม่ควรเปลี่ยนตามธีม)
+    Success    = [System.Drawing.Color]::Lime
+    Warning    = [System.Drawing.Color]::Gold
+    Error      = [System.Drawing.Color]::Crimson
+    
+    # Background: สีพื้นหลัง
+    BgMain     = [System.Drawing.Color]::FromArgb(30, 30, 30)
+    BgControl  = [System.Drawing.Color]::FromArgb(45, 45, 45)
+}
+
+
 
 function Reset-LogWindow {
     # 1. ล้างข้อความ

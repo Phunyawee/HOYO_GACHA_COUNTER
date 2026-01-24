@@ -1,6 +1,38 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [7.0.0] - 2026-02-15
+
+## 🌟 Highlights
+Version 7.0.0 marks the **"Architectural Rebirth"** of the project. We have performed a complete code rewrite, transitioning from a monolithic script to a fully **Modular Architecture**. This structure ensures better performance, easier maintenance, and prepares the application for advanced features in the future.
+
+---
+
+## ⚠️ Breaking Changes & Deprecation
+
+### 🛑 Legacy GUI Discontinued
+*   **`GUI_VERSION` is now Deprecated:** The old folder structure (where all logic lived inside a single root folder) has been officially discontinued.
+*   **End of Support:** We will no longer provide updates or fixes for the `GUI_VERSION` folder.
+*   **Migration:** All development effort has shifted entirely to the new **`GUI_REFACTOR`** structure.
+
+---
+
+## 🏗️ Structural Overhaul (The Great Refactor)
+
+The application logic has been decoupled and organized into specialized directories to follow separation of concerns principles:
+
+### 🧩 New Folder Structure
+*   **📂 Engine:** Core processing units are now isolated (e.g., `ApiManager`, `AuthManager`, `GachaStatsManager`).
+*   **📂 Views:** UI components are split into individual files for better rendering performance (e.g., `PityMeter.ps1`, `LogWindow.ps1`, `FilterPanel.ps1`).
+*   **📂 Controllers:** Dedicated logic handlers (`MainLogic.ps1`, `ChartLogic.ps1`) to bridge the gap between data and the UI.
+*   **📂 System:** Essential system utilities like `SoundPlayer`, `ThemeManager`, and `SettingsWindow` now have their own dedicated space.
+*   **📂 UserData:** All database files (`MasterDB_*.json`) are now strictly organized within this directory to keep the root clean.
+
+### ⚡ Improvements
+*   **Clean Codebase:** Removed the clutter of loose CSV and script files from the root directory.
+*   **Enhanced Maintainability:** Bugs can now be tracked down to specific modules rather than searching through a massive single script file.
+
+
 # [6.5.0] - 2026-01-22
 
 ## 🌟 Highlights
