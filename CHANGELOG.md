@@ -1,6 +1,52 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+[7.2.0] - 2026-02-15
+📧 Major Update: Email Reporting System
+Version 7.2.0 expands the application's connectivity by introducing a full-featured **Email Reporting Engine**. You can now receive detailed HTML-formatted gacha reports directly to your inbox. We also unified the sorting logic to ensure Discord and Email reports perfectly match what you see on screen.
+
+### ✨ New Features
+- **Email Reporting Module:**
+  - Added "Email Report" button in the Scope & Analysis panel.
+  - Generates beautiful **HTML Tables** with Gold highlighting for 5-star items.
+  - Supports **Auto-Send** upon data fetch completion.
+- **SMTP Configuration UI:**
+  - New "SMTP Sender Config" section in **Settings > Integrations**.
+  - Supports custom Host, Port, and Secure Password (TLS/SSL).
+- **Unified Data Logic:**
+  - Created `Get-FilteredScopeData` to centralize filter & sort logic.
+  - **Result:** Discord, Email, and UI now share the exact same data order (no more reverse list bugs!).
+
+### 🛠 Fixes & Improvements
+- **Fixed:** Discord report was showing history in reverse order (Oldest first). It now correctly respects the "Newest First" checkbox.
+- **Fixed:** Configuration saving mechanism now correctly writes new keys (SMTP) to `config.json` without data loss.
+- **Changed:** Refined Filter Panel UI to accommodate the new Email button without overcrowding.
+
+### 📖 GUIDE: How to Setup Email (SMTP)
+Since we don't use a central server, you must use your own email to send reports.
+Go to **Settings > Tab 3: Integrations** and fill in the following:
+
+#### 1. Receiver Info
+- **Receiver Email:** The email address where you want to READ the reports (e.g., `my_personal@gmail.com`).
+
+#### 2. SMTP Sender Config (The Bot)
+This is the email account that will act as the "Sender".
+*(Recommended: Use a secondary Gmail account)*
+
+- **SMTP Host:** `smtp.gmail.com` (for Gmail) or `smtp.live.com` (for Outlook).
+- **Port:** `587` (Standard for TLS).
+- **Sender Email:** The full email address of your bot/secondary account.
+- **App Password:** **[IMPORTANT]** Do NOT use your normal login password!
+  - **For Gmail Users:**
+    1. Go to Google Account > Security.
+    2. Enable "2-Step Verification".
+    3. Search for **"App Passwords"**.
+    4. Create a new one named "HoyoEngine".
+    5. Copy the 16-character code (e.g., `xxxx xxxx xxxx xxxx`) and paste it here.
+
+*Note: Your password is saved locally in `config.json` and is never shared with anyone.*
+
+
 
 # [7.1.0] - 2026-01-24
 🚀 Highlights

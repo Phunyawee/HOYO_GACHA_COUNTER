@@ -82,35 +82,59 @@ function Show-SettingsWindow {
 
     # ================= TAB 3: INTEGRATIONS =================
     $tDis = New-Tab "Integrations"
-    
-    # --- Discord Section ---
-    $grpDisc = New-Object System.Windows.Forms.GroupBox; $grpDisc.Text = " Discord Webhook "; $grpDisc.Location = "15, 15"; $grpDisc.Size = "505, 120"; $grpDisc.ForeColor = "Silver"; $tDis.Controls.Add($grpDisc)
+    $tDis.AutoScroll = $true # เผื่อจอเล็กจะได้เลื่อนได้
+
+    # --- 1. Discord ---
+    $grpDisc = New-Object System.Windows.Forms.GroupBox; $grpDisc.Text = " Discord Webhook "; $grpDisc.Location = "15, 15"; $grpDisc.Size = "500, 100"; $grpDisc.ForeColor = "Silver"; $tDis.Controls.Add($grpDisc)
     
     $lblUrl = New-Object System.Windows.Forms.Label; $lblUrl.Text = "Webhook URL:"; $lblUrl.Location = "20, 25"; $lblUrl.AutoSize = $true; $lblUrl.ForeColor = "White"; $grpDisc.Controls.Add($lblUrl)
-    $txtWebhook = New-Object System.Windows.Forms.TextBox; $txtWebhook.Location = "20, 50"; $txtWebhook.Width = 460; $txtWebhook.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtWebhook.ForeColor = "Cyan"; $txtWebhook.BorderStyle = "FixedSingle"; $txtWebhook.Text = $conf.WebhookUrl; $grpDisc.Controls.Add($txtWebhook)
+    $txtWebhook = New-Object System.Windows.Forms.TextBox; $txtWebhook.Location = "20, 45"; $txtWebhook.Width = 460; $txtWebhook.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtWebhook.ForeColor = "Cyan"; $txtWebhook.BorderStyle = "FixedSingle"; $txtWebhook.Text = $conf.WebhookUrl; $grpDisc.Controls.Add($txtWebhook)
     
-    $chkAutoSend = New-Object System.Windows.Forms.CheckBox; $chkAutoSend.Text = "Auto-Send Report to Discord"; $chkAutoSend.Location = "20, 85"; $chkAutoSend.AutoSize = $true; $chkAutoSend.ForeColor = "White"; $chkAutoSend.Checked = $conf.AutoSendDiscord; $grpDisc.Controls.Add($chkAutoSend)
+    $chkAutoSend = New-Object System.Windows.Forms.CheckBox; $chkAutoSend.Text = "Auto-Send Report to Discord"; $chkAutoSend.Location = "20, 75"; $chkAutoSend.AutoSize = $true; $chkAutoSend.ForeColor = "White"; $chkAutoSend.Checked = $conf.AutoSendDiscord; $grpDisc.Controls.Add($chkAutoSend)
 
-    # --- [UPDATE] Email Section ---
-    $grpMail = New-Object System.Windows.Forms.GroupBox; $grpMail.Text = " Email Notifications "; $grpMail.Location = "15, 150"; $grpMail.Size = "505, 120"; $grpMail.ForeColor = "Silver"; $tDis.Controls.Add($grpMail)
+    # --- 2. Email Recipient (คนรับ) ---
+    $grpMail = New-Object System.Windows.Forms.GroupBox; $grpMail.Text = " Email Notification (To) "; $grpMail.Location = "15, 125"; $grpMail.Size = "500, 80"; $grpMail.ForeColor = "Silver"; $tDis.Controls.Add($grpMail)
 
-    $lblMail = New-Object System.Windows.Forms.Label; $lblMail.Text = "Recipient Email (To):"; $lblMail.Location = "20, 30"; $lblMail.AutoSize = $true; $lblMail.ForeColor = "White"; $grpMail.Controls.Add($lblMail)
-    
-    $txtEmail = New-Object System.Windows.Forms.TextBox
-    $txtEmail.Location = "20, 55"; $txtEmail.Width = 300
-    $txtEmail.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtEmail.ForeColor = "Yellow"; $txtEmail.BorderStyle = "FixedSingle"
+    $lblMail = New-Object System.Windows.Forms.Label; $lblMail.Text = "Receiver Email:"; $lblMail.Location = "20, 25"; $lblMail.AutoSize = $true; $lblMail.ForeColor = "White"; $grpMail.Controls.Add($lblMail)
+    $txtEmail = New-Object System.Windows.Forms.TextBox; $txtEmail.Location = "20, 45"; $txtEmail.Width = 300; $txtEmail.BackColor = [System.Drawing.Color]::FromArgb(60,60,60); $txtEmail.ForeColor = "Yellow"; $txtEmail.BorderStyle = "FixedSingle"
     if ($conf.PSObject.Properties["NotificationEmail"]) { $txtEmail.Text = $conf.NotificationEmail }
     $grpMail.Controls.Add($txtEmail)
 
-    # [NEW] Checkbox Auto-Send Email
-    $chkAutoEmail = New-Object System.Windows.Forms.CheckBox
-    $chkAutoEmail.Text = "Auto-Send Report to Email"
-    $chkAutoEmail.Location = "20, 85"
-    $chkAutoEmail.AutoSize = $true
-    $chkAutoEmail.ForeColor = "White"
-    # Logic เช็คค่าเดิม (ถ้าไม่มี ให้ Default เป็น False ไว้ก่อนเพื่อความปลอดภัย)
-    if ($conf.PSObject.Properties["AutoSendEmail"]) { $chkAutoEmail.Checked = $conf.AutoSendEmail } else { $chkAutoEmail.Checked = $false }
+    $chkAutoEmail = New-Object System.Windows.Forms.CheckBox; $chkAutoEmail.Text = "Auto-Send"; $chkAutoEmail.Location = "340, 45"; $chkAutoEmail.AutoSize = $true; $chkAutoEmail.ForeColor = "White"
+    if ($conf.PSObject.Properties["AutoSendEmail"]) { $chkAutoEmail.Checked = $conf.AutoSendEmail }
     $grpMail.Controls.Add($chkAutoEmail)
+
+    # --- 3. [NEW] SMTP Settings (คนส่ง) ---
+    $grpSmtp = New-Object System.Windows.Forms.GroupBox; $grpSmtp.Text = " SMTP Sender Config (Advanced) "; $grpSmtp.Location = "15, 215"; $grpSmtp.Size = "500, 160"; $grpSmtp.ForeColor = "Orange"; $tDis.Controls.Add($grpSmtp)
+
+    # Server & Port
+    $lblSmtpHost = New-Object System.Windows.Forms.Label; $lblSmtpHost.Text = "SMTP Host (e.g. smtp.gmail.com):"; $lblSmtpHost.Location = "20, 25"; $lblSmtpHost.AutoSize = $true; $grpSmtp.Controls.Add($lblSmtpHost)
+    $txtSmtpHost = New-Object System.Windows.Forms.TextBox; $txtSmtpHost.Location = "20, 45"; $txtSmtpHost.Width = 300; $txtSmtpHost.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtSmtpHost.ForeColor = "White"; $txtSmtpHost.BorderStyle = "FixedSingle"
+    # Default Value
+    if ($conf.PSObject.Properties["SmtpServer"]) { $txtSmtpHost.Text = $conf.SmtpServer } else { $txtSmtpHost.Text = "smtp.gmail.com" }
+    $grpSmtp.Controls.Add($txtSmtpHost)
+
+    $lblPort = New-Object System.Windows.Forms.Label; $lblPort.Text = "Port:"; $lblPort.Location = "340, 25"; $lblPort.AutoSize = $true; $grpSmtp.Controls.Add($lblPort)
+    $txtPort = New-Object System.Windows.Forms.TextBox; $txtPort.Location = "340, 45"; $txtPort.Width = 60; $txtPort.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtPort.ForeColor = "White"; $txtPort.BorderStyle = "FixedSingle"
+    if ($conf.PSObject.Properties["SmtpPort"]) { $txtPort.Text = $conf.SmtpPort } else { $txtPort.Text = "587" }
+    $grpSmtp.Controls.Add($txtPort)
+
+    # Sender Email & Password
+    $lblSender = New-Object System.Windows.Forms.Label; $lblSender.Text = "Sender Email (Bot):"; $lblSender.Location = "20, 80"; $lblSender.AutoSize = $true; $grpSmtp.Controls.Add($lblSender)
+    $txtSender = New-Object System.Windows.Forms.TextBox; $txtSender.Location = "20, 100"; $txtSender.Width = 220; $txtSender.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtSender.ForeColor = "White"; $txtSender.BorderStyle = "FixedSingle"
+    if ($conf.PSObject.Properties["SenderEmail"]) { $txtSender.Text = $conf.SenderEmail }
+    $grpSmtp.Controls.Add($txtSender)
+
+    $lblPass = New-Object System.Windows.Forms.Label; $lblPass.Text = "App Password:"; $lblPass.Location = "260, 80"; $lblPass.AutoSize = $true; $grpSmtp.Controls.Add($lblPass)
+    $txtPass = New-Object System.Windows.Forms.TextBox; $txtPass.Location = "260, 100"; $txtPass.Width = 200; $txtPass.BackColor = [System.Drawing.Color]::FromArgb(50,50,50); $txtPass.ForeColor = "White"; $txtPass.BorderStyle = "FixedSingle"
+    $txtPass.UseSystemPasswordChar = $true # ซ่อนรหัสผ่านเป็นจุดๆ
+    if ($conf.PSObject.Properties["SenderPassword"]) { $txtPass.Text = $conf.SenderPassword }
+    $grpSmtp.Controls.Add($txtPass)
+    
+    # Checkbox Show Password
+    $chkShowPass = New-Object System.Windows.Forms.CheckBox; $chkShowPass.Text = "Show"; $chkShowPass.Location = "470, 100"; $chkShowPass.AutoSize = $true; $chkShowPass.ForeColor = "DimGray"
+    $chkShowPass.Add_CheckedChanged({ $txtPass.UseSystemPasswordChar = -not $chkShowPass.Checked })
+    $grpSmtp.Controls.Add($chkShowPass)
 
 
     # ================= TAB 4: DATA & MAINTENANCE =================
@@ -350,37 +374,52 @@ function Show-SettingsWindow {
     # ================= SAVE & EXIT =================
     $btnSave = New-Object System.Windows.Forms.Button; $btnSave.Text = "APPLY SETTINGS"; $btnSave.Location = "180, 500"; $btnSave.Size = "180, 40"; Apply-ButtonStyle -Button $btnSave -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontBold
     $btnSave.Add_Click({
-        # [NEW] จัดการค่าใหม่ (ใช้ Add-Member เผื่อคีย์เก่ายังไม่มี)
-        if (-not $conf.PSObject.Properties["EnableAutoBackup"]) {
-            $conf | Add-Member -NotePropertyName "EnableAutoBackup" -NotePropertyValue $chkEnableBk.Checked
-        } else {
-            $conf.EnableAutoBackup = $chkEnableBk.Checked
+        # 1. Helper Function: วิธีเพิ่มคีย์ถ้าไม่มี (จะได้ไม่ต้องเขียน if ซ้ำๆ)
+        function Set-ConfVal($Name, $Val) {
+            if (-not $conf.PSObject.Properties[$Name]) {
+                $conf | Add-Member -NotePropertyName $Name -NotePropertyValue $Val
+            } else {
+                $conf.$Name = $Val
+            }
         }
 
-         # 2. [NEW] จัดการ Email (เพิ่มตรงนี้)
-        if (-not $conf.PSObject.Properties["NotificationEmail"]) { 
-            $conf | Add-Member -NotePropertyName "NotificationEmail" -NotePropertyValue $txtEmail.Text 
-        } else { 
-            $conf.NotificationEmail = $txtEmail.Text 
-        }
-
-        # 3. [NEW] Auto-Send Email (ตัวใหม่ล่าสุด)
-        if (-not $conf.PSObject.Properties["AutoSendEmail"]) { 
-            $conf | Add-Member -NotePropertyName "AutoSendEmail" -NotePropertyValue $chkAutoEmail.Checked 
-        } else { 
-            $conf.AutoSendEmail = $chkAutoEmail.Checked 
-        }
-
-
-        $conf.DebugConsole=$chkDebug.Checked; $conf.Opacity=($trackOp.Value/100); $conf.BackupPath=$txtBackup.Text; $conf.WebhookUrl=$txtWebhook.Text; $conf.AutoSendDiscord=$chkAutoSend.Checked; $conf.EnableSound=$chkSound.Checked; $conf.EnableFileLog=$chkFileLog.Checked; $conf.AccentColor=$script:TempHexColor; $conf.CsvSeparator=if($cmbCsvSep.SelectedIndex-eq 1){";"}else{","}
+        # 2. เก็บค่าจาก UI ลงตัวแปร $conf
+        Set-ConfVal "EnableAutoBackup" $chkEnableBk.Checked
+        Set-ConfVal "NotificationEmail" $txtEmail.Text
+        Set-ConfVal "AutoSendEmail" $chkAutoEmail.Checked
         
-        # [FIX] บันทึกไฟล์ที่ Path ใหม่ ($AppRoot\Settings)
-        $setDir = Join-Path $AppRoot "Settings"; if(-not(Test-Path $setDir)){New-Item -Type Directory -Path $setDir -Force|Out-Null}
+        # --- [NEW] SMTP SAVING ---
+        Set-ConfVal "SmtpServer" $txtSmtpHost.Text
+        Set-ConfVal "SmtpPort" ([int]$txtPort.Text)
+        Set-ConfVal "SenderEmail" $txtSender.Text
+        Set-ConfVal "SenderPassword" $txtPass.Text
+        # -------------------------
+
+        # 3. ค่า Config พื้นฐาน
+        $conf.DebugConsole=$chkDebug.Checked
+        $conf.Opacity=($trackOp.Value/100)
+        $conf.BackupPath=$txtBackup.Text
+        $conf.WebhookUrl=$txtWebhook.Text
+        $conf.AutoSendDiscord=$chkAutoSend.Checked
+        $conf.EnableSound=$chkSound.Checked
+        $conf.EnableFileLog=$chkFileLog.Checked
+        $conf.AccentColor=$script:TempHexColor
+        $conf.CsvSeparator=if($cmbCsvSep.SelectedIndex-eq 1){";"}else{","}
+        
+        # 4. บันทึกลงไฟล์
+        $setDir = Join-Path $AppRoot "Settings"
+        if (-not (Test-Path $setDir)) { New-Item -Type Directory -Path $setDir -Force | Out-Null }
+        
         $conf | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $setDir "config.json") -Encoding UTF8
 
-        $script:AppConfig=$conf; Apply-Theme -NewHex $conf.AccentColor -NewOpacity $conf.Opacity; $script:DebugMode=$conf.DebugConsole
-        if($menuExpand){$menuExpand.ForeColor=[System.Drawing.ColorTranslator]::FromHtml($conf.AccentColor)}; if($chkSendDiscord){$chkSendDiscord.Checked=$conf.AutoSendDiscord}
-        [System.Windows.Forms.MessageBox]::Show("Saved!", "Done"); $fSet.Close()
+        # 5. Reload & Close
+        $script:AppConfig=$conf
+        Apply-Theme -NewHex $conf.AccentColor -NewOpacity $conf.Opacity
+        $script:DebugMode=$conf.DebugConsole
+        if ($menuExpand) { $menuExpand.ForeColor=[System.Drawing.ColorTranslator]::FromHtml($conf.AccentColor) }
+        
+        [System.Windows.Forms.MessageBox]::Show("Configuration (including SMTP) Saved!", "Done")
+        $fSet.Close()
     })
     $fSet.Controls.Add($btnSave)
     

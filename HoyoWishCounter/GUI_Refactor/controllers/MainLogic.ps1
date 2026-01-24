@@ -325,15 +325,15 @@ function Start-SmartSnap {
     if (-not $found) { WriteGUI-Log "Could not find a reset point in the past." "Red" }
 }
 
-function Start-DiscordScopeReport {
-    if ($null -eq $script:LastFetchedData) { return }
-
-    WriteGUI-Log "Preparing Discord Report..." "Magenta"
+# =========================================================================
+#  SHARED LOGIC: คำนวณ Pity, Filter และ Sort ในที่เดียว (แก้บั๊กเรียงผิดด้วย)
+# =========================================================================
+function Get-FilteredScopeData {
+    if ($null -eq $script:LastFetchedData) { return $null }
 
     # 1. กำหนด Scope วันที่
     $startDate = [DateTime]::MinValue
     $endDate   = [DateTime]::MaxValue
-
     if ($chkFilterEnable.Checked) {
         $startDate = $dtpStart.Value.Date
         $endDate   = $dtpEnd.Value.Date.AddDays(1).AddSeconds(-1)
@@ -341,22 +341,19 @@ function Start-DiscordScopeReport {
 
     $conf = Get-GameConfig $script:CurrentGame
     
-    # 2. กำหนด Scope ของ Banner
+    # 2. Banner Scope
     $targetBannerCode = $null
     if ($script:cmbBanner.SelectedIndex -gt 0) {
         $selIndex = $script:cmbBanner.SelectedIndex - 1
         $targetBannerCode = $conf.Banners[$selIndex].Code
-        WriteGUI-Log "Filter Mode: Specific Banner ($($conf.Banners[$selIndex].Name))" "Gray"
-    } else {
-        WriteGUI-Log "Filter Mode: All Banners" "Gray"
     }
 
-    # 3. คำนวณ Pity
+    # 3. Pity Calculation
     $pityTrackers = @{}
     foreach ($b in $conf.Banners) { $pityTrackers[$b.Code] = 0 }
     
     $allSorted = $script:LastFetchedData | Sort-Object { [decimal]$_.id } 
-    $listToSend = @()
+    $tempList = @()
 
     foreach ($item in $allSorted) {
         $code = [string]$item.gacha_type
@@ -367,58 +364,82 @@ function Start-DiscordScopeReport {
         
         if ($item.rank_type -eq $conf.SRank) {
             
-            # --- FILTER CHECK ---
-            $isDateOk = $false
-            $isBannerOk = $false
-
-            # A. Date
+            # --- [FIXED HERE] แก้ตรงนี้ครับ ลบ $ หน้า [DateTime] ออก ---
             $t = [DateTime]$item.time
-            if ($t -ge $startDate -and $t -le $endDate) { $isDateOk = $true }
+            $isDateOk = ($t -ge $startDate -and $t -le $endDate)
+            # --------------------------------------------------------
 
-            # B. Banner
-            if ($null -eq $targetBannerCode) {
-                $isBannerOk = $true
-            } else {
-                if ($code -eq $targetBannerCode) { $isBannerOk = $true }
-            }
+            $isBannerOk = ($null -eq $targetBannerCode) -or ($code -eq $targetBannerCode)
 
             if ($isDateOk -and $isBannerOk) {
-                $listToSend += [PSCustomObject]@{
+                $tempList += [PSCustomObject]@{
                     Time   = $item.time
                     Name   = $item.name
                     Banner = $item._BannerName
                     Pity   = $pityTrackers[$code]
                 }
             }
-            $pityTrackers[$code] = 0
+            $pityTrackers[$code] = 0 
         }
     }
 
-    # 4. Sorting Logic
+    # 4. Sorting Logic (เหมือนเดิม)
     $finalList = @()
     if ($chkSortDesc.Checked) {
-        $finalList = $listToSend
-        $logSort = "Newest First"
-    } else {
-        if ($listToSend.Count -gt 0) {
-            for ($i = $listToSend.Count - 1; $i -ge 0; $i--) {
-                $finalList += $listToSend[$i]
+        if ($tempList.Count -gt 0) {
+            for ($i = $tempList.Count - 1; $i -ge 0; $i--) {
+                $finalList += $tempList[$i]
             }
         }
-        $logSort = "Oldest First"
+    } else {
+        $finalList = $tempList
     }
 
-    # 5. Send
-    if ($finalList.Count -gt 0) {
-        $res = Send-DiscordReport -HistoryData $finalList -PityTrackers $pityTrackers -Config $conf -ShowNoMode $chkShowNo.Checked
-        WriteGUI-Log "Discord Report Sent ($logSort): $res" "Lime"
+    return @{
+        Data = $finalList
+        PityTrackers = $pityTrackers
+        Config = $conf
+    }
+}
+# =========================================================================
+#  DISCORD FUNCTION (สั้นลงเยอะ)
+# =========================================================================
+function Start-DiscordScopeReport {
+    WriteGUI-Log "Preparing Discord Report..." "Magenta"
+    
+    # เรียกใช้ฟังก์ชันกลาง
+    $result = Get-FilteredScopeData
+    if ($null -eq $result) { return }
+
+    if ($result.Data.Count -gt 0) {
+        # ส่งข้อมูลที่ Sort มาแล้วไปให้ Discord
+        $res = Send-DiscordReport -HistoryData $result.Data -PityTrackers $result.PityTrackers -Config $result.Config -ShowNoMode $chkShowNo.Checked
+        WriteGUI-Log "Discord Report Sent: $res" "Lime"
     } else {
         WriteGUI-Log "No 5-Star data found in selected scope." "Orange"
-        [System.Windows.Forms.MessageBox]::Show("No 5-Star records found matching your Filter & Banner selection.", "Report Empty", 0, 48)
+        [System.Windows.Forms.MessageBox]::Show("No 5-Star records found matching filter.", "Empty", 0, 48)
     }
 }
 
+# =========================================================================
+#  EMAIL FUNCTION (สั้นลงเยอะ)
+# =========================================================================
+function Start-EmailScopeReport {
+    WriteGUI-Log "Preparing Email Report..." "Cyan"
 
+    # เรียกใช้ฟังก์ชันกลาง (ได้ข้อมูลชุดเดียวกับ Discord เป๊ะๆ 100%)
+    $result = Get-FilteredScopeData
+    if ($null -eq $result) { return }
+
+    if ($result.Data.Count -gt 0) {
+        # ส่งข้อมูลไปให้ Email
+        Send-EmailReport -HistoryData $result.Data -Config $result.Config
+        [System.Windows.Forms.MessageBox]::Show("Email sent to $($script:AppConfig.NotificationEmail)", "Success", 0, 64)
+    } else {
+        WriteGUI-Log "No records found for Email." "Orange"
+        [System.Windows.Forms.MessageBox]::Show("No records found to email.", "Empty", 0, 48)
+    }
+}
 
 # controllers/MainLogic.ps1 (ส่วนท้ายสุด)
 

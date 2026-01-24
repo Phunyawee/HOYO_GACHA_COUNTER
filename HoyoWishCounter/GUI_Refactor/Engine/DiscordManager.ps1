@@ -24,16 +24,17 @@ function Send-DiscordReport {
         $fields += @{ name = "$($b.Name) Pity"; value = "**$val**"; inline = $true }
     }
 
-    # สร้าง Description แสดงประวัติย้อนหลัง 30 รายการ
+     # สร้าง Description แสดงประวัติย้อนหลัง 30 รายการ
     $descTxt = ""
     $count = 0
     $limit = 30
     
     if ($HistoryData.Count -gt 0) {
         $descTxt = "**Recent History (Last $limit):**`n"
-        for ($i = $HistoryData.Count - 1; $i -ge 0; $i--) {
+        
+        # [FIX] เปลี่ยนจาก for loop ย้อนหลัง เป็น foreach ธรรมดา (วิ่งจากบนลงล่าง)
+        foreach ($h in $HistoryData) {
             if ($count -ge $limit) { break }
-            $h = $HistoryData[$i]
             
             # Logic สีลูกบอลตามความเกลือ
             $icon = ":green_circle:"
@@ -41,14 +42,20 @@ function Send-DiscordReport {
             
             # การแสดงผลแบบมีเลขลำดับ หรือ เวลา
             if ($ShowNoMode) {
-                $prefix = "[No.$($i+1)]"
+                # ใช้ $count+1 เพื่อเรียง 1, 2, 3... ตามบรรทัดที่โชว์
+                $prefix = "[No.$($count+1)]"
             } else {
                 $prefix = "`[$($h.Time)`]"
             }
             
             # ตัดชื่อตู้ให้สั้นลง
             $bannerText = if ($h.Banner) { $h.Banner } else { "Unknown" }
-            $bNameShort = $bannerText.Split('(')[0].Trim()
+            # แก้ไข: เช็คว่ามีวงเล็บไหมกัน Error
+            if ($bannerText -match "\(") {
+                $bNameShort = $bannerText.Split('(')[0].Trim()
+            } else {
+                $bNameShort = $bannerText
+            }
             
             $descTxt += "$prefix $icon **$($h.Name)** (Pity: **$($h.Pity)**) - *$bNameShort*`n"
             $count++
@@ -56,6 +63,7 @@ function Send-DiscordReport {
     } else {
         $descTxt = "No history found."
     }
+
 
     # ประกอบร่าง JSON Payload
     $payload = @{

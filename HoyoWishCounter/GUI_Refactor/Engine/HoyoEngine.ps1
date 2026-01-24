@@ -12,7 +12,8 @@ $EngineModules = @(
     "ApiManager.ps1",
     "GachaStatsManager.ps1",
     "SimManager.ps1",
-    "DiscordManager.ps1"
+    "DiscordManager.ps1",
+    "EmailManager.ps1"
 )
 
 # ตัวแปรนับจำนวน
