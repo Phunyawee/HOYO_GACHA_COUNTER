@@ -224,7 +224,7 @@ function Show-SettingsWindow {
     
     # 1. คำเตือนแบบ Hacker Style
     $lblAdvInfo = New-Object System.Windows.Forms.Label
-    $lblAdvInfo.Text = "⚠️ CAUTION: Direct JSON Editing Mode. Syntax errors may reset config."
+    $lblAdvInfo.Text = "CAUTION: Direct JSON Editing Mode. Syntax errors may reset config."
     $lblAdvInfo.Location = "15, 15"; $lblAdvInfo.AutoSize = $true
     $lblAdvInfo.ForeColor = "Orange"
     $lblAdvInfo.Font = New-Object System.Drawing.Font("Consolas", 8)
