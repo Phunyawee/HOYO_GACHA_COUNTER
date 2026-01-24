@@ -1,7 +1,7 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
-# [7.0.0] - 2026-02-15
+# [7.0.0] - 2026-01-24
 
 ## 🌟 Highlights
 Version 7.0.0 marks the **"Architectural Rebirth"** of the project. We have performed a complete code rewrite, transitioning from a monolithic script to a fully **Modular Architecture**. This structure ensures better performance, easier maintenance, and prepares the application for advanced features in the future.
