@@ -330,19 +330,28 @@ function Show-SettingsWindow {
     $btnForceBackup.Location = "20, 95"; $btnForceBackup.Size = "250, 35"
     Apply-ButtonStyle -Button $btnForceBackup -BaseColorName "RoyalBlue" -HoverColorName "CornflowerBlue" -CustomFont $script:fontNormal
     $btnForceBackup.Add_Click({
+        # 1. กำหนด Path ต้นทางให้ถูกต้อง (ชี้ไปที่ Settings)
+        $srcConfig = Join-Path $PSScriptRoot "Settings\config.json"
+        
+        # 2. กำหนด Path ปลายทาง (Backup)
         $backupDir = Join-Path $PSScriptRoot "Backups"
         if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir | Out-Null }
         
         $dateStr = Get-Date -Format "yyyyMMdd_HHmmss"
-        if (Test-Path "config.json") {
+        
+        # 3. เช็คจาก $srcConfig แทน "config.json" เฉยๆ
+        if (Test-Path $srcConfig) {
             $destName = "config_backup_$dateStr.json"
             $destPath = Join-Path $backupDir $destName
-            Copy-Item "config.json" -Destination $destPath
+            
+            # 4. สั่ง Copy
+            Copy-Item -Path $srcConfig -Destination $destPath
+            
             WriteGUI-Log "User manually triggered Config Backup. Saved to: $destName" "Lime"
             [System.Windows.Forms.MessageBox]::Show("Backup created successfully inside 'Backups' folder.", "Success", 0, 64)
         } else {
-             WriteGUI-Log "Manual Config Backup failed: config.json not found." "OrangeRed"
-             [System.Windows.Forms.MessageBox]::Show("Config file not found.", "Info", 0, 48)
+             WriteGUI-Log "Manual Config Backup failed: config.json not found in Settings." "OrangeRed"
+             [System.Windows.Forms.MessageBox]::Show("Config file not found in Settings folder.", "Info", 0, 48)
         }
     })
     $tData.Controls.Add($btnForceBackup)
@@ -366,9 +375,24 @@ function Show-SettingsWindow {
                 $newConf = $jsonContent | ConvertFrom-Json
                 if (-not $newConf.PSObject.Properties["AccentColor"]) { throw "Invalid Config Format" }
 
-                if (Test-Path "config.json") { Copy-Item "config.json" -Destination "config.json.old" -Force }
-                Set-Content -Path "config.json" -Value $jsonContent -Encoding UTF8
-                
+                # 1. ตั้งตัวแปร Path ให้ชัดเจน
+                $configDir  = Join-Path $PSScriptRoot "Settings"
+                $configPath = Join-Path $configDir "config.json"
+                $backupPath = Join-Path $configDir "config.json.old"
+
+                # 2. สร้างโฟลเดอร์ Settings ก่อน (กันเหนียว เดี๋ยว Save ไม่ผ่าน)
+                if (-not (Test-Path $configDir)) {
+                    New-Item -ItemType Directory -Path $configDir -Force | Out-Null
+                }
+
+                # 3. เช็คไฟล์เดิมเพื่อทำ Backup (.old)
+                if (Test-Path $configPath) { 
+                    Copy-Item -Path $configPath -Destination $backupPath -Force 
+                }
+
+                # 4. บันทึกไฟล์ใหม่
+                Set-Content -Path $configPath -Value $jsonContent -Encoding UTF8
+
                 # Hot Reload Settings
                 $chkDebug.Checked = $newConf.DebugConsole
                 $txtBackup.Text = $newConf.BackupPath
@@ -553,7 +577,7 @@ function Show-SettingsWindow {
     }
 
     # --- ITEMS LIST ---
-    Add-HealthCheck "Config"   (Join-Path $PSScriptRoot "config.json")
+    Add-HealthCheck "Config"   (Join-Path $PSScriptRoot "Settings\config.json")
     Add-HealthCheck "Engine"   (Join-Path $PSScriptRoot "HoyoEngine.ps1")
     
     $gamesToCheck = @("Genshin", "HSR", "ZZZ")

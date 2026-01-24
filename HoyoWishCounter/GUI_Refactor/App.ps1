@@ -35,9 +35,22 @@ trap {
 # ============================
 $script:AppRoot = $PSScriptRoot
 $script:AppVersion = "7.0.0"
+
+$script:ConfigDir = Join-Path $PSScriptRoot "Settings"
+$script:ConfigPath = Join-Path $script:ConfigDir "config.json"
+
+# เช็คว่ามี Folder Settings ไหม? ถ้าไม่มีให้สร้างเลย
+if (-not (Test-Path $script:ConfigDir)) {
+    New-Item -ItemType Directory -Path $script:ConfigDir -Force | Out-Null
+    if (Get-Command "Write-BootTrace" -ErrorAction SilentlyContinue) {
+        Write-BootTrace "Created Settings Directory: $script:ConfigDir"
+    }
+}
+
 $script:DevBypassDebug = $false  
 $script:DebugMode = $script:DevBypassDebug
 $global:ErrorActionPreference = "Continue"
+
 
 # Setup Trap (Crash Catcher)
 trap {
@@ -226,9 +239,12 @@ if ($script:DevBypassDebug) {
 }
 
 # Auto Create Config if missing
-if (-not (Test-Path "config.json")) {
+# เช็คที่ Path ใหม่ใน folder Settings
+if (-not (Test-Path $script:ConfigPath)) { 
     if (Get-Command "Save-AppConfig" -ErrorAction SilentlyContinue) {
-        Save-AppConfig -ConfigObj $script:AppConfig
+        # หมายเหตุ: Function Save-AppConfig ของคุณต้องรองรับ parameter Path 
+        # หรือถูกแก้ให้อ่านค่าจาก $script:ConfigPath แล้วนะครับ
+        Save-AppConfig -ConfigObj $script:AppConfig -Path $script:ConfigPath
     }
 }
 
