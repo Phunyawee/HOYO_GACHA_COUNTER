@@ -269,6 +269,20 @@ try {
 # Load History Data (Last Step)
 Load-LocalHistory -GameName $script:CurrentGame
 
+# [FIX] บังคับ Apply Theme จาก Config ที่โหลดมาได้ ก่อนจะโชว์หน้าต่าง
+if ($script:AppConfig) {
+    if (Get-Command "Apply-Theme" -ErrorAction SilentlyContinue) {
+        
+        # 1. ดึงค่าจาก Config (ถ้าไม่มีใช้ค่า Default)
+        $savedColor = if ($script:AppConfig.AccentColor) { $script:AppConfig.AccentColor } else { "#00FFFF" }
+        $savedOpacity = if ($script:AppConfig.Opacity) { $script:AppConfig.Opacity } else { 1.0 }
+        
+        # 2. สั่งเปลี่ยน Theme เดี๋ยวนี้!
+        Apply-Theme -NewHex $savedColor -NewOpacity $savedOpacity
+        
+        Write-BootTrace "Theme Applied on Launch: $savedColor (Opacity: $savedOpacity)"
+    }
+}
 
 # ============================
 #  5. SHOW APPLICATION
