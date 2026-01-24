@@ -1,6 +1,26 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+
+# [7.1.0] - 2026-01-24
+🚀 Highlights
+Version 7.1.0 introduces the **Advanced Configuration** module. We have added a dedicated "Power User" interface allowing direct manipulation of the core configuration via a raw JSON editor. This update features a **Hot Reload** engine, enabling real-time visual updates (Theme & Opacity) immediately after saving, without the need to restart the application.
+
+### ✨ Added
+- **New "Advanced" Tab:** A dedicated section in Settings for direct configuration management.
+- **Raw JSON Editor:**
+  - **Hacker-Style UI:** Implemented a high-contrast coding environment (Lime Green text on Dark background) using Consolas font.
+  - **Live Syntax Editing:** Edit your configuration structure directly.
+- **Hot Reload System:**
+  - **"SAVE & APPLY" Button:** Instantly saves `config.json` and updates the application's global state.
+  - **Real-time UI Update:** Theme colors and opacity settings apply immediately upon save.
+- **Safety & Utilities:**
+  - **JSON Validation:** Automatic syntax checking prevents saving corrupted configuration files.
+  - **Revert Changes:** A quick "Undo" button to reload the last saved config if you make a mistake.
+  - **Open Folder:** Shortcut button to directly access the `Settings` directory.
+
+
+
 # [7.0.0] - 2026-01-24
 
 ## 🌟 Highlights

@@ -127,23 +127,184 @@ function Show-SettingsWindow {
     $grpHealth = New-Object System.Windows.Forms.GroupBox; $grpHealth.Text = " System Status "; $grpHealth.Location = "20, 260"; $grpHealth.Size = "440, 100"; $grpHealth.ForeColor = "Silver"; $tData.Controls.Add($grpHealth)
     function Add-Header($text, $x) { $h = New-Object System.Windows.Forms.Label; $h.Text=$text; $h.Location="$x, 25"; $h.AutoSize=$true; $h.ForeColor="DimGray"; $grpHealth.Controls.Add($h) }
     Add-Header "COMPONENT" 20; Add-Header "FILENAME" 140; Add-Header "SIZE" 260; Add-Header "STATUS" 320; $script:HealthY=50
-    function Add-HealthCheck($t, $p, $opt=$false) {
-        $ex=Test-Path $p; if($opt -and (-not $ex)){return}
-        $l=New-Object System.Windows.Forms.Label; $l.Text=$t; $l.Location="20,$script:HealthY"; $l.AutoSize=$true; $l.ForeColor="White"; $grpHealth.Controls.Add($l)
-        $fn=Split-Path $p -Leaf; if($fn.Length-gt 15){$fn=$fn.Substring(0,12)+"..."}; $lf=New-Object System.Windows.Forms.Label; $lf.Text=$fn; $lf.Location="140,$script:HealthY"; $lf.AutoSize=$true; $lf.ForeColor="Gray"; $grpHealth.Controls.Add($lf)
-        $sz="?"; if($ex){try{$i=Get-Item $p;if($i.PSIsContainer){$sz="DIR"}else{$sz="{0:N0} KB"-f($i.Length/1KB)}}catch{}}; $ls=New-Object System.Windows.Forms.Label; $ls.Text=$sz; $ls.Location="260,$script:HealthY"; $ls.AutoSize=$true; $ls.ForeColor="SkyBlue"; $grpHealth.Controls.Add($ls)
-        $st=New-Object System.Windows.Forms.Label; $st.AutoSize=$true; $st.Location="320,$script:HealthY"; if($ex){$st.Text="OK";$st.ForeColor="LimeGreen"}else{$st.Text="MISSING";$st.ForeColor="Crimson"}; $grpHealth.Controls.Add($st)
-        $script:HealthY+=30
+    # --- ROW RENDERER (UPGRADED) ---
+    function Add-HealthCheck {
+        param($LabelText, $FilePath, $IsOptional=$false)
+        
+        $exists = Test-Path $FilePath
+        if ($IsOptional -and (-not $exists)) { return }
+
+        # 1. Label ชื่อ Component
+        $lbl = New-Object System.Windows.Forms.Label; $lbl.Text = $LabelText; $lbl.Location = "20, $script:HealthY"; $lbl.AutoSize = $true; $lbl.ForeColor = "White"; $grpHealth.Controls.Add($lbl)
+        
+        # 2. ชื่อไฟล์
+        $fname = Split-Path $FilePath -Leaf; if ($fname.Length -gt 15) { $fname = $fname.Substring(0, 12)+"..." }
+        $lblF = New-Object System.Windows.Forms.Label; $lblF.Text = $fname; $lblF.Location = "140, $script:HealthY"; $lblF.AutoSize = $true; $lblF.ForeColor = "Gray"; $grpHealth.Controls.Add($lblF)
+        
+        # 3. คำนวณขนาด (File เท่านั้น, Folder โชว์ DIR)
+        $sz = "-"
+        if ($exists) {
+            try {
+                $item = Get-Item $FilePath
+                
+                if ($item.PSIsContainer) {
+                    # ถ้าเป็น Folder ให้จบเลย พิมพ์ว่า DIR
+                    $sz = "DIR"
+                } else {
+                    # ถ้าเป็น File ค่อยคำนวณ
+                    if ($item.Length -gt 1GB) {
+                        $sz = "{0:N2} GB" -f ($item.Length / 1GB)
+                    } elseif ($item.Length -gt 1MB) {
+                        $sz = "{0:N2} MB" -f ($item.Length / 1MB)
+                    } else {
+                        $sz = "{0:N0} KB" -f ($item.Length / 1KB)
+                    }
+                }
+            } catch { 
+                $sz = "Err" 
+            }
+        }
+
+        $lblS = New-Object System.Windows.Forms.Label
+        $lblS.Text = $sz
+        $lblS.Location = "260, $script:HealthY"
+        $lblS.AutoSize = $true
+        $lblS.ForeColor = "SkyBlue"
+        $grpHealth.Controls.Add($lblS)
+        # 4. สถานะ
+        $lblSt = New-Object System.Windows.Forms.Label; $lblSt.AutoSize = $true; $lblSt.Location = "320, $script:HealthY"; $lblSt.Font = New-Object System.Drawing.Font("Segoe UI",9,[System.Drawing.FontStyle]::Bold)
+        if ($exists) { $lblSt.Text = "OK"; $lblSt.ForeColor = "LimeGreen" } else { $lblSt.Text = "MISSING"; $lblSt.ForeColor = "Crimson" }
+        $grpHealth.Controls.Add($lblSt)
+        
+        # --- [NEW] 5. ปุ่ม OPEN (เพิ่มส่วนนี้) ---
+        if ($exists) {
+            $btnOpen = New-Object System.Windows.Forms.Button
+            $btnOpen.Text = "OPEN"
+            $btnOpen.Size = New-Object System.Drawing.Size(45, 23)
+            # วางตำแหน่งถัดจากสถานะไปทางขวา (X=380)
+            $btnOpen.Location = "380, " + ($script:HealthY - 3) 
+            $btnOpen.FlatStyle = "Flat"
+            $btnOpen.ForeColor = "Silver"
+            $btnOpen.Font = New-Object System.Drawing.Font("Arial", 7)
+            $btnOpen.FlatAppearance.BorderSize = 1
+            $btnOpen.FlatAppearance.BorderColor = "DimGray"
+            $btnOpen.Cursor = [System.Windows.Forms.Cursors]::Hand
+            
+            # Action: เปิด Explorer แล้วชี้ไปที่ไฟล์นั้น
+            $btnOpen.Add_Click({
+                try {
+                    $realPath = (Resolve-Path $FilePath).Path
+                    # ใช้ explorer.exe /select,"path" เพื่อเปิดแล้ว highlight ไฟล์เลย
+                    Start-Process "explorer.exe" -ArgumentList "/select,`"$realPath`""
+                } catch {
+                    # Fallback: ถ้าเปิดแบบ select ไม่ได้ ให้เปิดปกติ
+                    Invoke-Item $FilePath
+                }
+            }.GetNewClosure()) # สำคัญ: ใช้ GetNewClosure เพื่อจำค่า $FilePath ของบรรทัดนี้ไว้
+            
+            $grpHealth.Controls.Add($btnOpen)
+        }
+        
+        $script:HealthY += 30
     }
 
     # [FIX] ใช้ $AppRoot แทน $PSScriptRoot ทั้งหมด!
     Add-HealthCheck "Config"   (Join-Path $AppRoot "Settings\config.json")
     Add-HealthCheck "Engine"   (Join-Path $AppRoot "Engine\HoyoEngine.ps1")
-    Add-HealthCheck "Logs"     (Join-Path $AppRoot "Logs")
+    # Add-HealthCheck "Logs"     (Join-Path $AppRoot "Logs")
     foreach ($g in @("Genshin", "HSR", "ZZZ")) { Add-HealthCheck "DB ($g)" (Join-Path $AppRoot "UserData\MasterDB_$($g).json") -opt ($g -ne $script:CurrentGame) }
 
     $grpHealth.Height = $script:HealthY+10; $tData.Controls.Add((New-Object System.Windows.Forms.Label -Property @{Text=""; Location="0,$($grpHealth.Bottom+20)"; Size="10,10"}))
 
+    
+    # ==================================================
+    # TAB 5: ADVANCED (RAW JSON EDITOR)
+    # ==================================================
+    $tAdv = New-Tab "Advanced"
+    
+    # 1. คำเตือนแบบ Hacker Style
+    $lblAdvInfo = New-Object System.Windows.Forms.Label
+    $lblAdvInfo.Text = "⚠️ CAUTION: Direct JSON Editing Mode. Syntax errors may reset config."
+    $lblAdvInfo.Location = "15, 15"; $lblAdvInfo.AutoSize = $true
+    $lblAdvInfo.ForeColor = "Orange"
+    $lblAdvInfo.Font = New-Object System.Drawing.Font("Consolas", 8)
+    $tAdv.Controls.Add($lblAdvInfo)
+
+    # 2. พื้นที่เขียน Code (Text Area)
+    $txtJson = New-Object System.Windows.Forms.TextBox
+    $txtJson.Multiline = $true
+    $txtJson.ScrollBars = "Vertical"
+    $txtJson.Location = "15, 40"
+    $txtJson.Size = "505, 360" # ใหญ่สะใจ
+    $txtJson.BackColor = [System.Drawing.Color]::FromArgb(20, 20, 20) # ดำเกือบสนิท
+    $txtJson.ForeColor = "LimeGreen" # สีเขียว Matrix
+    $txtJson.Font = New-Object System.Drawing.Font("Consolas", 10) # ฟอนต์โค้ด
+    $txtJson.BorderStyle = "FixedSingle"
+    
+    # ดึง JSON สวยๆ มาโชว์
+    $txtJson.Text = $conf | ConvertTo-Json -Depth 5
+    $tAdv.Controls.Add($txtJson)
+
+    # 3. แถบปุ่มควบคุม (Button Bar)
+    $pnlAdvBtns = New-Object System.Windows.Forms.Panel
+    $pnlAdvBtns.Location = "15, 410"; $pnlAdvBtns.Size = "505, 35"
+    $tAdv.Controls.Add($pnlAdvBtns)
+
+    # ปุ่ม 3.1: Open Folder
+    $btnAdvOpen = New-Object System.Windows.Forms.Button
+    $btnAdvOpen.Text = "Open Folder"
+    $btnAdvOpen.Location = "0, 0"; $btnAdvOpen.Size = "100, 30"
+    Apply-ButtonStyle -Button $btnAdvOpen -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+    $btnAdvOpen.Add_Click({ Invoke-Item (Join-Path $AppRoot "Settings") })
+    $pnlAdvBtns.Controls.Add($btnAdvOpen)
+
+    # ปุ่ม 3.2: Revert/Reload (เผื่อแก้พัง)
+    $btnAdvReload = New-Object System.Windows.Forms.Button
+    $btnAdvReload.Text = "Revert Changes"
+    $btnAdvReload.Location = "110, 0"; $btnAdvReload.Size = "120, 30"
+    Apply-ButtonStyle -Button $btnAdvReload -BaseColorName "IndianRed" -HoverColorName "Red" -CustomFont $script:fontNormal
+    $btnAdvReload.Add_Click({
+        # โหลดค่าจากตัวแปร $conf เดิมมาทับใหม่ (Undo สิ่งที่พิมพ์ไป)
+        $txtJson.Text = $conf | ConvertTo-Json -Depth 5
+        WriteGUI-Log "Reverted JSON editor changes." "Yellow"
+    })
+    $pnlAdvBtns.Controls.Add($btnAdvReload)
+
+    # ปุ่ม 3.3: SAVE & HOT RELOAD (พระเอกของเรา)
+    $btnAdvSave = New-Object System.Windows.Forms.Button
+    $btnAdvSave.Text = "SAVE & APPLY (HOT RELOAD)"
+    $btnAdvSave.Location = "285, 0"; $btnAdvSave.Size = "220, 30"
+    Apply-ButtonStyle -Button $btnAdvSave -BaseColorName "SeaGreen" -HoverColorName "Lime" -CustomFont $script:fontBold
+    $btnAdvSave.Add_Click({
+        try {
+            # 1. แปลง Text กลับเป็น Object (Validation ในตัว ถ้า Syntax ผิดจะเด้งเข้า Catch)
+            $newRawObj = $txtJson.Text | ConvertFrom-Json
+            
+            # 2. บันทึกลงไฟล์ทันที
+            $setDir = Join-Path $AppRoot "Settings"
+            if (-not (Test-Path $setDir)) { New-Item -ItemType Directory -Path $setDir -Force | Out-Null }
+            $txtJson.Text | Out-File (Join-Path $setDir "config.json") -Encoding UTF8
+
+            # 3. อัปเดต Global Config (สำคัญมาก: นี่คือที่มาของ Hot Reload)
+            $script:AppConfig = $newRawObj
+            
+            # 4. สั่ง UI ให้เปลี่ยนตามทันที!
+            Apply-Theme -NewHex $newRawObj.AccentColor -NewOpacity $newRawObj.Opacity
+            
+            # อัปเดตค่าใน UI หน้า Settings ด้วย (จะได้ไม่ตีกัน)
+            $conf = $newRawObj 
+            $script:TempHexColor = $newRawObj.AccentColor
+            $trackOp.Value = [int]($newRawObj.Opacity * 100)
+            
+            WriteGUI-Log "Advanced Config Saved & Hot-Reloaded!" "Lime"
+            [System.Windows.Forms.MessageBox]::Show("Configuration updated and applied live!", "Success", 0, 64)
+            
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Invalid JSON Syntax!`nCheck your commas and brackets.`n`nError: $($_.Exception.Message)", "JSON Error", 0, 16)
+        }
+    })
+    $pnlAdvBtns.Controls.Add($btnAdvSave)
+    
     # ================= SAVE & EXIT =================
     $btnSave = New-Object System.Windows.Forms.Button; $btnSave.Text = "APPLY SETTINGS"; $btnSave.Location = "180, 500"; $btnSave.Size = "180, 40"; Apply-ButtonStyle -Button $btnSave -BaseColorName "ForestGreen" -HoverColorName "LimeGreen" -CustomFont $script:fontBold
     $btnSave.Add_Click({
