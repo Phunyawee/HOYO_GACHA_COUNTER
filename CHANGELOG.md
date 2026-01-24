@@ -1,7 +1,7 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
-[7.2.0] - 2026-02-15
+# [7.2.0] - 2026-02-15
 📧 Major Update: Email Reporting System
 Version 7.2.0 expands the application's connectivity by introducing a full-featured **Email Reporting Engine**. You can now receive detailed HTML-formatted gacha reports directly to your inbox. We also unified the sorting logic to ensure Discord and Email reports perfectly match what you see on screen.
 
