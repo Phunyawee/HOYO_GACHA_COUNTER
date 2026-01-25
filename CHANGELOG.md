@@ -1,8 +1,26 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [7.2.2] - 2026-01-25
+🚀 Patch: Startup Synchronization & Debugging
+Version 7.1.2 focuses on application stability during the launch sequence. We've resolved a persistent race condition that caused the UI to desync from your saved configuration, alongside a new low-level tracing system for easier troubleshooting.
 
-## [7.2.1] — 2026-02-15  
+### 🐛 Bug Fixes
+- **Startup State Persistence:**
+  - Fixed an issue where the application would always default to **Genshin Impact** upon launch, ignoring the `LastGame` setting in `config.json`.
+  - **Technical:** Moved the initial game-switching logic to the Form's `Shown` event. This ensures all UI components and Event Listeners are fully loaded before applying the user's preferences.
+- **ZZZ Table Highlighting:**
+  - Adjusted the color logic in the **History Table Viewer** to correctly recognize Zenless Zone Zero's rank system (where S-Rank is internal value 4, and A-Rank is 3).
+
+### 🛠️ System Improvements
+- **Boot Trace Logging:**
+  - Introduced a new `boot_trace.txt` logging mechanism.
+  - Captures low-level initialization steps *before* the GUI loads, making it significantly easier to diagnose "Crash on Startup" issues or freezing events.
+- **Performance:** Removed redundant data loading calls during the game-switching process, resulting in a snappier response when clicking game icons.
+
+
+
+## [7.2.1] — 2026-01-25  
 📂 **Patch: File Management & Stability**
 
 Version **7.2.1** refines how the application handles file operations, ensuring a cleaner project structure and smarter background processes.  
@@ -31,7 +49,7 @@ We've reorganized where temporary files and exports land to keep your workspace 
 
 
 
-# [7.2.0] - 2026-02-15
+# [7.2.0] - 2026-01-25
 📧 Major Update: Email Reporting System
 Version 7.2.0 expands the application's connectivity by introducing a full-featured **Email Reporting Engine**. You can now receive detailed HTML-formatted gacha reports directly to your inbox. We also unified the sorting logic to ensure Discord and Email reports perfectly match what you see on screen.
 

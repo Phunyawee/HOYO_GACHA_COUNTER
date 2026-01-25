@@ -425,14 +425,33 @@ $menuTools = New-Object System.Windows.Forms.ToolStripMenuItem("Tools")
             } catch {}
         })
         
-        # Style: จัดสี 5 ดาวให้เด่น
+        # Style: จัดสี 5 ดาวให้เด่น (รองรับ ZZZ)
         $grid.Add_CellFormatting({
             param($sender, $e)
+            
+            # ตรวจสอบว่าคอลัมน์นี้ใช่ "Rank" ไหม
             if ($e.RowIndex -ge 0 -and $grid.Columns[$e.ColumnIndex].Name -eq "Rank") {
-                if ($e.Value -eq "5") {
+                
+                # --- [ADDED LOGIC] ---
+                # ดึงค่า Rank มาแปลงเป็นตัวเลข (กันเหนียว)
+                $rankVal = try { [int]$e.Value } catch { 0 }
+                
+                # เช็คว่าเป็นเกม ZZZ หรือไม่?
+                $isZZZ = $script:CurrentGame -match "ZZZ"
+                
+                # กำหนดค่า Rank เป้าหมาย
+                # ถ้าเป็น ZZZ: 5ดาว=4, 4ดาว=3
+                # ถ้าเกมอื่น: 5ดาว=5, 4ดาว=4
+                $target5 = if ($isZZZ) { 4 } else { 5 }
+                $target4 = if ($isZZZ) { 3 } else { 4 }
+
+                # --- [COLOR LOGIC] ---
+                if ($rankVal -eq $target5) {
+                    # สีทอง (5 ดาว)
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.BackColor = "Gold"
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.ForeColor = "Black"
-                } elseif ($e.Value -eq "4") {
+                } elseif ($rankVal -eq $target4) {
+                    # สีม่วง (4 ดาว)
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.BackColor = "MediumPurple"
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.ForeColor = "White"
                 }

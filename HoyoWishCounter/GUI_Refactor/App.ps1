@@ -238,6 +238,10 @@ if ($script:DevBypassDebug) {
     $script:DebugMode = $script:AppConfig.DebugConsole
 }
 
+# ทำให้ $script:CurrentGame ถูกเปลี่ยนกลับเป็น Genshin โดยไม่ตั้งใจ
+# เราต้องดึงค่าจาก Config มา "บังคับกดปุ่ม" ให้ถูกอันอีกครั้ง
+
+
 # Auto Create Config if missing
 # เช็คที่ Path ใหม่ใน folder Settings
 if (-not (Test-Path $script:ConfigPath)) { 
@@ -287,5 +291,24 @@ if ($script:AppConfig) {
 # ============================
 #  5. SHOW APPLICATION
 # ============================
+# [FIX FINAL] ย้ายการกดปุ่มมาไว้ตรงนี้ (ทำงานเมื่อหน้าต่างโผล่ขึ้นมาแล้วเท่านั้น)
+$form.Add_Shown({
+    # เช็คก่อนว่าเคยทำไปรึยัง (กันทำซ้ำ)
+    if ($script:InitialLoadDone) { return }
+    $script:InitialLoadDone = $true
+
+    WriteGUI-Log "System Ready. Syncing UI..." "Gray"
+    
+    # อ่านค่าจาก Config
+    $targetGame = if ($script:AppConfig.LastGame) { $script:AppConfig.LastGame } else { "Genshin" }
+    
+    # สั่งกดปุ่มตาม Config (ตอนนี้ปุ่มพร้อม 100% แล้ว)
+    switch ($targetGame) {
+        "Genshin" { if ($btnGenshin) { $btnGenshin.PerformClick() } }
+        "HSR"     { if ($btnHSR)     { $btnHSR.PerformClick() } }
+        "ZZZ"     { if ($btnZZZ)     { $btnZZZ.PerformClick() } }
+    }
+})
+
 if (Get-Command "Play-Sound" -ErrorAction SilentlyContinue) { Play-Sound "startup" }
 $form.ShowDialog() | Out-Null
