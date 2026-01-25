@@ -146,97 +146,103 @@ $menuTools = New-Object System.Windows.Forms.ToolStripMenuItem("Tools")
             $budget = [int]$lblTotalPulls.Text
             if ($budget -le 0) { [System.Windows.Forms.MessageBox]::Show("Please enter resources!", "No Budget", 0, 48); return }
             
-            $fSim.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
-            $btnSim.Enabled = $false; $btnStopSim.Enabled = $true # เปิดปุ่ม Stop
-            $script:SimStopRequested = $false # Reset Flag
-            
-            WriteGUI-Log "----------------------------------------" "DimGray"
-            WriteGUI-Log "[Action] Initializing Simulation ($budget Pulls)..." "Cyan"
-            [System.Windows.Forms.Application]::DoEvents()
-            
-            # Call Engine (Pass ref Flag)
-            $res = Invoke-GachaSimulation -SimCount 100000 `
-                                        -MyPulls $budget `
-                                        -StartPity ([int]$txtPity.Text) `
-                                        -IsGuaranteed ($chkG.Checked) `
-                                        -HardPityCap $hardCap `
-                                        -SoftPityStart $softCap `
-                                        -StopFlag ([ref]$script:SimStopRequested) `
-                                        -ProgressCallback { 
-                                            param($r)
-                                            $pct=($r/100000)*100
-                                            $btnSim.Text="Running... $pct%"
-                                            WriteGUI-Log "[Forecast] Simulating: $pct%" "Gray"
-                                            [System.Windows.Forms.Application]::DoEvents()
-                                        }
-            
-            # Check if Cancelled
-            if ($res.IsCancelled) {
-                WriteGUI-Log "[Forecast] Process Aborted." "Red"
-                $lblChance.Text = "Cancelled"
-                $lblCost.Text = "-"
-                $pbFill.Width = 0
-                $btnSim.Text = "RUN SIMULATION"
-                $btnSim.Enabled = $true
-                $btnStopSim.Enabled = $false
-                $fSim.Cursor = "Default"
-                return
-            }
-
-            # Update UI Results (Normal)
-            $winRate = "{0:N1}" -f $res.WinRate
-            $lblChance.Text = "Success Chance: $winRate%"
-            $lblCost.Text = "Avg. Cost: ~$('{0:N0}' -f $res.AvgCost) pulls"
-            
-            WriteGUI-Log "[Forecast] COMPLETE! WinRate=$winRate%, AvgCost=$('{0:N0}' -f $res.AvgCost)" "Lime"
-            
-            if ($res.WinRate -ge 80) { $lblChance.ForeColor="Lime"; $pbFill.BackColor="Lime" }
-            elseif ($res.WinRate -ge 50) { $lblChance.ForeColor="Gold"; $pbFill.BackColor="Gold" }
-            else { $lblChance.ForeColor="Crimson"; $pbFill.BackColor="Crimson" }
-            $pbFill.Width = [int](320 * ($res.WinRate / 100))
-
-            # --- UPDATE CHART ---
-            $chartSim.Series.Clear(); 
-            $caSim.AxisX.StripLines.Clear(); 
-            $chartSim.Legends.Clear()
-            $caSim.AxisX.Minimum = 0; 
-            if ($budget -gt 100) { 
-                $caSim.AxisX.Maximum = $NaN 
-            } 
-            else 
-            { 
-                $caSim.AxisX.Maximum = 100 
-            }
-
-            $leg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend; $leg.Name="Legend1"; $leg.Docking="Bottom"; $leg.Alignment="Center"; $leg.BackColor="Transparent"; $leg.ForeColor="Silver"; $chartSim.Legends.Add($leg)
-
-            if ($null -ne $res.Distribution -and $res.Distribution.Count -gt 0) {
-                $s = New-Object System.Windows.Forms.DataVisualization.Charting.Series; $s.Name="Simulation"; $s.ChartType="Column"; $s.IsVisibleInLegend=$false; $s["PixelPointWidth"]="40"
-                $startP = [int]$txtPity.Text
-                $keys = $res.Distribution.Keys | Sort-Object { [int]$_ }
-                foreach ($k in $keys) {
-                    $val = $res.Distribution[$k]
-                    if ($val -gt 0) {
-                        $ptIdx = $s.Points.AddXY([int]$k, [int]$val)
-                        $pt = $s.Points[$ptIdx]
-                        $totalPityReached = $startP + $k
-                        if ($totalPityReached -lt 74) { $pt.Color = "LimeGreen" } elseif ($totalPityReached -le 85) { $pt.Color = "Gold" } else { $pt.Color = "Crimson" }
-                        $pct = "{0:N2}" -f (($val / 100000) * 100)
-                        $pt.ToolTip = "Used: ~$k Pulls (Total Pity: $totalPityReached)`nChance: $pct%"
-                    }
+            try {
+                $fSim.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
+                $btnSim.Enabled = $false; $btnStopSim.Enabled = $true # เปิดปุ่ม Stop
+                $script:SimStopRequested = $false # Reset Flag
+                
+                WriteGUI-Log "----------------------------------------" "DimGray"
+                WriteGUI-Log "[Action] Initializing Simulation ($budget Pulls)..." "Cyan"
+                [System.Windows.Forms.Application]::DoEvents()
+                
+                # Call Engine (Pass ref Flag)
+                $res = Invoke-GachaSimulation -SimCount 100000 `
+                                            -MyPulls $budget `
+                                            -StartPity ([int]$txtPity.Text) `
+                                            -IsGuaranteed ($chkG.Checked) `
+                                            -HardPityCap $hardCap `
+                                            -SoftPityStart $softCap `
+                                            -StopFlag ([ref]$script:SimStopRequested) `
+                                            -ProgressCallback { 
+                                                param($r)
+                                                $pct=($r/100000)*100
+                                                $btnSim.Text="Running... $pct%"
+                                                WriteGUI-Log "[Forecast] Simulating: $pct%" "Gray"
+                                                [System.Windows.Forms.Application]::DoEvents()
+                                            }
+                
+                # Check if Cancelled
+                if ($res.IsCancelled) {
+                    WriteGUI-Log "[Forecast] Process Aborted." "Red"
+                    $lblChance.Text = "Cancelled"
+                    $lblCost.Text = "-"
+                    $pbFill.Width = 0
+                    $btnSim.Text = "RUN SIMULATION"
+                    $btnSim.Enabled = $true
+                    $btnStopSim.Enabled = $false
+                    $fSim.Cursor = "Default"
+                    return
                 }
-                $chartSim.Series.Add($s)
 
-                function Add-LegendItem($name, $color) { $dum=New-Object System.Windows.Forms.DataVisualization.Charting.Series; $dum.Name=$name; $dum.Color=$color; $dum.ChartType="Column"; $chartSim.Series.Add($dum); [void]$dum.Points.AddXY(-1000,0) }
-                Add-LegendItem "Lucky (<74)" "LimeGreen"; Add-LegendItem "Soft Pity (74-85)" "Gold"; Add-LegendItem "Hard Pity (>85)" "Crimson"
+                # Update UI Results (Normal)
+                $winRate = "{0:N1}" -f $res.WinRate
+                $lblChance.Text = "Success Chance: $winRate%"
+                $lblCost.Text = "Avg. Cost: ~$('{0:N0}' -f $res.AvgCost) pulls"
+                
+                WriteGUI-Log "[Forecast] COMPLETE! WinRate=$winRate%, AvgCost=$('{0:N0}' -f $res.AvgCost)" "Lime"
+                
+                if ($res.WinRate -ge 80) { $lblChance.ForeColor="Lime"; $pbFill.BackColor="Lime" }
+                elseif ($res.WinRate -ge 50) { $lblChance.ForeColor="Gold"; $pbFill.BackColor="Gold" }
+                else { $lblChance.ForeColor="Crimson"; $pbFill.BackColor="Crimson" }
+                $pbFill.Width = [int](320 * ($res.WinRate / 100))
 
-                $markerSoft = 74 - $startP; $markerHard = 90 - $startP
-                if ($markerSoft -gt 0) { $slSoft = New-Object System.Windows.Forms.DataVisualization.Charting.StripLine; $slSoft.IntervalOffset=$markerSoft; $slSoft.StripWidth=0.5; $slSoft.BackColor="Gold"; $slSoft.BorderDashStyle="Dash"; $slSoft.Text="Soft Pity Start"; $slSoft.TextOrientation="Rotated270"; $slSoft.TextAlignment="Far"; $slSoft.ForeColor="Gold"; $caSim.AxisX.StripLines.Add($slSoft) }
-                if ($markerHard -gt 0) { $slHard = New-Object System.Windows.Forms.DataVisualization.Charting.StripLine; $slHard.IntervalOffset=$markerHard; $slHard.StripWidth=0.5; $slHard.BackColor="Red"; $slHard.Text="Hard Pity (90)"; $slHard.TextOrientation="Rotated270"; $slHard.TextAlignment="Far"; $slHard.ForeColor="Red"; $caSim.AxisX.StripLines.Add($slHard) }
-                $chartSim.Update()
+                # --- UPDATE CHART ---
+                $chartSim.Series.Clear(); 
+                $caSim.AxisX.StripLines.Clear(); 
+                $chartSim.Legends.Clear()
+                $caSim.AxisX.Minimum = 0; 
+                if ($budget -gt 100) { 
+                    $caSim.AxisX.Maximum = $NaN 
+                } 
+                else 
+                { 
+                    $caSim.AxisX.Maximum = 100 
+                }
+
+                $leg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend; $leg.Name="Legend1"; $leg.Docking="Bottom"; $leg.Alignment="Center"; $leg.BackColor="Transparent"; $leg.ForeColor="Silver"; $chartSim.Legends.Add($leg)
+
+                if ($null -ne $res.Distribution -and $res.Distribution.Count -gt 0) {
+                    $s = New-Object System.Windows.Forms.DataVisualization.Charting.Series; $s.Name="Simulation"; $s.ChartType="Column"; $s.IsVisibleInLegend=$false; $s["PixelPointWidth"]="40"
+                    $startP = [int]$txtPity.Text
+                    $keys = $res.Distribution.Keys | Sort-Object { [int]$_ }
+                    foreach ($k in $keys) {
+                        $val = $res.Distribution[$k]
+                        if ($val -gt 0) {
+                            $ptIdx = $s.Points.AddXY([int]$k, [int]$val)
+                            $pt = $s.Points[$ptIdx]
+                            $totalPityReached = $startP + $k
+                            if ($totalPityReached -lt 74) { $pt.Color = "LimeGreen" } elseif ($totalPityReached -le 85) { $pt.Color = "Gold" } else { $pt.Color = "Crimson" }
+                            $pct = "{0:N2}" -f (($val / 100000) * 100)
+                            $pt.ToolTip = "Used: ~$k Pulls (Total Pity: $totalPityReached)`nChance: $pct%"
+                        }
+                    }
+                    $chartSim.Series.Add($s)
+
+                    function Add-LegendItem($name, $color) { $dum=New-Object System.Windows.Forms.DataVisualization.Charting.Series; $dum.Name=$name; $dum.Color=$color; $dum.ChartType="Column"; $chartSim.Series.Add($dum); [void]$dum.Points.AddXY(-1000,0) }
+                    Add-LegendItem "Lucky (<74)" "LimeGreen"; Add-LegendItem "Soft Pity (74-85)" "Gold"; Add-LegendItem "Hard Pity (>85)" "Crimson"
+
+                    $markerSoft = 74 - $startP; $markerHard = 90 - $startP
+                    if ($markerSoft -gt 0) { $slSoft = New-Object System.Windows.Forms.DataVisualization.Charting.StripLine; $slSoft.IntervalOffset=$markerSoft; $slSoft.StripWidth=0.5; $slSoft.BackColor="Gold"; $slSoft.BorderDashStyle="Dash"; $slSoft.Text="Soft Pity Start"; $slSoft.TextOrientation="Rotated270"; $slSoft.TextAlignment="Far"; $slSoft.ForeColor="Gold"; $caSim.AxisX.StripLines.Add($slSoft) }
+                    if ($markerHard -gt 0) { $slHard = New-Object System.Windows.Forms.DataVisualization.Charting.StripLine; $slHard.IntervalOffset=$markerHard; $slHard.StripWidth=0.5; $slHard.BackColor="Red"; $slHard.Text="Hard Pity (90)"; $slHard.TextOrientation="Rotated270"; $slHard.TextAlignment="Far"; $slHard.ForeColor="Red"; $caSim.AxisX.StripLines.Add($slHard) }
+                    $chartSim.Update()
+                }
             }
-
-            $fSim.Cursor="Default"; $btnSim.Enabled=$true; $btnSim.Text="RUN SIMULATION"; $btnStopSim.Enabled=$false
+            finally {
+                $fSim.Cursor="Default"; 
+                $btnSim.Enabled=$true; 
+                $btnSim.Text="RUN SIMULATION"; 
+                $btnStopSim.Enabled=$false
+            }
         })
 
         $fSim.ShowDialog() | Out-Null
@@ -335,26 +341,19 @@ $menuTools = New-Object System.Windows.Forms.ToolStripMenuItem("Tools")
             # ตรวจสอบว่าคอลัมน์นี้ใช่ "Rank" ไหม
             if ($e.RowIndex -ge 0 -and $grid.Columns[$e.ColumnIndex].Name -eq "Rank") {
                 
-                # --- [ADDED LOGIC] ---
-                # ดึงค่า Rank มาแปลงเป็นตัวเลข (กันเหนียว)
                 $rankVal = try { [int]$e.Value } catch { 0 }
                 
-                # เช็คว่าเป็นเกม ZZZ หรือไม่?
-                $isZZZ = $script:CurrentGame -match "ZZZ"
+                # [FIX] Safe Check for CurrentGame
+                $curGame = if ($script:CurrentGame) { $script:CurrentGame } else { "" }
+                $isZZZ = $curGame -match "ZZZ"
                 
-                # กำหนดค่า Rank เป้าหมาย
-                # ถ้าเป็น ZZZ: 5ดาว=4, 4ดาว=3
-                # ถ้าเกมอื่น: 5ดาว=5, 4ดาว=4
                 $target5 = if ($isZZZ) { 4 } else { 5 }
                 $target4 = if ($isZZZ) { 3 } else { 4 }
 
-                # --- [COLOR LOGIC] ---
                 if ($rankVal -eq $target5) {
-                    # สีทอง (5 ดาว)
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.BackColor = "Gold"
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.ForeColor = "Black"
                 } elseif ($rankVal -eq $target4) {
-                    # สีม่วง (4 ดาว)
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.BackColor = "MediumPurple"
                     $grid.Rows[$e.RowIndex].DefaultCellStyle.ForeColor = "White"
                 }
@@ -435,6 +434,12 @@ $menuTools = New-Object System.Windows.Forms.ToolStripMenuItem("Tools")
                 
                 # Reset & Update UI
                 Reset-LogWindow
+
+                if ($script:chart) { 
+                    $script:chart.Series.Clear()
+                    $script:chart.Visible = $false 
+                }
+
                 WriteGUI-Log "Successfully loaded: $($ofd.SafeFileName)" "Lime"
                 WriteGUI-Log "Total Items: $($script:LastFetchedData.Count)" "Gray"
                 

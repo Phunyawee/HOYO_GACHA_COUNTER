@@ -1,7 +1,25 @@
 # ==============================================================================
-# HOYO ENGINE - Core Logic Library & Bootstrapper
+# HOYO ENGINE - Core Logic Library
 # ==============================================================================
-$script:EngineVersion = "7.0.0"
+
+# เช็คว่ามีตัวแปรนี้ประกาศมาจากไฟล์แม่หรือยัง? ถ้าไม่มี ให้กำหนดค่า Default หรือไปอ่านไฟล์เอง
+if (-not $global:EngineVersion) {
+    # Logic ถอยหลังไปหาไฟล์ version.json กรณีรัน Engine แยกเดี่ยวๆ (Optional)
+    $RootPath = Split-Path (Split-Path $PSScriptRoot -Parent) 
+    $VerPath  = Join-Path $RootPath "Settings\version.json"
+    
+    if (Test-Path $VerPath) {
+        $VerData = Get-Content $VerPath -Raw | ConvertFrom-Json
+        $script:EngineVersion = $VerData.EngineVersion
+    } else {
+        $script:EngineVersion = "7.0.0-Fallback"
+    }
+} else {
+    # รับช่วงต่อจากไฟล์แม่
+    $script:EngineVersion = $global:EngineVersion
+}
+
+Write-Host "HoyoEngine Loaded: v$script:EngineVersion" -ForegroundColor Cyan
 Add-Type -AssemblyName System.Web
 
 # รายชื่อ Module ที่ต้องการโหลด (เรียงตามลำดับความสำคัญ)

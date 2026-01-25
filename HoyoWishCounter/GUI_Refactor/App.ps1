@@ -31,10 +31,28 @@ trap {
 }
 
 # ============================
-#  1. GLOBAL & DEBUG SETUP
+#  1. GLOBAL & BOOTSTRAP
 # ============================
 $script:AppRoot = $PSScriptRoot
-$script:AppVersion = "7.0.0"
+
+# หาไฟล์ Version
+$VerPath = Join-Path $script:AppRoot "Settings\version.json"
+
+if (Test-Path $VerPath) {
+    try {
+        $VerData = Get-Content $VerPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        
+        # ประกาศเป็น Global เพื่อให้ HoyoEngine และ EmailManager มองเห็น
+        $global:AppVersion    = $VerData.AppVersion
+        $global:EngineVersion = $VerData.EngineVersion
+    } catch {
+        Write-Host "Error reading version.json" -ForegroundColor Red
+        $global:AppVersion = "0.0.0" # Fallback
+    }
+} else {
+    # กรณีหาไม่เจอจริงๆ (กันเหนียว)
+    $global:AppVersion = "Dev-Build" 
+}
 
 $script:ConfigDir = Join-Path $PSScriptRoot "Settings"
 $script:ConfigPath = Join-Path $script:ConfigDir "config.json"
