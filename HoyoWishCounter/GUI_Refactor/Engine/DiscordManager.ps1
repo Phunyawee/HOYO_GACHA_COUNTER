@@ -3,7 +3,8 @@ function Send-DiscordReport {
         $HistoryData, 
         $PityTrackers, 
         $Config, # รับ GameConfig (Genshin/HSR/ZZZ)
-        [bool]$ShowNoMode
+        [bool]$ShowNoMode,
+        [bool]$SortDesc 
     )
     
     # เรียกใช้ Function จาก ConfigManager เพื่อเอา Webhook URL ล่าสุด
@@ -28,29 +29,34 @@ function Send-DiscordReport {
     $descTxt = ""
     $count = 0
     $limit = 30
-    
+    $TotalItems = $HistoryData.Count 
+
     if ($HistoryData.Count -gt 0) {
         $descTxt = "**Recent History (Last $limit):**`n"
         
-        # [FIX] เปลี่ยนจาก for loop ย้อนหลัง เป็น foreach ธรรมดา (วิ่งจากบนลงล่าง)
         foreach ($h in $HistoryData) {
             if ($count -ge $limit) { break }
             
-            # Logic สีลูกบอลตามความเกลือ
+            # Logic สีลูกบอล
             $icon = ":green_circle:"
             if ($h.Pity -gt 75) { $icon = ":red_circle:" } elseif ($h.Pity -gt 50) { $icon = ":yellow_circle:" }
             
-            # การแสดงผลแบบมีเลขลำดับ หรือ เวลา
+            # [แก้] Logic การแสดงเลขลำดับ หรือ เวลา
             if ($ShowNoMode) {
-                # ใช้ $count+1 เพื่อเรียง 1, 2, 3... ตามบรรทัดที่โชว์
-                $prefix = "[No.$($count+1)]"
+                if ($SortDesc) {
+                    # เรียง ใหม่ -> เก่า (เช่น มี 50 ตัว: ตัวแรกคือ 50, ตัวสองคือ 49)
+                    $RealNumber = $TotalItems - $count
+                } else {
+                    # เรียง เก่า -> ใหม่ (ตัวแรกคือ 1, ตัวสองคือ 2)
+                    $RealNumber = $count + 1
+                }
+                $prefix = "[No.$RealNumber]"
             } else {
                 $prefix = "`[$($h.Time)`]"
             }
             
             # ตัดชื่อตู้ให้สั้นลง
             $bannerText = if ($h.Banner) { $h.Banner } else { "Unknown" }
-            # แก้ไข: เช็คว่ามีวงเล็บไหมกัน Error
             if ($bannerText -match "\(") {
                 $bNameShort = $bannerText.Split('(')[0].Trim()
             } else {

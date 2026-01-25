@@ -424,7 +424,7 @@ function Start-DiscordScopeReport {
 
     if ($result.Data.Count -gt 0) {
         # ส่งข้อมูลที่ Sort มาแล้วไปให้ Discord
-        $res = Send-DiscordReport -HistoryData $result.Data -PityTrackers $result.PityTrackers -Config $result.Config -ShowNoMode $chkShowNo.Checked
+        $res = Send-DiscordReport -HistoryData $result.Data -PityTrackers $result.PityTrackers -Config $result.Config -ShowNoMode $chkShowNo.Checked -SortDesc $chkSortDesc.Checked
         WriteGUI-Log "Discord Report Sent: $res" "Lime"
     } else {
         WriteGUI-Log "No 5-Star data found in selected scope." "Orange"
@@ -444,7 +444,7 @@ function Start-EmailScopeReport {
 
     if ($result.Data.Count -gt 0) {
         # ส่งข้อมูลไปให้ Email
-        Send-EmailReport -HistoryData $result.Data -Config $result.Config
+        Send-EmailReport -HistoryData $result.Data -Config $result.Config -ShowNoMode $chkShowNo.Checked -SortDesc $chkSortDesc.Checked
         WriteGUI-Log "Email Report Sent!..." "Green"
         [System.Windows.Forms.MessageBox]::Show("Email sent to $($script:AppConfig.NotificationEmail)", "Success", 0, 64)
     } else {

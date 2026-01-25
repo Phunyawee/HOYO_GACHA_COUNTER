@@ -132,7 +132,9 @@ function Generate-ChartImage {
 function Send-EmailReport {
     param (
         [Parameter(Mandatory=$true)] $HistoryData,
-        [Parameter(Mandatory=$true)] $Config
+        [Parameter(Mandatory=$true)] $Config,
+        [bool]$ShowNoMode,
+        [bool]$SortDesc 
     )
 
     # 1. LOAD CONFIGS
@@ -201,21 +203,42 @@ function Send-EmailReport {
         }
     } else {
         # --- TABLE MODE ---
-        # ต้อง Generate Table ให้ตรงกับ Style ที่เลือกด้วย (Classic/Terminal/Premium)
         $rows = ""
+        $HeadCol1 = if ($ShowNoMode) { "Index [No.]" } else { "Time" }
+
+        # [สำคัญ] เก็บจำนวนทั้งหมดไว้คำนวณ
+        $TotalCount = $HistoryData.Count
+        $LoopIndex = 0 # ตัวนับรอบ loop (เริ่มที่ 0)
+
         foreach ($item in ($HistoryData | Select-Object -First 20)) {
              $pityVal = [int]$item.Pity
              $col = if ($pityVal -ge 75) { "#ff4d4d" } elseif ($pityVal -lt 20) { "#00e676" } else { "#ffb74d" }
              
+             # [สูตรคำนวณเลข No.]
+             if ($ShowNoMode) {
+                if ($SortDesc) {
+                    # กรณีเรียง ใหม่ -> เก่า (เช่น มี 50 ตัว: ตัวแรกโชว์ 50, ตัวถัดไป 49...)
+                    $RealNumber = $TotalCount - $LoopIndex
+                } else {
+                    # กรณีเรียง เก่า -> ใหม่ (ตัวแรกโชว์ 1, ตัวถัดไป 2...)
+                    $RealNumber = $LoopIndex + 1
+                }
+                $displayCol1 = "No. $RealNumber"
+             } else {
+                $displayCol1 = $item.Time
+             }
+
              # Table Row Styling
              if ($SelectedStyle -eq "Classic Table") {
-                $rows += "<tr><td style='padding:5px;border:1px solid #ccc;'>$($item.Time)</td><td style='padding:5px;border:1px solid #ccc;'>$($item.Name)</td><td style='padding:5px;border:1px solid #ccc;color:$col;'>$($item.Pity)</td></tr>"
+                $rows += "<tr><td style='padding:5px;border:1px solid #ccc;'>$displayCol1</td><td style='padding:5px;border:1px solid #ccc;'>$($item.Name)</td><td style='padding:5px;border:1px solid #ccc;color:$col;'>$($item.Pity)</td></tr>"
              } elseif ($SelectedStyle -eq "Terminal Mode") {
-                $rows += "<tr><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Time)</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Name)</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Pity)</td></tr>"
+                $rows += "<tr><td style='padding:5px;border-bottom:1px dashed #0f0;'>$displayCol1</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Name)</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Pity)</td></tr>"
              } else {
                 # Premium
-                $rows += "<tr><td style='color:#aaa;padding:8px;border-bottom:1px solid #333;'>$($item.Time)</td><td style='color:#eee;font-weight:bold;padding:8px;border-bottom:1px solid #333;'>$($item.Name)</td><td style='padding:8px;border-bottom:1px solid #333;'><span style='color:$col;'>$($item.Pity)</span></td></tr>"
+                $rows += "<tr><td style='color:#aaa;padding:8px;border-bottom:1px solid #333;'>$displayCol1</td><td style='color:#eee;font-weight:bold;padding:8px;border-bottom:1px solid #333;'>$($item.Name)</td><td style='padding:8px;border-bottom:1px solid #333;'><span style='color:$col;'>$($item.Pity)</span></td></tr>"
              }
+             
+             $LoopIndex++ # บวกตัวนับรอบ
         }
 
         # Table Wrapper Styling

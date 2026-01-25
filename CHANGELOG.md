@@ -1,6 +1,27 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [7.3.1] - 2026-01-26
+🐛 **Patch: Logic Precision & Report Synchronization**
+Version **7.3.1** focuses on the accuracy of your data. We've overhauled the filtering engine to ensure that what you see on screen is exactly what gets delivered to Discord and Email.
+This update fixes sorting discrepancies and ensures Index numbering `[No.]` correctly reflects your sorting preference (Newest vs. Oldest).
+
+## 🛠️ Fixes & Improvements
+
+### 🧮 Smart Sorting & Indexing
+- **Correct Index Calculation**  
+  The `[No. X]` indicator in reports now intelligently adapts to your sort order.
+  - *Newest First:* Counts down from Max (e.g., No. 50, 49, 48...).
+  - *Oldest First:* Counts up from 1 (e.g., No. 1, 2, 3...).
+- **Decimal ID Sorting**  
+  Fixed a potential bug where IDs were sorted as text (causing 10 to appear before 2). The engine now forces Decimal sorting for 100% accuracy.
+
+### 📨 Report Synchronization
+- **Email & Discord Parity**  
+  Both Discord and Email reports now strictly obey your **"View Mode"** (Time vs. No.) and **"Sort Order"** checkboxes.
+- **View Mode Fix**  
+  Fixed an issue where the Email report ignored the "View: Index [No.]" toggle and always showed Timestamps.
+
 # [7.3.0] - 2026-01-26
 🎨 **Patch: Visual Analytics & Email Reporting**
 Version **7.3.0** delivers a major upgrade to how you visualize and share your gacha history.  
