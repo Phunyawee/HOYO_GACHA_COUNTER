@@ -1,6 +1,36 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [7.2.1] — 2026-02-15  
+📂 **Patch: File Management & Stability**
+
+Version **7.2.1** refines how the application handles file operations, ensuring a cleaner project structure and smarter background processes.  
+We've reorganized where temporary files and exports land to keep your workspace tidy.
+
+### 🛠️ Improvements
+
+#### 🧠 Smarter Cache Staging
+- The **Find-GameCacheFile engine** now safely creates a dedicated `temp_data` directory.
+- Prevents `data_2` files from cluttering the root directory.
+- Avoids relative path issues during the staging process.
+
+#### 📑 Organized CSV Exports
+- Exported **Wish History** files now land in a dedicated `\export` folder at the project root.
+- The system automatically:
+  - Detects the root path (stepping back from `controllers`)
+  - Creates the folder if it doesn’t exist
+
+#### 🔐 Backup Logic Refinement
+- **Toggle Respect**  
+  - Auto-backup now strictly follows the `EnableAutoBackup` config  
+  - Backup logic is skipped entirely when disabled
+- **Null Safety**  
+  - Added validation to ensure actual data exists before saving  
+  - Prevents creation of empty backup files when fetch fails
+
+
+
 # [7.2.0] - 2026-02-15
 📧 Major Update: Email Reporting System
 Version 7.2.0 expands the application's connectivity by introducing a full-featured **Email Reporting Engine**. You can now receive detailed HTML-formatted gacha reports directly to your inbox. We also unified the sorting logic to ensure Discord and Email reports perfectly match what you see on screen.
