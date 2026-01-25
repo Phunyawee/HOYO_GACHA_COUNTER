@@ -70,8 +70,23 @@ $btnSave.Add_Click({
     if ($script:menuExpand) { 
         $script:menuExpand.ForeColor = [System.Drawing.ColorTranslator]::FromHtml($conf.AccentColor) 
     }
+
+    # --- SAVE EMAIL FORM JSON ---
+    if ($script:EmailStyleCmb) {
+        $EmailData = @{
+            Style         = $script:EmailStyleCmb.SelectedItem
+            SubjectPrefix = $script:EmailSubjTxt.Text
+            ContentType   = $script:EmailTypeCmb.SelectedItem
+            ChartType     = $script:EmailChartCmb.SelectedItem # บันทึกประเภทกราฟ
+            Updated       = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+        }
+
+        # บันทึกลง JSON
+        $EmailData | ConvertTo-Json | Set-Content -Path $script:EmailJsonPath -Encoding UTF8
+        Write-Host "  + Email preferences saved." -ForegroundColor Green
+    }
     
-    [System.Windows.Forms.MessageBox]::Show("Configuration (including SMTP) Saved!", "Done")
+    [System.Windows.Forms.MessageBox]::Show("Configuration Saved!", "Done")
     $fSet.Close()
 })
 $fSet.Controls.Add($btnSave)

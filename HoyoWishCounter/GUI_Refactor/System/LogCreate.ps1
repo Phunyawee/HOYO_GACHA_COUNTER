@@ -22,8 +22,18 @@ function Write-LogFile {
     # ตั้งเผื่อไว้สำหรับคำยาวสุด เช่น "USER_ACTION" (11 ตัว) -> ตั้งเผื่อเป็น 12 หรือ 14
     $MaxLabelWidth = $Level.Length
 
-    # 1. เช็ค Config
-    if ($script:AppConfig -and (-not $script:AppConfig.EnableFileLog) -and ($Level -notin @("CRASH", "FATAL"))) { return }
+    # 1. เช็ค Config (Refactored Logic)
+    
+    # ถ้าเป็นเรื่องคอขาดบาดตาย (CRASH/FATAL) ให้เขียนเสมอ ไม่ต้องสน Config
+    $IsCritical = ($Level -in @("CRASH", "FATAL"))
+    if (-not $IsCritical) {
+        # ถ้าไม่มี Config (ยังโหลดไม่เสร็จ) -> ให้ถือว่าปิดไว้ก่อน (Return เลย)
+        if (-not $script:AppConfig) { return }
+
+        # ถ้ามี Config แต่ค่าเป็น False (หรือ "False") -> ให้ถือว่าปิด (Return)
+        # ใช้ [bool] บังคับแปลงค่าเผื่อ JSON ส่งมาเป็น String
+        if (-not ([bool]$script:AppConfig.EnableFileLog)) { return }
+    }
 
     # 2. เตรียม Path
     if (-not $Global:LogRoot) { $Global:LogRoot = "$PSScriptRoot\Logs" }

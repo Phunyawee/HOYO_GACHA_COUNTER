@@ -1,195 +1,270 @@
+# ==============================================================================
+# ENGINE: EMAIL MANAGER (Full Chart Support + Debug Logging)
+# ==============================================================================
+
+function Generate-ChartImage {
+    param($DataList, $ChartType, $Config, $OutPath)
+
+    Add-Type -AssemblyName System.Windows.Forms.DataVisualization
+    Add-Type -AssemblyName System.Drawing
+
+    $chart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
+    $chart.Width = 900  # เพิ่มความกว้างอีกนิดให้ชื่อไม่เบียด
+    $chart.Height = 500
+    $chart.BackColor = [System.Drawing.Color]::FromArgb(30,30,30)
+    
+    $area = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea "Main"
+    $area.BackColor = "Transparent"
+    
+    # -------------------------------------------------------
+    # [จุดแก้สำคัญ] ตั้งค่าแกน X ให้โชว์ชื่อครบ
+    # -------------------------------------------------------
+    $area.AxisX.LabelStyle.ForeColor = "Silver"
+    $area.AxisX.LineColor = "#555"
+    $area.AxisX.MajorGrid.LineColor = "#333"
+    
+    # 1. บังคับโชว์ทุกขีด (ไม่ให้ข้ามชื่อ)
+    $area.AxisX.Interval = 1 
+    
+    # 2. ถ้าชื่อยาว ให้เอียงตัวหนังสือ -45 องศา จะได้ไม่ทับกัน
+    $area.AxisX.LabelStyle.Angle = -45 
+    
+    # 3. กันไม่ให้ตัดคำท้ายๆ ทิ้ง
+    $area.AxisX.LabelStyle.IsEndLabelVisible = $true
+    
+    $area.AxisY.LabelStyle.ForeColor = "Silver"
+    $area.AxisY.LineColor = "#555"
+    $area.AxisY.MajorGrid.LineColor = "#333"
+    
+    $chart.ChartAreas.Add($area)
+
+    $series = New-Object System.Windows.Forms.DataVisualization.Charting.Series "Data"
+    $series.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
+
+    # =========================================================
+    # TYPE A: RATE ANALYSIS (Doughnut)
+    # =========================================================
+    if ($ChartType -eq "Rate Analysis") {
+        $area.AxisX.Enabled = "False"; $area.AxisY.Enabled = "False"
+        
+        $sRank = if ($Config.SRank) { $Config.SRank } else { "5" }
+        $count5 = ($DataList | Where-Object { $_.rank_type -eq $sRank }).Count
+        $count4 = ($DataList | Where-Object { $_.rank_type -eq "4" }).Count
+        $count3 = $DataList.Count - $count5 - $count4
+
+        $series.ChartType = "Doughnut"
+        $series["DoughnutRadius"] = "60"
+        $series["PieLabelStyle"] = "Outside"
+        $series["PieLineColor"] = "Silver"
+        $series.LabelForeColor = "White"
+
+        if ($count5 -gt 0) {
+            $p = $series.Points.Add($count5); $series.Points[$p].Color = "Gold"
+            $series.Points[$p].LegendText = "5-Star"; $series.Points[$p].Label = "#VALY (#PERCENT{P1})"
+            $series.Points[$p].LabelForeColor = "Gold"
+        }
+        if ($count4 -gt 0) {
+            $p = $series.Points.Add($count4); $series.Points[$p].Color = "MediumPurple"
+            $series.Points[$p].LegendText = "4-Star"; $series.Points[$p].Label = "#VALY (#PERCENT{P1})"
+            $series.Points[$p].LabelForeColor = "MediumPurple"
+        }
+        if ($count3 -gt 0) {
+            $p = $series.Points.Add($count3); $series.Points[$p].Color = "DodgerBlue"
+            $series.Points[$p].LegendText = "3-Star"; $series.Points[$p].Label = "" 
+        }
+
+    } else {
+        # =========================================================
+        # TYPE B: HISTORY (Bar/Line)
+        # =========================================================
+        $series.ChartType = $ChartType 
+        $series.IsValueShownAsLabel = $true
+        $series.LabelForeColor = "White"
+        
+        if ($ChartType -match "Line|Spline") {
+            $series.BorderWidth = 3; $series.Color = "White"; $series.MarkerStyle = "Circle"; $series.MarkerSize = 8
+        } else {
+            $series["PixelPointWidth"] = "30"
+        }
+
+        # Sort ตามเวลา: เก่า -> ใหม่
+        $DisplayData = $DataList | Sort-Object Time | Select-Object -Last 15
+        
+        foreach ($item in $DisplayData) {
+            # สร้าง Label
+            $labelName = "$($item.Name)"
+            
+            # AddXY: แกน X เป็น String, แกน Y เป็นตัวเลข
+            $ptIdx = $series.Points.AddXY($labelName, $item.Pity)
+            $pt = $series.Points[$ptIdx]
+            
+            # [Fix เพิ่มเติม] บังคับใส่ AxisLabel อีกรอบเพื่อความชัวร์
+            $pt.AxisLabel = $labelName
+            
+            # สี Pity
+            $col = "LimeGreen"
+            if ($item.Pity -ge 75) { $col = "Crimson" } elseif ($item.Pity -ge 50) { $col = "Gold" }
+            
+            if ($ChartType -match "Bar|Column") { $pt.Color = $col } else { $pt.MarkerColor = $col }
+        }
+    }
+    
+    $chart.Series.Add($series)
+
+    # ปรับ Legend ให้สวยงาม
+    $leg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend
+    $leg.Docking = "Bottom"; $leg.BackColor = "Transparent"; $leg.ForeColor = "Silver"
+    $chart.Legends.Add($leg)
+
+    # Title
+    $title = New-Object System.Windows.Forms.DataVisualization.Charting.Title
+    $title.Text = "$ChartType Report"
+    $title.ForeColor = "White"
+    $title.Font = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
+    $chart.Titles.Add($title)
+
+    # Save
+    $chart.SaveImage($OutPath, "Png")
+    $chart.Dispose()
+}
+
+
 function Send-EmailReport {
     param (
         [Parameter(Mandatory=$true)] $HistoryData,
-        [Parameter(Mandatory=$true)] $Config, # Config เกม (Color/Name)
-        [string]$SubjectPrefix = "Gacha Report"
+        [Parameter(Mandatory=$true)] $Config
     )
 
-    # =========================================================
-    # 1. LOAD APP CONFIG & VERSION
-    # =========================================================
+    # 1. LOAD CONFIGS
     $RootPath = Split-Path $PSScriptRoot -Parent
-    $JsonPath = Join-Path $RootPath "Settings\config.json"
+    $MainConfPath = Join-Path $RootPath "Settings\config.json"
+    $EmailConfPath = Join-Path $RootPath "Settings\EmailForm.json"
 
-    if (-not (Test-Path $JsonPath)) {
-        Write-Host "[EmailManager] Error: Config file not found" -ForegroundColor Red
-        return $false
-    }
+    # [DEBUG LOG]
+    Write-Host "[EmailMgr] Root Path: $RootPath" -ForegroundColor DarkGray
+    Write-Host "[EmailMgr] Loading EmailForm.json from: $EmailConfPath" -ForegroundColor DarkGray
 
-    try {
-        $AppConf = Get-Content $JsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
-        
-        # [NEW] ดึง Version จาก Config ถ้าไม่มีให้ใช้ Default
-        $CurrentVersion = if ($AppConf.AppVersion) { $AppConf.AppVersion } else { "7.0.0" }
-    } catch {
-        Write-Host "[EmailManager] Error reading config" -ForegroundColor Red
-        return $false
-    }
-
-    # =========================================================
-    # 2. VALIDATE SETTINGS
-    # =========================================================
-    $toEmail = $AppConf.NotificationEmail
-    $senderEmail = $AppConf.SenderEmail
-    $senderPass  = $AppConf.SenderPassword
-
-    if ([string]::IsNullOrWhiteSpace($toEmail)) { return } # ไม่มีคนรับ ก็จบงาน
-
-    if ([string]::IsNullOrWhiteSpace($senderEmail) -or [string]::IsNullOrWhiteSpace($senderPass)) {
-        if (Get-Command "WriteGUI-Log" -ErrorAction SilentlyContinue) {
-            WriteGUI-Log "Email Error: Sender Config Missing" "Red"
-        }
-        return $false
-    }
-
-    $smtpServer = if ($AppConf.SmtpServer) { $AppConf.SmtpServer } else { "smtp.gmail.com" }
-    $smtpPort   = if ($AppConf.SmtpPort)   { $AppConf.SmtpPort }   else { 587 }
-
-    # =========================================================
-    # 3. GENERATE HTML (PREMIUM GACHA STYLE)
-    # =========================================================
+    if (-not (Test-Path $MainConfPath)) { Write-Host "Config not found!" -ForegroundColor Red; return $false }
+    $AppConf = Get-Content $MainConfPath -Raw -Encoding UTF8 | ConvertFrom-Json
     
-    # ใช้สีจาก Config เกม หรือ Default เป็นสีม่วงถ้าไม่มี
-    $ThemeColor = if ($Config.AccentColor) { $Config.AccentColor } else { "#A370F0" }
-    $GameTitle  = if ($script:CurrentGame) { $script:CurrentGame } else { "Gacha Game" }
-    $DateStr    = Get-Date -Format "dd MMM yyyy, HH:mm"
-
-    # สร้างแถวตาราง (Table Rows)
-    $rows = ""
-    foreach ($item in $HistoryData) {
-        # เช็ค Pity เพื่อเปลี่ยนสี Badge (ถ้าสูงให้แดง ถ้าต่ำให้เขียว)
-        $pityVal = [int]$item.Pity
-        $pityColor = if ($pityVal -ge 75) { "#ff4d4d" } elseif ($pityVal -lt 20) { "#00e676" } else { "#ffb74d" }
-
-        # เช็คความแรร์ (สมมติถ้าชื่อมีคำว่า 5-Star หรือดูจาก Logic อื่น ในที่นี้เน้นใส่ class)
-        # แต่เพื่อความง่าย ผมใส่ Style ให้คอลัมน์ชื่อดูเด่นขึ้น
-        
-        $rows += "
-        <tr>
-            <td style='color:#888; font-size:12px;'>$($item.Time)</td>
-            <td style='font-weight:600; color:#fff; font-size:14px;'>
-                <span style='text-shadow: 0 0 10px $($ThemeColor)40;'>$($item.Name)</span>
-            </td>
-            <td>
-                <span style='background-color: $($pityColor)20; color:$pityColor; padding: 2px 8px; border-radius: 12px; font-weight:bold; font-size:12px; border:1px solid $($pityColor)40;'>
-                    $($item.Pity)
-                </span>
-            </td>
-            <td style='color:#ccc; font-size:13px;'>$($item.Banner)</td>
-        </tr>"
+    # Defaults
+    $SelectedStyle = "Premium Card"; $ContentType = "Table List"; $ChartType = "Rate Analysis"; $SubjectPrefix = "Gacha Report"
+    
+    if (Test-Path $EmailConfPath) {
+        try {
+            $ES = Get-Content $EmailConfPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($ES.Style) { $SelectedStyle = $ES.Style }
+            if ($ES.ContentType) { $ContentType = $ES.ContentType }
+            if ($ES.ChartType) { $ChartType = $ES.ChartType }
+            if ($ES.SubjectPrefix) { $SubjectPrefix = $ES.SubjectPrefix }
+            
+            # [DEBUG LOG] ยืนยันว่าอ่านค่าได้จริง
+            Write-Host "[EmailMgr] Config Loaded -> Style: $SelectedStyle | Mode: $ContentType | Chart: $ChartType" -ForegroundColor Yellow
+        } catch {
+            Write-Host "[EmailMgr] Error reading EmailForm.json" -ForegroundColor Red
+        }
+    } else {
+        Write-Host "[EmailMgr] EmailForm.json not found. Using Defaults." -ForegroundColor Yellow
     }
 
-    $htmlBody = @"
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <style>
-        body { background-color: #121212; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; color: #e0e0e0; }
-        .main-card {
-            max-width: 650px; margin: 0 auto; background-color: #1e1e1e; 
-            border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-        }
-        .header {
-            background: linear-gradient(135deg, $ThemeColor 0%, #1a1a1a 100%);
-            padding: 30px 20px; text-align: center; position: relative;
-        }
-        .header h1 { margin: 0; color: #fff; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        .header p { margin: 5px 0 0; color: rgba(255,255,255,0.7); font-size: 14px; }
+    $RawGameName = if ($script:CurrentGame) { $script:CurrentGame } else { "Gacha" }
+    
+    switch ($RawGameName) {
+        "Genshin" { $GameTitle = "Genshin Impact" }
+        "HSR"     { $GameTitle = "Honkai: Star Rail" }
+        "ZZZ"     { $GameTitle = "Zenless Zone Zero" }
+        "WuWa"    { $GameTitle = "Wuthering Waves" }
+        Default   { $GameTitle = $RawGameName } # ถ้าไม่ตรงเงื่อนไข ให้ใช้ชื่อเดิม
+    }
+
+    # Creds Check
+    $toEmail = $AppConf.NotificationEmail; $senderEmail = $AppConf.SenderEmail; $senderPass = $AppConf.SenderPassword
+    if ([string]::IsNullOrWhiteSpace($toEmail) -or [string]::IsNullOrWhiteSpace($senderEmail)) { return $false }
+    $smtpServer = if ($AppConf.SmtpServer) { $AppConf.SmtpServer } else { "smtp.gmail.com" }
+    $smtpPort = if ($AppConf.SmtpPort) { $AppConf.SmtpPort } else { 587 }
+
+    # 2. PREPARE CONTENT
+    $ThemeColor = if ($Config.AccentColor) { $Config.AccentColor } else { "#A370F0" }
+    #$GameTitle = if ($script:CurrentGame) { $script:CurrentGame } else { "Gacha Game" }
+    $Attachments = @()
+
+    if ($ContentType -eq "Chart Snapshot") {
+        # --- GRAPH MODE ---
+        $TempImage = Join-Path $env:TEMP "Hoyo_Chart.png"
+        Generate-ChartImage -DataList $HistoryData -ChartType $ChartType -Config $Config -OutPath $TempImage
         
-        .stats-grid {
-            display: flex; justify-content: space-around; background-color: #252525;
-            padding: 15px; border-bottom: 1px solid #333;
+        if (Test-Path $TempImage) {
+            $Attachments += $TempImage
+            $BodyContent = "<div style='text-align:center;'><img src='cid:Hoyo_Chart.png' style='max-width:100%;border-radius:8px;border:1px solid #444;'></div>"
+        } else {
+            $BodyContent = "<p style='color:red;'>Error generating chart.</p>"
         }
-        .stat-item { text-align: center; }
-        .stat-val { display: block; font-size: 18px; font-weight: bold; color: #fff; }
-        .stat-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-
-        .content { padding: 20px; }
-        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
-        th { text-align: left; color: #666; font-size: 11px; text-transform: uppercase; padding: 0 10px; letter-spacing: 1px; }
-        td { background-color: #2a2a2a; padding: 12px 10px; border-top: 1px solid #333; border-bottom: 1px solid #333; }
-        td:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; border-left: 1px solid #333; }
-        td:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; border-right: 1px solid #333; }
-        
-        .footer {
-            background-color: #181818; padding: 15px; text-align: center;
-            font-size: 11px; color: #555; border-top: 1px solid #333;
+    } else {
+        # --- TABLE MODE ---
+        # ต้อง Generate Table ให้ตรงกับ Style ที่เลือกด้วย (Classic/Terminal/Premium)
+        $rows = ""
+        foreach ($item in ($HistoryData | Select-Object -First 20)) {
+             $pityVal = [int]$item.Pity
+             $col = if ($pityVal -ge 75) { "#ff4d4d" } elseif ($pityVal -lt 20) { "#00e676" } else { "#ffb74d" }
+             
+             # Table Row Styling
+             if ($SelectedStyle -eq "Classic Table") {
+                $rows += "<tr><td style='padding:5px;border:1px solid #ccc;'>$($item.Time)</td><td style='padding:5px;border:1px solid #ccc;'>$($item.Name)</td><td style='padding:5px;border:1px solid #ccc;color:$col;'>$($item.Pity)</td></tr>"
+             } elseif ($SelectedStyle -eq "Terminal Mode") {
+                $rows += "<tr><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Time)</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Name)</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Pity)</td></tr>"
+             } else {
+                # Premium
+                $rows += "<tr><td style='color:#aaa;padding:8px;border-bottom:1px solid #333;'>$($item.Time)</td><td style='color:#eee;font-weight:bold;padding:8px;border-bottom:1px solid #333;'>$($item.Name)</td><td style='padding:8px;border-bottom:1px solid #333;'><span style='color:$col;'>$($item.Pity)</span></td></tr>"
+             }
         }
-        .version-badge {
-            background-color: #333; color: #888; padding: 2px 6px; border-radius: 4px; margin-left: 5px;
+
+        # Table Wrapper Styling
+        if ($SelectedStyle -eq "Classic Table") {
+            $BodyContent = "<table width='100%' style='border-collapse:collapse;color:black;'><tr><th style='text-align:left;background:#eee;padding:5px;'>Time</th><th style='text-align:left;background:#eee;padding:5px;'>Item</th><th style='text-align:left;background:#eee;padding:5px;'>Pity</th></tr>$rows</table>"
+        } elseif ($SelectedStyle -eq "Terminal Mode") {
+            $BodyContent = "<table width='100%' style='border-collapse:collapse;color:#0f0;font-family:Consolas;'><tr><th style='text-align:left;border-bottom:1px double #0f0;'>TIME</th><th style='text-align:left;border-bottom:1px double #0f0;'>ITEM</th><th style='text-align:left;border-bottom:1px double #0f0;'>PITY</th></tr>$rows</table>"
+        } else {
+            $BodyContent = "<table width='100%' cellspacing='0'><tr><th style='text-align:left;color:#666;'>Time</th><th style='text-align:left;color:#666;'>Item</th><th style='text-align:left;color:#666;'>Pity</th></tr>$rows</table>"
         }
-    </style>
-    </head>
-    <body>
-        <div class="main-card">
-            <div class="header">
-                <h1>$GameTitle</h1>
-                <p>New Items Acquired</p>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <span class="stat-val">$($HistoryData.Count)</span>
-                    <span class="stat-label">Total Items</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-val">$DateStr</span>
-                    <span class="stat-label">Sync Time</span>
-                </div>
-            </div>
+    }
 
-            <div class="content">
-                <table cellspacing="0" cellpadding="0">
-                    <tr>
-                        <th width="20%">Time</th>
-                        <th width="40%">Item Name</th>
-                        <th width="15%">Pity</th>
-                        <th width="25%">Banner</th>
-                    </tr>
-                    $rows
-                </table>
-            </div>
-
-            <div class="footer">
-                Powered by <strong>HoyoEngine</strong> <span class="version-badge">v$CurrentVersion</span>
-                <br><br>
-                This is an automated report. Good luck on your pulls!
-            </div>
-        </div>
-    </body>
-    </html>
+    # 3. FINAL HTML WRAPPER (Theme Based)
+    $Meta = "<meta charset='utf-8'>"
+    switch ($SelectedStyle) {
+        "Classic Table" {
+            $htmlBody = "<html><head>$Meta<style>body{background:white;color:black;font-family:sans-serif;}</style></head><body><h3>$GameTitle - $SubjectPrefix</h3><hr>$BodyContent</body></html>"
+        }
+        "Terminal Mode" {
+             # [แก้ไข] ย้าย background-color:black มาใส่ใน style ของ <body> โดยตรง
+             $htmlBody = "<html><head>$Meta</head><body style='background-color:black; color:#0f0; font-family:Consolas,monospace; padding:20px;'><div>> TARGET: $GameTitle</div><div>> SUBJECT: $SubjectPrefix</div><div style='border:1px dashed #0f0;margin:10px 0;'></div>$BodyContent<br><div>> END_LOG</div></body></html>"
+        }
+        Default {
+            # Premium Card
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{background:#121212;color:#eee;font-family:'Segoe UI';} .card{max-width:600px;margin:0 auto;background:#1e1e1e;border-radius:12px;overflow:hidden;border:1px solid #333;} .head{background:linear-gradient(135deg,$ThemeColor 0%,#111 100%);padding:20px;text-align:center;} h2{margin:0;color:white;} .cont{padding:20px;}</style></head><body>
+<div class='card'><div class='head'><h2>$GameTitle</h2><p>$SubjectPrefix</p></div><div class='cont'>$BodyContent</div></div></body></html>
 "@
+        }
+    }
 
-    # =========================================================
     # 4. SEND MAIL
-    # =========================================================
     try {
         $secPass = ConvertTo-SecureString $senderPass -AsPlainText -Force
         $cred = New-Object System.Management.Automation.PSCredential($senderEmail, $secPass)
-
-        Send-MailMessage -From $senderEmail `
-                         -To $toEmail `
-                         -Subject "[$GameTitle] $SubjectPrefix ($($HistoryData.Count) Drops)" `
-                         -Body $htmlBody `
-                         -BodyAsHtml `
-                         -SmtpServer $smtpServer `
-                         -Port $smtpPort `
-                         -UseSsl `
-                         -Credential $cred
-
-        if (Get-Command "WriteGUI-Log" -ErrorAction SilentlyContinue) {
-            WriteGUI-Log "Email Report v$CurrentVersion Sent to $toEmail" "Lime"
+        
+        $params = @{
+            From = $senderEmail; To = $toEmail; Subject = "[$GameTitle] $SubjectPrefix"; Body = $htmlBody; BodyAsHtml = $true
+            SmtpServer = $smtpServer; Port = $smtpPort; UseSsl = $true; Credential = $cred; Encoding = [System.Text.Encoding]::UTF8
         }
+        if ($Attachments.Count -gt 0) { $params.Attachments = $Attachments }
+
+        Send-MailMessage @params
+        Write-Host "Email Sent Successfully ($ContentType - $ChartType)" -ForegroundColor Green
         return $true
-
     } catch {
-        $errMsg = $_.Exception.Message
-        if (Get-Command "WriteGUI-Log" -ErrorAction SilentlyContinue) {
-            WriteGUI-Log "Email Failed: $errMsg" "Red"
-        } else {
-            Write-Host "Email Failed: $errMsg" -ForegroundColor Red
-        }
+        Write-Host "Email Failed: $_" -ForegroundColor Red
         return $false
+    } finally {
+        if ($TempImage -and (Test-Path $TempImage)) { Remove-Item $TempImage -Force -ErrorAction SilentlyContinue }
     }
 }

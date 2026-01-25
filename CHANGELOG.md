@@ -1,9 +1,74 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [7.3.0] - 2026-01-26
+🎨 **Patch: Visual Analytics & Email Reporting**
+Version **7.3.0** delivers a major upgrade to how you visualize and share your gacha history.  
+This release introduces a brand-new **Email Manager**, a fully rewritten **Charting Engine**, and improved game name mapping for more professional reporting.
+
+## ✨ New Features
+
+### 📧 Email Reporting System
+- **Automated Reports**  
+  Send your gacha history directly to your email with a single click.
+
+- **Theme Support**  
+  Choose from three distinct presentation styles:
+  - 🃏 **Premium Card** – Modern dark-themed card design with gradient headers  
+  - 📟 **Terminal Mode** – Hacker-style neon green text on a black background  
+  - 📝 **Classic Table** – Clean, professional white-paper layout
+
+- **Smart Subject Lines**  
+  Internal game codes are now automatically mapped to full titles  
+  (e.g. `HSR` → **[Honkai: Star Rail]**) for polished email headers.
+
+## 📊 Charting Engine Overhaul
+
+### 🎯 Pro-Grade Visualization
+- **Rate Analysis**
+  - Replaced legacy Pie Charts with modern **Doughnut Charts**
+  - Added **Outside Labels** to prevent overlap
+  - 3-Star item labels are now hidden for better clarity
+
+- **Pity Coloring Logic**
+  Bars and data points dynamically change color based on luck:
+  - 🟢 **Lime Green** — Early Pity (`< 50`)
+  - 🟡 **Gold** — Soft Pity (`50–74`)
+  - 🔴 **Crimson** — Hard Pity (`75+`)
+
+### 🔁 Data Sorting Fixes
+- Fixed a critical logic error where Line Graphs rendered backwards
+- History data is now correctly sorted:
+  **Oldest → Newest (Left → Right)**  
+  for accurate progression tracking
+
+### 🏷️ Labeling Improvements
+- X-Axis now uses:
+  - `Interval = 1`
+  - `-45°` text rotation  
+- Character names are always readable, even with dense history data
+
+## 💾 Export & Utilities
+
+### 🖼️ Advanced Image Saving
+- **Watermark Editor**  
+  Add your **Player Name** and **UID** directly onto exported chart images
+- **Native Dark Mode Export**  
+  Generated images now use a seamless dark background (`#1E1E1E`), perfectly matching the app’s UI
+
+## 🐛 Bug Fixes
+- **Outlook / Gmail Rendering**  
+  Fixed white background issues by moving CSS styles inline into the `<body>` tag
+- **Assembly Loading Safety**  
+  Added validation to ensure  
+  `.NET System.Windows.Forms.DataVisualization`  
+  is fully loaded before generating reports
+
+
+
 # [7.2.2] - 2026-01-25
 🚀 Patch: Startup Synchronization & Debugging
-Version 7.1.2 focuses on application stability during the launch sequence. We've resolved a persistent race condition that caused the UI to desync from your saved configuration, alongside a new low-level tracing system for easier troubleshooting.
+Version 7.2.2 focuses on application stability during the launch sequence. We've resolved a persistent race condition that caused the UI to desync from your saved configuration, alongside a new low-level tracing system for easier troubleshooting.
 
 ### 🐛 Bug Fixes
 - **Startup State Persistence:**

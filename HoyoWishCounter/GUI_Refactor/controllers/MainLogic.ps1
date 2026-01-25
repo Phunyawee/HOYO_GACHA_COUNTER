@@ -445,6 +445,7 @@ function Start-EmailScopeReport {
     if ($result.Data.Count -gt 0) {
         # ส่งข้อมูลไปให้ Email
         Send-EmailReport -HistoryData $result.Data -Config $result.Config
+        WriteGUI-Log "Email Report Sent!..." "Green"
         [System.Windows.Forms.MessageBox]::Show("Email sent to $($script:AppConfig.NotificationEmail)", "Success", 0, 64)
     } else {
         WriteGUI-Log "No records found for Email." "Orange"
