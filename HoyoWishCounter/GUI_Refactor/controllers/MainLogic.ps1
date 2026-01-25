@@ -239,25 +239,36 @@ function Start-MainProcess {
         # ==========================================
         # [ADD] AUTO BACKUP LOGIC
         # ==========================================
-        $bkPath = $script:AppConfig.BackupPath
-        
-        # 1. เช็คว่า User ตั้งค่า Path ไว้ไหม และ Path นั้นมีอยู่จริงไหม
-        if (-not [string]::IsNullOrWhiteSpace($bkPath) -and (Test-Path $bkPath)) {
-            WriteGUI-Log "Performing Auto-Backup..." "Magenta"
+        if (-not $script:AppConfig.EnableAutoBackup) {
+            WriteGUI-Log "Auto-Backup is disabled." "Gray"
+        } 
+        else {
+            $bkPath = $script:AppConfig.BackupPath
             
-            try {
-                # สร้างชื่อไฟล์ตามวันที่ (เช่น Genshin_Backup_20240118.json)
-                $dateStr = Get-Date -Format "yyyyMMdd_HHmm"
-                $bkFileName = "$($script:CurrentGame)_Backup_$dateStr.json"
-                $bkFull = Join-Path $bkPath $bkFileName
+            # 1. เช็คว่า User ตั้งค่า Path ไว้ไหม และ Path นั้นมีอยู่จริงไหม
+            if (-not [string]::IsNullOrWhiteSpace($bkPath) -and (Test-Path $bkPath)) {
                 
-                # แปลงข้อมูลล่าสุดเป็น JSON แล้วบันทึก
-                $jsonStr = $script:LastFetchedData | ConvertTo-Json -Depth 5 -Compress
-                [System.IO.File]::WriteAllText($bkFull, $jsonStr, [System.Text.Encoding]::UTF8)
+                if ($null -eq $script:LastFetchedData) {
+                    Log "No data to backup." "Gray"
+                    return # หรือข้ามไป
+                }
                 
-                WriteGUI-Log "Backup saved to: $bkFileName" "Lime"
-            } catch {
-                WriteGUI-Log "Auto-Backup Failed: $($_.Exception.Message)" "Red"
+                WriteGUI-Log "Performing Auto-Backup..." "Magenta"
+                
+                try {
+                    # สร้างชื่อไฟล์ตามวันที่ (เช่น Genshin_Backup_20240118.json)
+                    $dateStr = Get-Date -Format "yyyyMMdd_HHmm"
+                    $bkFileName = "$($script:CurrentGame)_Backup_$dateStr.json"
+                    $bkFull = Join-Path $bkPath $bkFileName
+                    
+                    # แปลงข้อมูลล่าสุดเป็น JSON แล้วบันทึก
+                    $jsonStr = $script:LastFetchedData | ConvertTo-Json -Depth 5 -Compress
+                    [System.IO.File]::WriteAllText($bkFull, $jsonStr, [System.Text.Encoding]::UTF8)
+                    
+                    WriteGUI-Log "Backup saved to: $bkFileName" "Lime"
+                } catch {
+                    WriteGUI-Log "Auto-Backup Failed: $($_.Exception.Message)" "Red"
+                }
             }
         }
         # ==========================================
@@ -447,8 +458,7 @@ function Start-EmailScopeReport {
 #  EXPORT LOGIC
 # ==============================================================================
 function Start-ExportCsv {
-    # 1. ตรวจสอบว่าจะเอาข้อมูลชุดไหน (ชุดที่กรองแล้ว หรือ ชุดทั้งหมด)
-    # เราเข้าถึง Checkbox ($chkFilterEnable) ได้เลยเพราะรันใน Scope เดียวกัน
+    # 1. ตรวจสอบว่าจะเอาข้อมูลชุดไหน (เหมือนเดิม)
     $dataToExport = $script:LastFetchedData
     
     if ($chkFilterEnable.Checked) {
@@ -462,21 +472,44 @@ function Start-ExportCsv {
         return 
     }
     
-    # 2. ตั้งชื่อไฟล์
-    $fileName = "$($script:CurrentGame)_WishHistory_$(Get-Date -Format 'yyyyMMdd_HHmm').csv"
-    $exportPath = Join-Path $PSScriptRoot $fileName
-    
+    # ========================================================
+    # [EDITED] ส่วนจัดการ Path และ Folder
+    # ========================================================
     try {
-        # 3. ดึงค่าตัวคั่นจาก Config (ถ้าไม่มีให้ใช้ลูกน้ำ , เป็นค่า default)
+        # 1. ถอยหลัง 1 ขั้นจาก $PSScriptRoot (ที่อยู่ใน controllers) ไปหา Root Project
+        $rootPath = Split-Path -Parent $PSScriptRoot
+        
+        # 2. กำหนดว่าโฟลเดอร์ export ควรอยู่ตรงไหน
+        $exportFolder = Join-Path $rootPath "export"
+
+        # 3. เช็คว่ามีโฟลเดอร์นี้ยัง? ถ้ายังไม่มีให้สร้าง
+        if (-not (Test-Path $exportFolder)) {
+            New-Item -ItemType Directory -Path $exportFolder -Force | Out-Null
+            WriteGUI-Log "Created new 'export' folder." "Gray"
+        }
+
+        # 4. ตั้งชื่อไฟล์และรวม Path ให้สมบูรณ์
+        $fileName = "$($script:CurrentGame)_WishHistory_$(Get-Date -Format 'yyyyMMdd_HHmm').csv"
+        $exportPath = Join-Path $exportFolder $fileName
+
+    } catch {
+        WriteGUI-Log "Error preparing path: $($_.Exception.Message)" "Red"
+        return
+    }
+    # ========================================================
+
+    try {
+        # 5. ดึงค่าตัวคั่นจาก Config
         $sep = if ($script:AppConfig.CsvSeparator) { $script:AppConfig.CsvSeparator } else { "," }
 
-        # 4. สั่ง Export
-        # เลือกเฉพาะ Column ที่สำคัญเพื่อความสะอาดของไฟล์
+        # 6. สั่ง Export
         $dataToExport | Select-Object time, name, item_type, rank_type, _BannerName, id | 
             Export-Csv -Path $exportPath -NoTypeInformation -Encoding UTF8 -Delimiter $sep
 
-        WriteGUI-Log "Saved to: $fileName" "Lime"
-        [System.Windows.Forms.MessageBox]::Show("Saved successfully to:`n$exportPath", "Export Done", 0, 64) # 64 = Icon Information
+        WriteGUI-Log "Saved to: export\$fileName" "Lime"
+        
+        # แสดงผลสำเร็จ (Optional: จะเปิดโฟลเดอร์ให้เลยก็ได้นะ ถ้า User ชอบ)
+        [System.Windows.Forms.MessageBox]::Show("Saved successfully to:`n$exportPath", "Export Done", 0, 64) 
     } catch {
         WriteGUI-Log "Export Failed: $_" "Red"
         [System.Windows.Forms.MessageBox]::Show("Export Failed: $_", "Error", 0, 16)
