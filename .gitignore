@@ -21,6 +21,7 @@ output/
 Backups/
 UserData/
 Logs/
+temp_data/
 boot_trace.*
 data_*
 temp_data_*

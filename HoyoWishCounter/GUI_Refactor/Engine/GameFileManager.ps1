@@ -147,14 +147,31 @@ function Find-GameCacheFile {
     
     Log-Status "Targeting File: $(Get-SafePath $FinalPath)" "Cyan"
 
+    # ==========================================
+    # [EDITED SECTION] ส่วนที่แก้ใหม่
+    # ==========================================
     try {
-        if ([string]::IsNullOrWhiteSpace($StagingPath)) { $StagingPath = ".\temp_data_2" }
-        # Resolve Path ให้เป็น Absolute Path ป้องกันปัญหา Relative Path
-        $DestFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($StagingPath)
+        # 1. กำหนด Folder ปลายทาง (ถ้าไม่ส่งค่ามา ให้ใช้ .\temp_data)
+        if ([string]::IsNullOrWhiteSpace($StagingPath)) { $StagingPath = ".\temp_data" }
         
+        # แปลง Path Folder ให้เป็น Absolute Path (กันเหนียว)
+        $DestFolder = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($StagingPath)
+        
+        # 2. เช็คว่ามี Folder ไหม? ถ้าไม่มีให้สร้าง
+        if (-not (Test-Path -Path $DestFolder)) {
+            Log-Status "Creating temp folder..." "Cyan"
+            New-Item -ItemType Directory -Path $DestFolder -Force | Out-Null
+        }
+
+        # 3. กำหนดชื่อไฟล์ปลายทาง (เอา data_2 ไปแปะใน Folder)
+        # ผลลัพธ์จะเป็น: .\temp_data\data_2
+        $DestFullPath = Join-Path -Path $DestFolder -ChildPath "data_2"
+        
+        # 4. Copy
         Copy-Item -Path $FinalPath -Destination $DestFullPath -Force
-        Log-Status "Auto-Detect Success! File copied." "Green"
+        Log-Status "Auto-Detect Success! File copied to: $(Get-SafePath $DestFullPath)" "Green"
         
+        # Return path เต็มของไฟล์กลับไป
         return $DestFullPath
     } catch {
         throw "Copy Failed: $($_.Exception.Message)"
