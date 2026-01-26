@@ -229,14 +229,19 @@ function Add-HealthCheck {
         $btnOpen.FlatAppearance.BorderColor = "DimGray"
         $btnOpen.Cursor = [System.Windows.Forms.Cursors]::Hand
         
+        # [FIX] สร้างตัวแปร local เก็บค่า path ไว้ก่อนส่งเข้า Block
+        $targetPath = $FilePath 
+
         $btnOpen.Add_Click({
             try {
-                $realPath = (Resolve-Path $FilePath).Path
+                # ใช้ $targetPath ที่ถูก Capture เข้ามาแทน $FilePath
+                $realPath = (Resolve-Path $targetPath).Path
                 Start-Process "explorer.exe" -ArgumentList "/select,`"$realPath`""
             } catch {
-                Invoke-Item $FilePath
+                # Fallback
+                Invoke-Item $targetPath
             }
-        }.GetNewClosure()) 
+        }.GetNewClosure()) # GetNewClosure จะจับค่า $targetPath ไว้ให้แต่ละปุ่มแยกกัน
         
         $grpHealth.Controls.Add($btnOpen)
     }

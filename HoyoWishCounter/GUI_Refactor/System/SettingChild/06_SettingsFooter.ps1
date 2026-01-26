@@ -87,7 +87,7 @@ $btnSave.Add_Click({
     }
     
     [System.Windows.Forms.MessageBox]::Show("Configuration Saved!", "Done")
-    $fSet.Close()
+    #$fSet.Close()
 })
 $fSet.Controls.Add($btnSave)
 
