@@ -1,6 +1,18 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+# [7.3.2] - 2026-01-26
+🏗️ **Patch: Modular Architecture & UI Polish**
+Version **7.3.2** brings a significant architectural cleanup to the **Email Settings** module. We've transitioned from a monolithic script to a clean, modular design (`Loader` → `Logic` → `UI`), improving code maintainability without sacrificing features.
+This update also fine-tunes the **Live Preview** engine, ensuring that the chart visualizations (Gradients, Legends, and Color coding) match the actual output perfectly.
+
+### 🛠️ Key Changes
+*   **Refactored Email Tab:** Split `07_TabEmail.ps1` into dedicated sub-modules (`Config`, `Styles`, `UI`) for better separation of concerns.
+*   **Visual Fidelity Restored:** Fixed an issue where the Chart Preview lost its gradient styling and legend details during the optimization process.
+*   **Code Optimization:** Reduced script complexity and improved safe-loading mechanisms for child components.
+
+
+
 # [7.3.1] - 2026-01-26
 🐛 **Patch: Logic Precision & Report Synchronization**
 Version **7.3.1** focuses on the accuracy of your data. We've overhauled the filtering engine to ensure that what you see on screen is exactly what gets delivered to Discord and Email.

@@ -1,133 +1,13 @@
 # ==============================================================================
-# ENGINE: EMAIL MANAGER (Full Chart Support + Debug Logging)
+# ENGINE: EMAIL MANAGER (Fixed Backgrounds & Encoding)
 # ==============================================================================
 
-function Generate-ChartImage {
-    param($DataList, $ChartType, $Config, $OutPath)
+# 1. Load Modules
+$ChartScriptPath = Join-Path $PSScriptRoot "EmailGenerate\ChartGenerator.ps1"
+$TableScriptPath = Join-Path $PSScriptRoot "EmailGenerate\TableGenerator.ps1"
 
-    Add-Type -AssemblyName System.Windows.Forms.DataVisualization
-    Add-Type -AssemblyName System.Drawing
-
-    $chart = New-Object System.Windows.Forms.DataVisualization.Charting.Chart
-    $chart.Width = 900  # เพิ่มความกว้างอีกนิดให้ชื่อไม่เบียด
-    $chart.Height = 500
-    $chart.BackColor = [System.Drawing.Color]::FromArgb(30,30,30)
-    
-    $area = New-Object System.Windows.Forms.DataVisualization.Charting.ChartArea "Main"
-    $area.BackColor = "Transparent"
-    
-    # -------------------------------------------------------
-    # [จุดแก้สำคัญ] ตั้งค่าแกน X ให้โชว์ชื่อครบ
-    # -------------------------------------------------------
-    $area.AxisX.LabelStyle.ForeColor = "Silver"
-    $area.AxisX.LineColor = "#555"
-    $area.AxisX.MajorGrid.LineColor = "#333"
-    
-    # 1. บังคับโชว์ทุกขีด (ไม่ให้ข้ามชื่อ)
-    $area.AxisX.Interval = 1 
-    
-    # 2. ถ้าชื่อยาว ให้เอียงตัวหนังสือ -45 องศา จะได้ไม่ทับกัน
-    $area.AxisX.LabelStyle.Angle = -45 
-    
-    # 3. กันไม่ให้ตัดคำท้ายๆ ทิ้ง
-    $area.AxisX.LabelStyle.IsEndLabelVisible = $true
-    
-    $area.AxisY.LabelStyle.ForeColor = "Silver"
-    $area.AxisY.LineColor = "#555"
-    $area.AxisY.MajorGrid.LineColor = "#333"
-    
-    $chart.ChartAreas.Add($area)
-
-    $series = New-Object System.Windows.Forms.DataVisualization.Charting.Series "Data"
-    $series.Font = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
-
-    # =========================================================
-    # TYPE A: RATE ANALYSIS (Doughnut)
-    # =========================================================
-    if ($ChartType -eq "Rate Analysis") {
-        $area.AxisX.Enabled = "False"; $area.AxisY.Enabled = "False"
-        
-        $sRank = if ($Config.SRank) { $Config.SRank } else { "5" }
-        $count5 = ($DataList | Where-Object { $_.rank_type -eq $sRank }).Count
-        $count4 = ($DataList | Where-Object { $_.rank_type -eq "4" }).Count
-        $count3 = $DataList.Count - $count5 - $count4
-
-        $series.ChartType = "Doughnut"
-        $series["DoughnutRadius"] = "60"
-        $series["PieLabelStyle"] = "Outside"
-        $series["PieLineColor"] = "Silver"
-        $series.LabelForeColor = "White"
-
-        if ($count5 -gt 0) {
-            $p = $series.Points.Add($count5); $series.Points[$p].Color = "Gold"
-            $series.Points[$p].LegendText = "5-Star"; $series.Points[$p].Label = "#VALY (#PERCENT{P1})"
-            $series.Points[$p].LabelForeColor = "Gold"
-        }
-        if ($count4 -gt 0) {
-            $p = $series.Points.Add($count4); $series.Points[$p].Color = "MediumPurple"
-            $series.Points[$p].LegendText = "4-Star"; $series.Points[$p].Label = "#VALY (#PERCENT{P1})"
-            $series.Points[$p].LabelForeColor = "MediumPurple"
-        }
-        if ($count3 -gt 0) {
-            $p = $series.Points.Add($count3); $series.Points[$p].Color = "DodgerBlue"
-            $series.Points[$p].LegendText = "3-Star"; $series.Points[$p].Label = "" 
-        }
-
-    } else {
-        # =========================================================
-        # TYPE B: HISTORY (Bar/Line)
-        # =========================================================
-        $series.ChartType = $ChartType 
-        $series.IsValueShownAsLabel = $true
-        $series.LabelForeColor = "White"
-        
-        if ($ChartType -match "Line|Spline") {
-            $series.BorderWidth = 3; $series.Color = "White"; $series.MarkerStyle = "Circle"; $series.MarkerSize = 8
-        } else {
-            $series["PixelPointWidth"] = "30"
-        }
-
-        # Sort ตามเวลา: เก่า -> ใหม่
-        $DisplayData = $DataList | Sort-Object Time | Select-Object -Last 15
-        
-        foreach ($item in $DisplayData) {
-            # สร้าง Label
-            $labelName = "$($item.Name)"
-            
-            # AddXY: แกน X เป็น String, แกน Y เป็นตัวเลข
-            $ptIdx = $series.Points.AddXY($labelName, $item.Pity)
-            $pt = $series.Points[$ptIdx]
-            
-            # [Fix เพิ่มเติม] บังคับใส่ AxisLabel อีกรอบเพื่อความชัวร์
-            $pt.AxisLabel = $labelName
-            
-            # สี Pity
-            $col = "LimeGreen"
-            if ($item.Pity -ge 75) { $col = "Crimson" } elseif ($item.Pity -ge 50) { $col = "Gold" }
-            
-            if ($ChartType -match "Bar|Column") { $pt.Color = $col } else { $pt.MarkerColor = $col }
-        }
-    }
-    
-    $chart.Series.Add($series)
-
-    # ปรับ Legend ให้สวยงาม
-    $leg = New-Object System.Windows.Forms.DataVisualization.Charting.Legend
-    $leg.Docking = "Bottom"; $leg.BackColor = "Transparent"; $leg.ForeColor = "Silver"
-    $chart.Legends.Add($leg)
-
-    # Title
-    $title = New-Object System.Windows.Forms.DataVisualization.Charting.Title
-    $title.Text = "$ChartType Report"
-    $title.ForeColor = "White"
-    $title.Font = New-Object System.Drawing.Font("Segoe UI", 16, [System.Drawing.FontStyle]::Bold)
-    $chart.Titles.Add($title)
-
-    # Save
-    $chart.SaveImage($OutPath, "Png")
-    $chart.Dispose()
-}
-
+if (Test-Path $ChartScriptPath) { . $ChartScriptPath } else { Write-Error "ChartGenerator missing!" }
+if (Test-Path $TableScriptPath) { . $TableScriptPath } else { Write-Error "TableGenerator missing!" }
 
 function Send-EmailReport {
     param (
@@ -142,15 +22,11 @@ function Send-EmailReport {
     $MainConfPath = Join-Path $RootPath "Settings\config.json"
     $EmailConfPath = Join-Path $RootPath "Settings\EmailForm.json"
 
-    # [DEBUG LOG]
-    Write-Host "[EmailMgr] Root Path: $RootPath" -ForegroundColor DarkGray
-    Write-Host "[EmailMgr] Loading EmailForm.json from: $EmailConfPath" -ForegroundColor DarkGray
-
     if (-not (Test-Path $MainConfPath)) { Write-Host "Config not found!" -ForegroundColor Red; return $false }
     $AppConf = Get-Content $MainConfPath -Raw -Encoding UTF8 | ConvertFrom-Json
     
     # Defaults
-    $SelectedStyle = "Premium Card"; $ContentType = "Table List"; $ChartType = "Rate Analysis"; $SubjectPrefix = "Gacha Report"
+    $SelectedStyle = "Universal Card"; $ContentType = "Table List"; $ChartType = "Rate Analysis"; $SubjectPrefix = "Gacha Report"
     
     if (Test-Path $EmailConfPath) {
         try {
@@ -159,42 +35,27 @@ function Send-EmailReport {
             if ($ES.ContentType) { $ContentType = $ES.ContentType }
             if ($ES.ChartType) { $ChartType = $ES.ChartType }
             if ($ES.SubjectPrefix) { $SubjectPrefix = $ES.SubjectPrefix }
-            
-            # [DEBUG LOG] ยืนยันว่าอ่านค่าได้จริง
-            Write-Host "[EmailMgr] Config Loaded -> Style: $SelectedStyle | Mode: $ContentType | Chart: $ChartType" -ForegroundColor Yellow
-        } catch {
-            Write-Host "[EmailMgr] Error reading EmailForm.json" -ForegroundColor Red
-        }
-    } else {
-        Write-Host "[EmailMgr] EmailForm.json not found. Using Defaults." -ForegroundColor Yellow
+        } catch {}
     }
 
     $RawGameName = if ($script:CurrentGame) { $script:CurrentGame } else { "Gacha" }
-    
     switch ($RawGameName) {
         "Genshin" { $GameTitle = "Genshin Impact" }
         "HSR"     { $GameTitle = "Honkai: Star Rail" }
         "ZZZ"     { $GameTitle = "Zenless Zone Zero" }
-        "WuWa"    { $GameTitle = "Wuthering Waves" }
-        Default   { $GameTitle = $RawGameName } # ถ้าไม่ตรงเงื่อนไข ให้ใช้ชื่อเดิม
+        Default   { $GameTitle = $RawGameName } 
     }
 
-    # Creds Check
     $toEmail = $AppConf.NotificationEmail; $senderEmail = $AppConf.SenderEmail; $senderPass = $AppConf.SenderPassword
     if ([string]::IsNullOrWhiteSpace($toEmail) -or [string]::IsNullOrWhiteSpace($senderEmail)) { return $false }
     $smtpServer = if ($AppConf.SmtpServer) { $AppConf.SmtpServer } else { "smtp.gmail.com" }
     $smtpPort = if ($AppConf.SmtpPort) { $AppConf.SmtpPort } else { 587 }
 
     # 2. PREPARE CONTENT
-    $ThemeColor = if ($Config.AccentColor) { $Config.AccentColor } else { "#A370F0" }
-    #$GameTitle = if ($script:CurrentGame) { $script:CurrentGame } else { "Gacha Game" }
     $Attachments = @()
-
     if ($ContentType -eq "Chart Snapshot") {
-        # --- GRAPH MODE ---
         $TempImage = Join-Path $env:TEMP "Hoyo_Chart.png"
-        Generate-ChartImage -DataList $HistoryData -ChartType $ChartType -Config $Config -OutPath $TempImage
-        
+         Generate-ChartImage -DataList $HistoryData -ChartType $ChartType -Config $Config -OutPath $TempImage -SortDesc $SortDesc
         if (Test-Path $TempImage) {
             $Attachments += $TempImage
             $BodyContent = "<div style='text-align:center;'><img src='cid:Hoyo_Chart.png' style='max-width:100%;border-radius:8px;border:1px solid #444;'></div>"
@@ -202,75 +63,151 @@ function Send-EmailReport {
             $BodyContent = "<p style='color:red;'>Error generating chart.</p>"
         }
     } else {
-        # --- TABLE MODE ---
-        $rows = ""
-        $HeadCol1 = if ($ShowNoMode) { "Index [No.]" } else { "Time" }
-
-        # [สำคัญ] เก็บจำนวนทั้งหมดไว้คำนวณ
-        $TotalCount = $HistoryData.Count
-        $LoopIndex = 0 # ตัวนับรอบ loop (เริ่มที่ 0)
-
-        foreach ($item in ($HistoryData | Select-Object -First 20)) {
-             $pityVal = [int]$item.Pity
-             $col = if ($pityVal -ge 75) { "#ff4d4d" } elseif ($pityVal -lt 20) { "#00e676" } else { "#ffb74d" }
-             
-             # [สูตรคำนวณเลข No.]
-             if ($ShowNoMode) {
-                if ($SortDesc) {
-                    # กรณีเรียง ใหม่ -> เก่า (เช่น มี 50 ตัว: ตัวแรกโชว์ 50, ตัวถัดไป 49...)
-                    $RealNumber = $TotalCount - $LoopIndex
-                } else {
-                    # กรณีเรียง เก่า -> ใหม่ (ตัวแรกโชว์ 1, ตัวถัดไป 2...)
-                    $RealNumber = $LoopIndex + 1
-                }
-                $displayCol1 = "No. $RealNumber"
-             } else {
-                $displayCol1 = $item.Time
-             }
-
-             # Table Row Styling
-             if ($SelectedStyle -eq "Classic Table") {
-                $rows += "<tr><td style='padding:5px;border:1px solid #ccc;'>$displayCol1</td><td style='padding:5px;border:1px solid #ccc;'>$($item.Name)</td><td style='padding:5px;border:1px solid #ccc;color:$col;'>$($item.Pity)</td></tr>"
-             } elseif ($SelectedStyle -eq "Terminal Mode") {
-                $rows += "<tr><td style='padding:5px;border-bottom:1px dashed #0f0;'>$displayCol1</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Name)</td><td style='padding:5px;border-bottom:1px dashed #0f0;'>$($item.Pity)</td></tr>"
-             } else {
-                # Premium
-                $rows += "<tr><td style='color:#aaa;padding:8px;border-bottom:1px solid #333;'>$displayCol1</td><td style='color:#eee;font-weight:bold;padding:8px;border-bottom:1px solid #333;'>$($item.Name)</td><td style='padding:8px;border-bottom:1px solid #333;'><span style='color:$col;'>$($item.Pity)</span></td></tr>"
-             }
-             
-             $LoopIndex++ # บวกตัวนับรอบ
-        }
-
-        # Table Wrapper Styling
-        if ($SelectedStyle -eq "Classic Table") {
-            $BodyContent = "<table width='100%' style='border-collapse:collapse;color:black;'><tr><th style='text-align:left;background:#eee;padding:5px;'>Time</th><th style='text-align:left;background:#eee;padding:5px;'>Item</th><th style='text-align:left;background:#eee;padding:5px;'>Pity</th></tr>$rows</table>"
-        } elseif ($SelectedStyle -eq "Terminal Mode") {
-            $BodyContent = "<table width='100%' style='border-collapse:collapse;color:#0f0;font-family:Consolas;'><tr><th style='text-align:left;border-bottom:1px double #0f0;'>TIME</th><th style='text-align:left;border-bottom:1px double #0f0;'>ITEM</th><th style='text-align:left;border-bottom:1px double #0f0;'>PITY</th></tr>$rows</table>"
-        } else {
-            $BodyContent = "<table width='100%' cellspacing='0'><tr><th style='text-align:left;color:#666;'>Time</th><th style='text-align:left;color:#666;'>Item</th><th style='text-align:left;color:#666;'>Pity</th></tr>$rows</table>"
-        }
+        $BodyContent = Generate-TableHTML -DataList $HistoryData -Style $SelectedStyle -ShowNoMode $ShowNoMode -SortDesc $SortDesc
     }
 
-    # 3. FINAL HTML WRAPPER (Theme Based)
+    # 3. FINAL HTML WRAPPER (Fixed Layouts)
     $Meta = "<meta charset='utf-8'>"
+    
+    # Helper for Wrapping: Email clients often strip <body>, so we use a Main Wrapper Div.
+    # Structure: <html><body> <div MainWrap> <div CenterCard> Content </div> </div> </body></html>
+
     switch ($SelectedStyle) {
+        "Universal Card" {
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>
+    body{margin:0;padding:0;font-family:'Segoe UI',sans-serif;}
+    table {width:100%; border-collapse:collapse;}
+    th, td {padding:10px; border-bottom:1px solid #2a2a2a; color:#eee;}
+</style></head><body>
+<div style='background-color:#121212; padding:20px; width:100%; min-height:100vh;'>
+    <div style='max-width:600px; margin:0 auto; background-color:#1e1e1e; border-radius:12px; overflow:hidden; border:1px solid #333; box-shadow:0 4px 15px rgba(0,0,0,0.5);'>
+        <div style='background:linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%); padding:20px; border-bottom:1px solid #333; text-align:center;'>
+            <h2 style='margin:0; font-size:22px; color:#fff; text-transform:uppercase;'>$GameTitle</h2>
+            <p style='margin:5px 0 0; font-size:12px; color:#888;'>$SubjectPrefix</p>
+        </div>
+        <div style='padding:20px;'>$BodyContent</div>
+    </div>
+</div></body></html>
+"@
+        }
         "Classic Table" {
-            $htmlBody = "<html><head>$Meta<style>body{background:white;color:black;font-family:sans-serif;}</style></head><body><h3>$GameTitle - $SubjectPrefix</h3><hr>$BodyContent</body></html>"
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:Tahoma;} table{width:100%;border-collapse:collapse;} th,td{border:1px solid #ccc;padding:8px;color:#000;}</style></head><body>
+<div style='background-color:#ffffff; padding:20px; color:#000;'>
+    <div style='max-width:600px; margin:0 auto;'>
+        <h3 style='border-bottom:2px solid #000; padding-bottom:10px;'>$GameTitle - $SubjectPrefix</h3>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
         }
         "Terminal Mode" {
-             # [แก้ไข] ย้าย background-color:black มาใส่ใน style ของ <body> โดยตรง
-             $htmlBody = "<html><head>$Meta</head><body style='background-color:black; color:#0f0; font-family:Consolas,monospace; padding:20px;'><div>> TARGET: $GameTitle</div><div>> SUBJECT: $SubjectPrefix</div><div style='border:1px dashed #0f0;margin:10px 0;'></div>$BodyContent<br><div>> END_LOG</div></body></html>"
-        }
-        Default {
-            # Premium Card
             $htmlBody = @"
-<!DOCTYPE html><html><head>$Meta<style>body{background:#121212;color:#eee;font-family:'Segoe UI';} .card{max-width:600px;margin:0 auto;background:#1e1e1e;border-radius:12px;overflow:hidden;border:1px solid #333;} .head{background:linear-gradient(135deg,$ThemeColor 0%,#111 100%);padding:20px;text-align:center;} h2{margin:0;color:white;} .cont{padding:20px;}</style></head><body>
-<div class='card'><div class='head'><h2>$GameTitle</h2><p>$SubjectPrefix</p></div><div class='cont'>$BodyContent</div></div></body></html>
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:Consolas,monospace;} table{width:100%;}</style></head><body>
+<div style='background-color:#000000; color:#00ff00; padding:20px; min-height:500px;'>
+    <div style='max-width:700px; margin:0 auto;'>
+        <div>&gt; TARGET: $GameTitle</div>
+        <div>&gt; SUBJECT: $SubjectPrefix</div>
+        <div style='border:1px dashed #00ff00; padding:15px; margin-top:10px;'>$BodyContent</div>
+        <br><div>&gt; END_LOG</div>
+    </div>
+</div></body></html>
+"@
+        }
+        "Modern Dark" {
+            # FIX: Added Dark Background Wrapper
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:sans-serif;} table{width:100%;border-collapse:collapse;} td{padding:12px;border-bottom:1px solid #444;color:#ddd;}</style></head><body>
+<div style='background-color:#222222; padding:30px; min-height:100%;'>
+    <div style='max-width:600px; margin:0 auto; background-color:#2b2b2b; padding:20px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);'>
+        <h3 style='border-left:5px solid #4db8ff; padding-left:15px; color:#fff; margin-top:0;'>$GameTitle</h3>
+        <p style='color:#888; font-size:12px; margin-bottom:20px;'>$SubjectPrefix</p>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
+        }
+        "Minimalist White" {
+            # FIX: Added Gray Background Wrapper & Shadow Card
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:'Helvetica Neue',sans-serif;} table{width:100%;border-collapse:collapse;} td{padding:15px 5px;border-bottom:1px solid #eee;color:#333;}</style></head><body>
+<div style='background-color:#f4f4f4; padding:30px; min-height:100%;'>
+    <div style='max-width:600px; margin:0 auto; background-color:#ffffff; padding:40px; box-shadow:0 1px 3px rgba(0,0,0,0.1); border-radius:4px;'>
+        <h2 style='font-weight:300; color:#000; text-align:center; margin-top:0;'>$GameTitle</h2>
+        <div style='text-align:center; color:#aaa; font-size:12px; margin-bottom:30px; letter-spacing:1px;'>$SubjectPrefix</div>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
+        }
+        "Cyber Neon" {
+            # FIX: Added Black Wrapper
+            $ThemeColor = "#ff00de"; $SecColor = "#00eaff"
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:Verdana;} table{width:100%;} td{padding:10px;border-bottom:1px solid $SecColor;color:#fff;}</style></head><body>
+<div style='background-color:#050505; padding:20px; min-height:100%;'>
+    <div style='max-width:600px; margin:0 auto; border:2px solid $ThemeColor; box-shadow:0 0 15px $ThemeColor; padding:20px; border-radius:5px; background-color:#000;'>
+        <h3 style='color:$SecColor; text-align:center; text-transform:uppercase; text-shadow:0 0 5px $SecColor; margin-top:0;'>$GameTitle :: $SubjectPrefix</h3>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
+        }
+        "Blueprint" {
+            # FIX: Added Blue Wrapper
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:'Courier New';} table{width:100%;border:2px solid #fff;margin-top:20px;} td{border:1px solid #88aadd;padding:8px;color:#fff;}</style></head><body>
+<div style='background-color:#003366; padding:20px; min-height:100%; color:#fff;'>
+    <div style='max-width:650px; margin:0 auto; border:4px solid #fff; padding:20px;'>
+        <div style='border:2px solid #fff; display:inline-block; padding:10px; background-color:#004488; font-weight:bold;'>PROJECT: $GameTitle</div>
+        <p>DOC: $SubjectPrefix</p>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
+        }
+        "Vintage Log" {
+             # FIX: Added Beige Wrapper
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:'Georgia',serif;} table{width:100%;border-top:2px double #8B4513;border-bottom:2px double #8B4513;margin-top:20px;} td{padding:12px;font-style:italic;color:#5c4033;}</style></head><body>
+<div style='background-color:#FDF5E6; padding:30px; min-height:100%;'>
+    <div style='max-width:600px; margin:0 auto;'>
+        <h2 style='text-align:center; border-bottom:2px solid #8B4513; padding-bottom:10px; color:#5c4033;'>$GameTitle Adventurer Log</h2>
+        <p style='text-align:center; color:#5c4033;'>$SubjectPrefix</p>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
+        }
+        "Excel Sheet" {
+            # FIX: Added White Wrapper + Sheet Look
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:Arial,sans-serif;} table{border-collapse:collapse;width:100%;border:1px solid #ccc;background:#fff;} td,th{border:1px solid #ccc;padding:5px;font-size:13px;color:#000;} tr:first-child{background:#f3f3f3;font-weight:bold;}</style></head><body>
+<div style='background-color:#e6e6e6; padding:30px; min-height:100%;'>
+    <div style='max-width:700px; margin:0 auto; background-color:#fff; padding:20px; border:1px solid #ccc; box-shadow:0 2px 5px rgba(0,0,0,0.1);'>
+        <div style='background-color:#217346; color:white; padding:8px 15px; font-weight:bold; border-radius:4px 4px 0 0; display:inline-block; margin-bottom:10px;'>$GameTitle - $SubjectPrefix</div>
+        $BodyContent
+    </div>
+</div></body></html>
+"@
+        }
+        "Gacha Pop" {
+            # FIX: Star symbol Encoding (&#9733;) and Pink Wrapper
+            $htmlBody = @"
+<!DOCTYPE html><html><head>$Meta<style>body{margin:0;padding:0;font-family:'Comic Sans MS',sans-serif;} table{width:100%;} td{padding:10px;border-bottom:1px dotted #ff99cc;color:#555;}</style></head><body>
+<div style='background-color:#ffe6f2; padding:30px; min-height:100%;'>
+    <div style='max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:20px; padding:20px; border:4px dashed #ff66b2;'>
+        <h2 style='text-align:center; color:#ff66b2; margin-top:0;'>&#9733; $GameTitle &#9733;</h2>
+        <p style='text-align:center; color:#888;'>$SubjectPrefix</p>
+        $BodyContent
+    </div>
+</div></body></html>
 "@
         }
     }
 
-    # 4. SEND MAIL
+    # 5. SEND MAIL
     try {
         $secPass = ConvertTo-SecureString $senderPass -AsPlainText -Force
         $cred = New-Object System.Management.Automation.PSCredential($senderEmail, $secPass)
@@ -282,7 +219,7 @@ function Send-EmailReport {
         if ($Attachments.Count -gt 0) { $params.Attachments = $Attachments }
 
         Send-MailMessage @params
-        Write-Host "Email Sent Successfully ($ContentType - $ChartType)" -ForegroundColor Green
+        Write-Host "Email Sent Successfully ($ContentType : $SelectedStyle)" -ForegroundColor Green
         return $true
     } catch {
         Write-Host "Email Failed: $_" -ForegroundColor Red
