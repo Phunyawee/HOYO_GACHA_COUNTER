@@ -1,8 +1,7 @@
 #System/SettingWindow.ps1
 
 function Show-SettingsWindow {
-    Write-Host "--- [Settings] Initializing Settings Window ---" -ForegroundColor Cyan
-    
+    Write-LogFile -Message "[Settings] Initializing Settings Window" -Level "INFO"
     # 1. SETUP ENVIRONMENT
     # ---------------------------------------------------------
     # กำหนด Root ของโปรแกรม (ถอยจาก System/ViewLoader ออกมา 1 ขั้น)
@@ -83,8 +82,8 @@ function Show-SettingsWindow {
 
     # 5. FINALIZE & SHOW
     # ---------------------------------------------------------
-    Write-Host "[Settings] Assembly Complete ($SetLoadedCount / $($SettingComponents.Count) tabs)." -ForegroundColor Green
     
+    Write-LogFile -Message "[Settings] Assembly Complete ($SetLoadedCount / $($SettingComponents.Count) tabs)." -Level "INFO"
     if (Get-Command "Write-LogFile" -ErrorAction SilentlyContinue) {
         Write-LogFile -Message "[Settings] Window Opened. Components loaded: $SetLoadedCount" -Level "INFO"
     }

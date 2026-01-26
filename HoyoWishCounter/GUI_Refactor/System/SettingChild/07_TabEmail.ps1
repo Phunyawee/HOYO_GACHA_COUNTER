@@ -15,8 +15,7 @@ $script:tEmail = New-Tab "Email Report"
 $ChildFolder = Join-Path $PSScriptRoot "TabEmailChild"
 
 # Debug: ปริ้นท์บอกหน่อยว่ากำลังโหลดจากไหน (เช็คใน Console ได้ถ้า Error)
-Write-Host "[TabEmail] Loading modules from: $ChildFolder" -ForegroundColor DarkGray
-
+Write-LogFile -Message "[TabEmail] Loading modules from: $ChildFolder" -Level "INFO"
 # 3. Execute Modules (Safe Loop)
 $ModuleFiles = @("01_Config.ps1", "02_Styles.ps1", "03_UI.ps1")
 
