@@ -1,6 +1,32 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.3.3] - 2026-01-27
+
+### 📜 Patch: Logging Architecture & Source Tracing
+ปแVersion **7.3.3** introduces a major overhaul of the internal logging mechanism by fully decoupling the **GUI Logger** from the core **File Logger**.  
+Critical logging components have been relocated into a centralized **Tools** directory to eliminate circular dependencies and resolve previous *double-wrapping* issues.
+
+This release also adds **precise Source Identification**, making it immediately clear whether a log entry originates from a user action (`[App]`) or a background process (`[System]`).
+
+### 🛠️ Key Changes
+
+- **Decoupled Logging Core**  
+  - Extracted `WriteGUI-Log` into `Tools/LogGenerator.ps1`  
+  - Migrated backend file writing logic into `Tools/LogFileGenerator.ps1`  
+  - Improves dependency clarity and long-term maintainability
+
+- **Smart Source Tracing**  
+  - Implemented logic to prevent log duplication  
+  - User-triggered actions are automatically tagged as `[App]`  
+  - Background and automated processes default to `[System]`
+
+- **Loader Optimization**  
+  - Updated `SystemLoader.ps1` to load logging tools **before** UI components  
+  - Ensures no log events are missed during application startup
+
+
+
 # [7.3.2] - 2026-01-26
 🏗️ **Patch: Modular Architecture & UI Polish**
 Version **7.3.2** brings a significant architectural cleanup to the **Email Settings** module. We've transitioned from a monolithic script to a clean, modular design (`Loader` → `Logic` → `UI`), improving code maintainability without sacrificing features.

@@ -6,7 +6,8 @@
 
 # 1. รายชื่อไฟล์ในโฟลเดอร์ System
 $SystemComponents = @(
-    "LogCreate.ps1",
+     "..\Tools\LogFileGenerator.ps1",
+     "..\Tools\LogGenerator.ps1", 
     "UIHelpers.ps1",
     "UIStyle.ps1",
     "ThemeManager.ps1",
@@ -23,7 +24,7 @@ $SysTotalCount = $SystemComponents.Count
 foreach ($FileName in $SystemComponents) {
     
     # --- [NEW] เช็คว่าถ้าเป็น LogCreate แล้วโหลดไปแล้ว ให้ข้ามเลย ---
-    if ($FileName -eq "LogCreate.ps1" -and (Get-Command "Write-LogFile" -ErrorAction SilentlyContinue)) {
+    if ($FileName -eq "LogFileGenerator.ps1" -and (Get-Command "Write-LogFile" -ErrorAction SilentlyContinue)) {
         # ถือว่าโหลดแล้ว (จาก App.ps1) นับจำนวนแล้วข้ามไปไฟล์ถัดไปเลย
         $SysLoadedCount++
         continue

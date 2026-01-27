@@ -149,7 +149,7 @@ try {
         Write-BootTrace "Executing SystemLoader..."
         # 2.1 Load Logger
         Set-SplashLog "Initializing Logger..." 10
-        $LogPath = Join-Path $PSScriptRoot "System\LogCreate.ps1"
+        $LogPath = Join-Path . "$PSScriptRoot\Tools\LogFileGenerator.ps1"
         if (Test-Path $LogPath) { . $LogPath }
 
         # 2.2 Load System Loader (Theme, Utils, Config Helper)

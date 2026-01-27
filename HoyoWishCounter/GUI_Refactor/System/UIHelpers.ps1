@@ -1,3 +1,5 @@
+
+
 function Apply-ButtonStyle {
     param($Button, $BaseColorName, $HoverColorName, $CustomFont)
 
@@ -80,57 +82,6 @@ function Reset-LogWindow {
     }
 }
 
-function WriteGUI-Log($msg, $color="Lime") { 
-    try {
-        # --- 1. ส่วนแสดงผลใน Debug Console (PowerShell Window) ---
-        if ($script:DebugMode) {
-            $consoleColor = "White" # Default
-            switch ($color) {
-                "Lime"      { $consoleColor = "Green" }
-                "Gold"      { $consoleColor = "Yellow" }
-                "OrangeRed" { $consoleColor = "Red" }
-                "Crimson"   { $consoleColor = "Red" }
-                "DimGray"   { $consoleColor = "DarkGray" }
-                "Cyan"      { $consoleColor = "Cyan" }
-                "Magenta"   { $consoleColor = "Magenta" }
-                "Gray"      { $consoleColor = "Gray" }
-                "Yellow"    { $consoleColor = "Yellow" }
-            }
-            
-            $timeStamp = Get-Date -Format "HH:mm:ss"
-            Write-Host "[$timeStamp] $msg" -ForegroundColor $consoleColor
-        }
-
-        # --- 2. ส่งไปเก็บลงไฟล์ (Log ปกติ) ---
-        if (Get-Command "Write-LogFile" -ErrorAction SilentlyContinue) {
-            Write-LogFile -Message $msg -Level "USER_ACTION"
-        }
-
-        # --- 3. ส่วนแสดงผลใน GUI ---
-        if ($script:txtLog) {
-            # ตรวจสอบว่า Control ยังไม่ถูก Dispose (ป้องกัน Error กรณีปิดหน้าต่างไปแล้วแต่ Script ยังรัน)
-            if (-not $script:txtLog.IsDisposed) {
-                $script:txtLog.SelectionStart = $script:txtLog.Text.Length
-                $script:txtLog.SelectionColor = [System.Drawing.Color]::FromName($color)
-                $script:txtLog.AppendText("$msg`n")
-                $script:txtLog.ScrollToCaret() 
-            }
-        }
-    }
-    catch {
-        # --- 4. ส่วนจัดการ Error (Catch Block) ---
-        # ดึงข้อความ Error ออกมา
-        $errorMessage = $_.Exception.Message
-        
-        # เขียน Error ลงไฟล์ Log ทันที
-        if (Get-Command "Write-LogFile" -ErrorAction SilentlyContinue) {
-            Write-LogFile -Message "SYSTEM ERROR in Log Function: $errorMessage | Original Msg: $msg" -Level "ERROR"
-        }
-        
-        # (Optional) แสดง Error ใน Console ด้วยเผื่อ DebugMode เปิดอยู่
-        Write-Host "Error in Log function: $errorMessage" -ForegroundColor Red
-    }
-}
 
 
 function Update-BannerList {
