@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [7.3.3] - 2026-01-27
 
 ### 📜 Patch: Logging Architecture & Source Tracing
-ปแVersion **7.3.3** introduces a major overhaul of the internal logging mechanism by fully decoupling the **GUI Logger** from the core **File Logger**.  
+Version **7.3.3** introduces a major overhaul of the internal logging mechanism by fully decoupling the **GUI Logger** from the core **File Logger**.  
 Critical logging components have been relocated into a centralized **Tools** directory to eliminate circular dependencies and resolve previous *double-wrapping* issues.
 
 This release also adds **precise Source Identification**, making it immediately clear whether a log entry originates from a user action (`[App]`) or a background process (`[System]`).
