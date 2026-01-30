@@ -1,8 +1,8 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
-## [7.3.5] - 2026-01-30
 
+## [7.3.5] - 2026-01-30
 ### 🧹 Patch: Help Menu Standardization & Architectural Unity
 Version **7.3.5** extends the **Modular Orchestration Pattern** to the **Help Menu**, bringing it in line with the recently refactored Tools architecture.
 
@@ -25,7 +25,6 @@ This update focuses on **codebase consistency**, ensuring that all major menu co
 
 
 ## [7.3.4] - 2026-01-30
-
 ### 🧩 Patch: Modular Tools Architecture & Dynamic Orchestration
 Version **7.3.4** introduces a significant architectural refactor of the **Tools Menu**, transitioning from a monolithic script to a **Modular Orchestration Pattern**.
 
@@ -51,7 +50,6 @@ The `03_TOOLS.ps1` file has been reimagined as a lightweight **"Orchestrator"**,
 
 
 ## [7.3.3] - 2026-01-27
-
 ### 📜 Patch: Logging Architecture & Source Tracing
 Version **7.3.3** introduces a major overhaul of the internal logging mechanism by fully decoupling the **GUI Logger** from the core **File Logger**.  
 Critical logging components have been relocated into a centralized **Tools** directory to eliminate circular dependencies and resolve previous *double-wrapping* issues.
