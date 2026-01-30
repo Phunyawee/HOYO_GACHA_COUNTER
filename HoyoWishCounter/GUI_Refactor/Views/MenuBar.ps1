@@ -3,7 +3,7 @@
 #  Parent: ViewLoader.ps1
 # ==============================================================================
 
-Write-Host "--- [MenuBar] Initializing Menu System ---" -ForegroundColor Cyan
+WriteGUI-Log "--- [MenuBar] Initializing Menu System ---" -ForegroundColor Cyan
 
 # ------------------------------------------------------------------------------
 # 1. สร้าง Main Container (โครงสร้างหลัก)
@@ -53,18 +53,18 @@ foreach ($ItemName in $MenuComponents) {
             }
 
         } catch {
-            Write-Host "  ! [MenuBar] ERROR loading $ItemName : $_" -ForegroundColor Red
+            WriteGUI-Log "  ! [MenuBar] ERROR loading $ItemName : $_" -ForegroundColor Red
             if (Get-Command "Write-LogFile" -ErrorAction SilentlyContinue) {
                 Write-LogFile -Message "[MenuBar] Failed to load $ItemName : $_" -Level "ERROR"
             }
         }
     } else {
-        Write-Host "  ! [MenuBar] MISSING: $ItemName" -ForegroundColor Yellow
+        WriteGUI-Log "  ! [MenuBar] MISSING: $ItemName" -ForegroundColor Yellow
     }
 }
 
 # สรุปผลการโหลด Menu
-Write-Host "[MenuBar] Assembly Complete ($MenuLoadedCount / $MenuTotalCount components)." -ForegroundColor Green
+WriteGUI-Log "[MenuBar] Assembly Complete ($MenuLoadedCount / $MenuTotalCount components)." -ForegroundColor Green
 Write-LogFile -Message "[MenuBar] View Assembly Complete. All components loaded ($MenuLoadedCount/$MenuTotalCount)." -Level "INFO"
 
 # ------------------------------------------------------------------------------

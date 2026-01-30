@@ -1,6 +1,32 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.3.4] - 2026-01-30
+
+### 🧩 Patch: Modular Tools Architecture & Dynamic Orchestration
+Version **7.3.4** introduces a significant architectural refactor of the **Tools Menu**, transitioning from a monolithic script to a **Modular Orchestration Pattern**.
+
+The `03_TOOLS.ps1` file has been reimagined as a lightweight **"Orchestrator"**, responsible solely for sequencing and loading sub-components. This change eliminates massive code blocks, improves readability, and allows for "Plug-and-Play" feature management.
+
+### 🛠️ Key Changes
+
+- **Tools Menu Orchestrator**
+  - Transformed `03_TOOLS.ps1` into a dynamic component loader.
+  - Features are now defined in a simplified **Ordered Array**, allowing for effortless menu reordering and visual separator (`-SEPARATOR-`) insertion without modifying core logic.
+
+- **Sub-Module Atomization**
+  - Deconstructed the legacy Tools script into five discrete, maintainable modules located in the `03_TOOLS/` directory:
+    - `01_WishForecast.ps1` (Simulator Logic)
+    - `02_HistoryTable.ps1` (Data Grid Viewer)
+    - `03_JsonExport.ps1` (Raw Data Export)
+    - `04_JsonImport.ps1` (Offline Mode & Import)
+    - `05_SavingsPlanner.ps1` (Resource Calculator)
+
+- **Scope-Aware Loading**
+  - Implemented robust dot-sourcing logic to ensure sub-modules retain full access to the global UI context (`$menuTools`, `$script:CurrentGame`) while keeping the file structure strictly isolated.
+
+
+
 ## [7.3.3] - 2026-01-27
 
 ### 📜 Patch: Logging Architecture & Source Tracing
