@@ -1,6 +1,29 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.3.5] - 2026-01-30
+
+### 🧹 Patch: Help Menu Standardization & Architectural Unity
+Version **7.3.5** extends the **Modular Orchestration Pattern** to the **Help Menu**, bringing it in line with the recently refactored Tools architecture.
+
+This update focuses on **codebase consistency**, ensuring that all major menu components (`Tools`, `Help`) now operate under the same logic-loading standard. This structure minimizes technical debt and makes future UI expansions significantly cleaner.
+
+### 🛠️ Key Changes
+
+- **Help Menu Orchestrator**
+  - Refactored `02_HELP.ps1` to function purely as a component loader, mirroring the logic of the Tools menu.
+  - Ensures a uniform loading experience across the application's top navigation bar.
+
+- **Component Decoupling**
+  - Extracted UI logic into dedicated sub-modules within the `02_HELP/` directory:
+    - `01_AboutCredits.ps1` (About Window & Credits)
+    - `02_CheckUpdate.ps1` (Version Control & GitHub Link)
+
+- **Standardized Scope Management**
+  - Applied strict dot-sourcing rules to ensure the Help sub-modules inherit necessary UI styles and global variables (`$script:AppVersion`, `$script:EngineVersion`) without polluting the main scope.
+
+
+
 ## [7.3.4] - 2026-01-30
 
 ### 🧩 Patch: Modular Tools Architecture & Dynamic Orchestration
