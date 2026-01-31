@@ -17,7 +17,7 @@ $script:tData.AutoScroll = $true
 # Section 1: Backup & Restore Actions
 # -----------------------------------------------------------
 
-# [Button] Open Data Folder
+# [Button] Open Data Folder (ปุ่มเดิม: เปิด Root Folder)
 $btnOpenFolder = New-Object System.Windows.Forms.Button
 $btnOpenFolder.Text = "[ Open Data Folder ]"
 $btnOpenFolder.Location = "20, 50"
@@ -26,7 +26,28 @@ Apply-ButtonStyle -Button $btnOpenFolder -BaseColorName "DimGray" -HoverColorNam
 $btnOpenFolder.Add_Click({ Invoke-Item $AppRoot }) 
 $script:tData.Controls.Add($btnOpenFolder)
 
-# [Button] Create Config Backup
+# [NEW BUTTON] Open Backups Folder (ปุ่มใหม่: เปิด Backups)
+$btnOpenBackupDir = New-Object System.Windows.Forms.Button
+$btnOpenBackupDir.Text = "[ Open Backups ]"
+$btnOpenBackupDir.Location = "280, 50"
+$btnOpenBackupDir.Size = "180, 35"
+Apply-ButtonStyle -Button $btnOpenBackupDir -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
+
+$btnOpenBackupDir.Add_Click({
+    $backupPath = Join-Path $AppRoot "Backups"
+    
+    if (Test-Path $backupPath) {
+        # ถ้ามีโฟลเดอร์ ให้เปิดเลย
+        Invoke-Item $backupPath
+    } else {
+        # ถ้าไม่มี ให้แจ้งเตือน
+        [System.Windows.Forms.MessageBox]::Show("Backups folder not found.`nPlease click 'Create Config Backup' first.", "Folder Missing", 0, 48) # 48 = Icon Warning
+    }
+})
+$script:tData.Controls.Add($btnOpenBackupDir)
+
+
+# [Button] Create Config Backup (เลื่อนตำแหน่ง Y ลงมานิดหน่อยเพื่อให้สวยงาม หรือไว้ที่เดิมก็ได้)
 $btnForceBackup = New-Object System.Windows.Forms.Button
 $btnForceBackup.Text = ">> Create Config Backup"
 $btnForceBackup.Location = "20, 95"
@@ -37,6 +58,7 @@ $btnForceBackup.Add_Click({
     $srcConfig = Join-Path $AppRoot "Settings\config.json"
     $backupDir = Join-Path $AppRoot "Backups"
     
+    # สร้างโฟลเดอร์ถ้ายังไม่มี
     if (-not (Test-Path $backupDir)) { 
         New-Item -ItemType Directory -Path $backupDir | Out-Null 
     }
@@ -44,7 +66,7 @@ $btnForceBackup.Add_Click({
     if (Test-Path $srcConfig) {
         $destName = "config_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
         Copy-Item -Path $srcConfig -Destination (Join-Path $backupDir $destName)
-        [System.Windows.Forms.MessageBox]::Show("Backup created in 'Backups'.", "Success", 0, 64)
+        [System.Windows.Forms.MessageBox]::Show("Backup created in 'Backups' folder.", "Success", 0, 64)
     } else { 
         [System.Windows.Forms.MessageBox]::Show("Config not found in Settings.", "Error", 0, 48) 
     }
@@ -59,9 +81,17 @@ $btnRestore.Size = "180, 35"
 Apply-ButtonStyle -Button $btnRestore -BaseColorName "DimGray" -HoverColorName "Gray" -CustomFont $script:fontNormal
 
 $btnRestore.Add_Click({
+    $backupDir = Join-Path $AppRoot "Backups"
+    
+    # เพิ่มการเช็คตรงนี้ด้วย (เผื่อคนกด Restore ก่อนเลย)
+    if (-not (Test-Path $backupDir)) {
+        [System.Windows.Forms.MessageBox]::Show("No backups found.`nPlease create a backup first.", "Warning", 0, 48)
+        return
+    }
+
     $ofd = New-Object System.Windows.Forms.OpenFileDialog
     $ofd.Filter = "JSON|*.json"
-    $ofd.InitialDirectory = Join-Path $AppRoot "Backups"
+    $ofd.InitialDirectory = $backupDir
     
     if ($ofd.ShowDialog() -eq "OK") {
         try {
@@ -76,57 +106,37 @@ $btnRestore.Add_Click({
             if (-not (Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force | Out-Null }
             Set-Content -Path (Join-Path $configDir "config.json") -Value $jsonContent -Encoding UTF8
 
-            # -------------------------------------------------------------
-            # [จุดสำคัญ] APPLY ค่าเข้าสู่ระบบทันที (เลียนแบบปุ่ม Apply)
-            # -------------------------------------------------------------
-            
-            # 3.1 อัปเดตตัวแปร Global ของแอป (เพื่อให้หน้า Main เปลี่ยนตาม)
+            # 3. APPLY ค่าเข้าสู่ระบบทันที
             $script:AppConfig = $newConf
             
-            # 3.2 อัปเดตตัวแปร $conf ของหน้า Settings (เพื่อให้ปุ่ม Apply รู้จักค่าใหม่)
-            # (เนื่องจาก $conf เป็นตัวแปร local ของ Show-SettingsWindow เราอาจเข้าถึงยาก 
-            #  แต่วิธีที่ดีที่สุดคืออัปเดต UI Controls ให้ตรงกับค่าใหม่ครับ)
-
-            # --- Map ค่าจาก Backup กลับลงไปในช่องกรอกต่างๆ (UI Refresh) ---
-            # General
+            # Update UI Elements
             $script:chkDebug.Checked     = $newConf.DebugConsole
             $script:trackOp.Value        = [int]($newConf.Opacity * 100)
             $script:txtBackup.Text       = $newConf.BackupPath
-            if ($newConf.PSObject.Properties["EnableAutoBackup"]) {
-                $script:chkEnableBk.Checked = $newConf.EnableAutoBackup
-            }
+            if ($newConf.PSObject.Properties["EnableAutoBackup"]) { $script:chkEnableBk.Checked = $newConf.EnableAutoBackup }
             $script:chkFileLog.Checked   = $newConf.EnableFileLog
             $script:chkSound.Checked     = $newConf.EnableSound
             
-            # CSV Separator Check
             if ($newConf.CsvSeparator -eq ";") { 
                 if ($script:cmbCsvSep) { $script:cmbCsvSep.SelectedIndex = 1 }
             } else { 
                 if ($script:cmbCsvSep) { $script:cmbCsvSep.SelectedIndex = 0 }
             }
 
-            # Integrations
             $script:txtWebhook.Text      = $newConf.WebhookUrl
             $script:chkAutoSend.Checked  = $newConf.AutoSendDiscord
 
-            # Email / Notification
             if ($newConf.PSObject.Properties["NotificationEmail"]) { $script:txtEmail.Text = $newConf.NotificationEmail }
             if ($newConf.PSObject.Properties["AutoSendEmail"])     { $script:chkAutoEmail.Checked = $newConf.AutoSendEmail }
             if ($newConf.PSObject.Properties["SmtpServer"])        { $script:txtSmtpHost.Text = $newConf.SmtpServer }
             if ($newConf.PSObject.Properties["SmtpPort"])          { $script:txtPort.Text = [string]$newConf.SmtpPort }
             if ($newConf.PSObject.Properties["SenderEmail"])       { $script:txtSender.Text = $newConf.SenderEmail }
-            # Password มักไม่แสดง หรือแสดงก็ใส่ไป
             if ($newConf.PSObject.Properties["SenderPassword"])    { $script:txtPass.Text = $newConf.SenderPassword }
 
-            # -------------------------------------------------------------
-            # 4. เรียกใช้ Function เปลี่ยนธีมทันที
-            # -------------------------------------------------------------
+            # 4. เรียกใช้ Function เปลี่ยนธีม
             Apply-Theme -NewHex $newConf.AccentColor -NewOpacity $newConf.Opacity
-            
-            # อัปเดตตัวแปรสีชั่วคราวด้วย (เผื่อคนกดเลือกสีต่อ)
             $script:TempHexColor = $newConf.AccentColor
 
-            # 5. แจ้งเตือนเสร็จสิ้น (ไม่ต้องปิดหน้าต่าง)
             [System.Windows.Forms.MessageBox]::Show("Configuration Restored & Applied Successfully!", "Success", 0, 64)
 
         } catch { 
