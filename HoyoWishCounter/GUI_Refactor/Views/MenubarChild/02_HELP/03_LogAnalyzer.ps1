@@ -156,7 +156,7 @@ $menuLog.Add_Click({
             if ($grid.Columns["Original"]) { $grid.Columns["Original"].Visible = $false }
             try {
                 $grid.Columns["Time"].Width = 140
-                $grid.Columns["Level"].Width = 80
+                $grid.Columns["Level"].Width = 100
                 $grid.Columns["Source"].Width = 100
             } catch {}
         }
