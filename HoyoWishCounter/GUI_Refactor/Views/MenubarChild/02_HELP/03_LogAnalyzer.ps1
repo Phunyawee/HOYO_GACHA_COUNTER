@@ -1,6 +1,6 @@
 # ==============================================================================
 #  MODULE: 03_LogAnalyzer.ps1
-#  DESCRIPTION: Log Dashboard (2 Rows Layout + Spacing Fix)
+#  DESCRIPTION: Log Dashboard (Final Layout: FlowLayoutPanel for Filters)
 #  PARENT: 02_HELP.ps1
 # ==============================================================================
 
@@ -12,94 +12,23 @@ $menuLog.Add_Click({
     # --- 1. MAIN WINDOW SETUP ---
     $frmLog = New-Object System.Windows.Forms.Form
     $frmLog.Text = "Log Dashboard & Inspector"
-    $frmLog.Size = New-Object System.Drawing.Size(1100, 700)
+    $frmLog.Size = New-Object System.Drawing.Size(1400, 800)
     $frmLog.StartPosition = "CenterParent"
     $frmLog.BackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
     $frmLog.ForeColor = "White"
 
-    # --- TOP PANEL (CONTROLS - 2 ROWS) ---
-    $pnlTop = New-Object System.Windows.Forms.Panel
-    $pnlTop.Dock = "Top"
-    # [จุดแก้ 1] เพิ่มความสูงจาก 80 เป็น 100 ให้มีที่หายใจ และดันตารางลง
-    $pnlTop.Height = 100 
-    $pnlTop.Padding = New-Object System.Windows.Forms.Padding(10)
-    $pnlTop.BackColor = [System.Drawing.Color]::FromArgb(40, 40, 40)
-    $frmLog.Controls.Add($pnlTop)
+    # ==========================================================================
+    #  LAYOUT: Docking System (Right -> Left -> Center)
+    # ==========================================================================
 
-    # --- Row 1: Date & Search ---
-    $lblDate = New-Object System.Windows.Forms.Label
-    $lblDate.Text = "Log Date:"; $lblDate.AutoSize = $true
-    $lblDate.Location = New-Object System.Drawing.Point(15, 15)
-    $pnlTop.Controls.Add($lblDate)
+    # --- 1. RIGHT PANEL (DETAILS) ---
+    $pnlRight = New-Object System.Windows.Forms.Panel
+    $pnlRight.Dock = "Right"
+    $pnlRight.Width = 450
+    $pnlRight.Padding = New-Object System.Windows.Forms.Padding(5)
+    $pnlRight.BackColor = [System.Drawing.Color]::FromArgb(35, 35, 35)
+    $frmLog.Controls.Add($pnlRight)
 
-    $cbDates = New-Object System.Windows.Forms.ComboBox
-    $cbDates.Location = New-Object System.Drawing.Point(85, 12); $cbDates.Width = 150
-    $cbDates.DropDownStyle = "DropDownList"
-    $pnlTop.Controls.Add($cbDates)
-
-    $lblSearch = New-Object System.Windows.Forms.Label
-    $lblSearch.Text = "Search:"; $lblSearch.AutoSize = $true
-    $lblSearch.Location = New-Object System.Drawing.Point(260, 15)
-    $pnlTop.Controls.Add($lblSearch)
-
-    $txtSearch = New-Object System.Windows.Forms.TextBox
-    $txtSearch.Location = New-Object System.Drawing.Point(315, 12); $txtSearch.Width = 300
-    $pnlTop.Controls.Add($txtSearch)
-
-    $btnRefresh = New-Object System.Windows.Forms.Button
-    $btnRefresh.Text = "Reload File"
-    $btnRefresh.Location = New-Object System.Drawing.Point(640, 10); $btnRefresh.Width = 100
-    $btnRefresh.BackColor = "DimGray"; $btnRefresh.ForeColor = "White"
-    $pnlTop.Controls.Add($btnRefresh)
-
-    # --- Row 2: Dynamic Filters ---
-    $lblLvl = New-Object System.Windows.Forms.Label
-    $lblLvl.Text = "Filter Level:"; $lblLvl.AutoSize = $true
-    $lblLvl.Location = New-Object System.Drawing.Point(15, 55) # ขยับ Y ลงมา
-    $pnlTop.Controls.Add($lblLvl)
-
-    $cbLevel = New-Object System.Windows.Forms.ComboBox
-    $cbLevel.Location = New-Object System.Drawing.Point(95, 52); $cbLevel.Width = 140
-    $cbLevel.DropDownStyle = "DropDownList"
-    $pnlTop.Controls.Add($cbLevel)
-
-    $lblSrc = New-Object System.Windows.Forms.Label
-    $lblSrc.Text = "Filter Source:"; $lblSrc.AutoSize = $true
-    $lblSrc.Location = New-Object System.Drawing.Point(260, 55) # ขยับ Y ลงมา
-    $pnlTop.Controls.Add($lblSrc)
-
-    $cbSource = New-Object System.Windows.Forms.ComboBox
-    $cbSource.Location = New-Object System.Drawing.Point(340, 52); $cbSource.Width = 150
-    $cbSource.DropDownStyle = "DropDownList"
-    $pnlTop.Controls.Add($cbSource)
-
-    # --- SPLIT CONTAINER ---
-    $split = New-Object System.Windows.Forms.SplitContainer
-    $split.Dock = "Fill"
-    $split.Orientation = "Horizontal"
-    $split.SplitterDistance = 400
-    $split.SplitterWidth = 5
-    $frmLog.Controls.Add($split)
-
-    # [จุดแก้ 2] ใส่ Padding ให้ Panel1 เพื่อดันตารางลงมาจากขอบบนอีก 10px
-    $split.Panel1.Padding = New-Object System.Windows.Forms.Padding(0, 10, 0, 0)
-
-    # --- GRID VIEW (TOP) ---
-    $grid = New-Object System.Windows.Forms.DataGridView
-    $grid.Dock = "Fill"
-    $grid.BackgroundColor = [System.Drawing.Color]::FromArgb(45, 45, 48)
-    $grid.ForeColor = "Black"
-    $grid.AllowUserToAddRows = $false
-    $grid.ReadOnly = $true
-    $grid.RowHeadersVisible = $false
-    $grid.SelectionMode = "FullRowSelect"
-    $grid.MultiSelect = $false
-    $grid.AutoSizeColumnsMode = "Fill"
-    $grid.BorderStyle = "None"
-    $grid.DefaultCellStyle.Font = New-Object System.Drawing.Font("Consolas", 9)
-    $split.Panel1.Controls.Add($grid)
-
-    # --- DETAIL BOX (BOTTOM) ---
     $grpDetail = New-Object System.Windows.Forms.GroupBox
     $grpDetail.Text = " Row Details "
     $grpDetail.Dock = "Fill"
@@ -114,21 +43,106 @@ $menuLog.Add_Click({
     $txtDetail.BorderStyle = "None"
     
     $grpDetail.Controls.Add($txtDetail)
-    $split.Panel2.Controls.Add($grpDetail)
-    $split.Panel2.Padding = New-Object System.Windows.Forms.Padding(5)
+    $pnlRight.Controls.Add($grpDetail)
+
+    # --- 2. LEFT PANEL (FILTERS - FLOW LAYOUT) ---
+    $pnlLeft = New-Object System.Windows.Forms.Panel
+    $pnlLeft.Dock = "Left"
+    $pnlLeft.Width = 300  # ให้กว้างหน่อย
+    $pnlLeft.BackColor = [System.Drawing.Color]::FromArgb(40, 40, 40)
+    $frmLog.Controls.Add($pnlLeft)
+
+    # ใช้ FlowLayoutPanel เพื่อเรียงของจากบนลงล่างอัตโนมัติ (แก้ปัญหาของกองกัน)
+    $flowLeft = New-Object System.Windows.Forms.FlowLayoutPanel
+    $flowLeft.Dock = "Fill"
+    $flowLeft.FlowDirection = "TopDown"   # เรียงจากบนลงล่าง
+    $flowLeft.WrapContents = $false       # ห้ามปัดไปคอลัมน์ใหม่
+    $flowLeft.AutoScroll = $true          # ถ้าจอมันเตี้ย ให้มี Scrollbar ได้
+    $flowLeft.Padding = New-Object System.Windows.Forms.Padding(15) # ระยะห่างจากขอบ
+    $pnlLeft.Controls.Add($flowLeft)
+
+    # Helper function: เพิ่ม Control เข้า Flow พร้อมกำหนด Margin ล่าง
+    $AddToFlow = { param($ctrl, $marginBottom)
+        $ctrl.Width = 250 # ความกว้าง Control
+        $ctrl.Margin = New-Object System.Windows.Forms.Padding(0, 0, 0, $marginBottom) # เว้นระยะล่าง
+        $flowLeft.Controls.Add($ctrl)
+    }
+
+    # --- SECTION 1: DATE ---
+    $lblDate = New-Object System.Windows.Forms.Label
+    $lblDate.Text = "Log Date:"; $lblDate.AutoSize = $true; $lblDate.ForeColor = "Cyan"
+    & $AddToFlow $lblDate 5
+
+    $cbDates = New-Object System.Windows.Forms.ComboBox
+    $cbDates.DropDownStyle = "DropDownList"
+    & $AddToFlow $cbDates 15 # เว้น 15px ก่อนถึงปุ่ม
+
+    $btnRefresh = New-Object System.Windows.Forms.Button
+    $btnRefresh.Text = "Reload / Refresh"
+    $btnRefresh.BackColor = "DimGray"; $btnRefresh.ForeColor = "White"
+    $btnRefresh.Height = 40 # ปุ่มใหญ่หน่อย
+    & $AddToFlow $btnRefresh 30 # เว้นเยอะหน่อย 30px เพื่อแบ่งโซน
+
+    # --- SECTION 2: SEARCH ---
+    $lblSearch = New-Object System.Windows.Forms.Label
+    $lblSearch.Text = "Search Message:"; $lblSearch.AutoSize = $true; $lblSearch.ForeColor = "Cyan"
+    & $AddToFlow $lblSearch 5
+
+    $txtSearch = New-Object System.Windows.Forms.TextBox
+    & $AddToFlow $txtSearch 30 # เว้นเยอะหน่อย 30px เพื่อแบ่งโซน
+
+    # --- SECTION 3: FILTERS ---
+    $lblLvl = New-Object System.Windows.Forms.Label
+    $lblLvl.Text = "Filter Level:"; $lblLvl.AutoSize = $true; $lblLvl.ForeColor = "Cyan"
+    & $AddToFlow $lblLvl 5
+
+    $cbLevel = New-Object System.Windows.Forms.ComboBox
+    $cbLevel.DropDownStyle = "DropDownList"
+    & $AddToFlow $cbLevel 20
+
+    $lblSrc = New-Object System.Windows.Forms.Label
+    $lblSrc.Text = "Filter Source:"; $lblSrc.AutoSize = $true; $lblSrc.ForeColor = "Cyan"
+    & $AddToFlow $lblSrc 5
+
+    $cbSource = New-Object System.Windows.Forms.ComboBox
+    $cbSource.DropDownStyle = "DropDownList"
+    & $AddToFlow $cbSource 20
+
+    # --- 3. CENTER PANEL (GRID) ---
+    $pnlCenter = New-Object System.Windows.Forms.Panel
+    $pnlCenter.Dock = "Fill"
+    $pnlCenter.Padding = New-Object System.Windows.Forms.Padding(0, 0, 5, 0)
+    $frmLog.Controls.Add($pnlCenter)
+    $pnlCenter.BringToFront()
+
+    $grid = New-Object System.Windows.Forms.DataGridView
+    $grid.Dock = "Fill"
+    $grid.BackgroundColor = [System.Drawing.Color]::FromArgb(45, 45, 48)
+    $grid.ForeColor = "Black"
+    $grid.AllowUserToAddRows = $false
+    $grid.ReadOnly = $true
+    $grid.RowHeadersVisible = $false
+    $grid.SelectionMode = "FullRowSelect"
+    $grid.MultiSelect = $false
+    $grid.AutoSizeColumnsMode = "Fill"
+    $grid.BorderStyle = "None"
+    $grid.DefaultCellStyle.Font = New-Object System.Drawing.Font("Consolas", 9)
+    $pnlCenter.Controls.Add($grid)
 
     # --- STATUS STRIP ---
     $statusStrip = New-Object System.Windows.Forms.StatusStrip
+    $statusStrip.BackColor = [System.Drawing.Color]::FromArgb(50, 50, 50)
     $statusLabel = New-Object System.Windows.Forms.ToolStripStatusLabel
     $statusLabel.Text = "Ready"
-    $statusLabel.ForeColor = "Black"
+    $statusLabel.ForeColor = "WhiteSmoke"
     $statusStrip.Items.Add($statusLabel)
     $frmLog.Controls.Add($statusStrip)
 
-    # ตัวแปรเก็บข้อมูล
+    # ==========================================================================
+    #  LOGIC SECTION (UNCHANGED)
+    # ==========================================================================
     $GlobalLogCache = New-Object System.Collections.ArrayList
 
-    # --- FUNCTION: UPDATE GRID ---
     $UpdateGridDisplay = {
         $searchText = $txtSearch.Text.ToLower()
         $filterLvl  = $cbLevel.SelectedItem
@@ -156,8 +170,8 @@ $menuLog.Add_Click({
             if ($grid.Columns["Original"]) { $grid.Columns["Original"].Visible = $false }
             try {
                 $grid.Columns["Time"].Width = 140
-                $grid.Columns["Level"].Width = 100
-                $grid.Columns["Source"].Width = 100
+                $grid.Columns["Level"].Width = 120
+                $grid.Columns["Source"].Width = 120
             } catch {}
         }
 
@@ -177,7 +191,6 @@ $menuLog.Add_Click({
         }
     }
 
-    # --- FUNCTION: SHOW DETAILS ---
     $ShowRowDetails = {
         if ($grid.SelectedRows.Count -gt 0) {
             $item = $grid.SelectedRows[0].DataBoundItem
@@ -203,7 +216,6 @@ $menuLog.Add_Click({
         }
     }
 
-    # --- FUNCTION: READ FILE ---
     $ReadFileAndParse = {
         $selectedDate = $cbDates.SelectedItem
         if (-not $selectedDate) { return }
@@ -235,7 +247,6 @@ $menuLog.Add_Click({
         & $UpdateGridDisplay
     }
 
-    # --- EVENTS ---
     $cbDates.add_SelectedIndexChanged($ReadFileAndParse)
     $btnRefresh.add_Click($ReadFileAndParse)
     $txtSearch.add_TextChanged($UpdateGridDisplay)
@@ -243,7 +254,6 @@ $menuLog.Add_Click({
     $cbSource.add_SelectedIndexChanged($UpdateGridDisplay)
     $grid.add_SelectionChanged($ShowRowDetails)
 
-    # --- INIT ---
     $cbDates.Items.Clear()
     $TargetDir = if ($Global:LogRoot) { $Global:LogRoot } else { "$PSScriptRoot\..\Logs" }
     if (Test-Path $TargetDir) {

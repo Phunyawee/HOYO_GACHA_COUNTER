@@ -1,7 +1,19 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
-## [7.5.0] - 2026-02-01
+## [7.5.1] - 2026-01-31
+### 🎨 UX/UI Refactor: Optimized Three-Pane Dashboard Layout
+This patch addresses usability constraints in the Log Inspector by transitioning to a **High-Efficiency Three-Column Workspace**.
+The interface has been completely reconstructed using a **responsive Docking & FlowLayout architecture**, resolving previous layout overlapping issues and significantly improving data readability on wide screens.
+The new layout establishes a clear visual hierarchy:
+
+- **Left Control Hub**: Auto-stacking filter controls via FlowLayoutPanel for clutter-free navigation and responsive resizing.
+- **Central Data Grid**: Maximized vertical screen real estate for browsing extensive log history without scrolling fatigue.
+- **Dedicated Detail Inspector**: A fixed right-side panel for viewing complex messages and raw data dumps without obscuring the main list.
+
+
+
+## [7.5.0] - 2026-01-31
 ### 🚀 Feature: Integrated Log Dashboard & Dynamic Inspector
 
 This release introduces a **brand-new Log Analysis Module**, eliminating the need for external text editors during debugging.
@@ -34,7 +46,7 @@ with **Dynamic Context Filtering**, enabling instant drill-down by:
 
 
 
-## [7.4.1] - 2026-02-01
+## [7.4.1] - 2026-01-31
 ### 🔄 Feature: Hot-Swap Configuration Restore & State Sync
 
 This update rewrites the backend logic of the **Data & Maintenance** module to support true hot-swap configuration restoration.  
