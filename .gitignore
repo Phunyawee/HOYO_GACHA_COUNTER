@@ -26,3 +26,4 @@ boot_trace.*
 data_*
 temp_data_*
 ZZZ_GachaScriptALL_Debug.ps1
+Test-LogGen.ps1

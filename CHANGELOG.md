@@ -1,6 +1,39 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.5.0] - 2026-02-01
+### 🚀 Feature: Integrated Log Dashboard & Dynamic Inspector
+
+This release introduces a **brand-new Log Analysis Module**, eliminating the need for external text editors during debugging.
+The system now natively parses, indexes, and visualizes `debug_*.log` files through a dedicated **WinForms GUI**.
+Unlike static text viewing, the module uses **Regex-based structural parsing** to transform raw log streams into an **interactive, sortable grid** 
+with **Dynamic Context Filtering**, enabling instant drill-down by:
+
+- Log Level  
+- Source  
+- Free-text Search  
+
+### 🧩 Key Technical Implementations
+#### 🪟 Split-Pane Inspector
+- Dual-view architecture (**Grid + RichText Detail**)
+- Designed for inspecting complex stack traces and multiline error messages
+- Maintains clarity without introducing UI clutter
+#### 🔍 Dynamic Attribute Indexing
+- Filter dropdowns are **dynamically generated**
+- Populated from unique `[Level]` and `[Source]` tags
+- Extracted directly from the selected log file (no hardcoding)
+#### 🎨 Visual Heuristics
+- Intelligent color-coding for rapid visual prioritization:
+  - **ERROR** → Red  
+  - **WARN** → Yellow  
+  - **USER_ACTION** → Cyan  
+#### 🛡️ Safe UI Calculation
+- Robust layout rendering engine
+- Explicit integer casting applied to all layout calculations
+- Prevents **GDI+ coordinate overflow errors** during window resizing
+
+
+
 ## [7.4.1] - 2026-02-01
 ### 🔄 Feature: Hot-Swap Configuration Restore & State Sync
 

@@ -17,6 +17,7 @@ $menuHelp.ForeColor = "White"
 # ------------------------------------------------------------------------------
 $HelpComponents = @(
     "01_AboutCredits.ps1",   # F1 About
+    "03_LogAnalyzer.ps1",
     "02_CheckUpdate.ps1"     # Update Checker
 )
 
