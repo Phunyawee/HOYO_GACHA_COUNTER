@@ -1,6 +1,68 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.4.1] - 2026-02-01
+### 🔄 Feature: Hot-Swap Configuration Restore & State Sync
+
+This update rewrites the backend logic of the **Data & Maintenance** module to support true hot-swap configuration restoration.  
+Application restarts are no longer required—restored configurations are injected directly into memory and synchronized across disk, runtime state, and the active UI.
+The system now keeps the physical **JSON file**, **global runtime variables**, and the **User Interface** perfectly in sync at all times.
+
+### ❌ Before
+- **Static File Overwrite**  
+  Backup restores only replaced the physical `config.json` file on disk, leaving in-memory configuration unchanged
+- **UI State Desynchronization**  
+  UI controls (TextBoxes, Toggles, Sliders) continued displaying stale values after restore
+- **Data Integrity Risk**  
+  Clicking **"APPLY SETTINGS"** after a restore overwrote restored data with outdated UI state
+- **Forced Restarts**  
+  Users had to manually restart the application (`Start-Process`) or close and reopen the window to apply changes
+
+### ✅ After
+- **Live Memory Injection**  
+  Restored JSON data is immediately mapped into `$script:AppConfig` and recursively propagated to all active UI controls in real time
+- **Instant Theme Application**  
+  The rendering engine (`Apply-Theme`) is triggered on restore, updating accent colors and opacity without delay
+- **Unified Logic Architecture**  
+  Input-mapping logic has been shared between **Save** and **Restore** modules, ensuring 1:1 consistency between disk state and UI state
+- **Seamless UX**  
+  Zero friction—no restarts, no window reloads, and no additional **Apply** actions required after restoration
+
+
+
+## [7.4.0] - 2026-01-31
+### 🎨 Feature: Vertical Navigation & UI Modernization
+
+This major update modernizes the **Preferences & Settings** interface by replacing the legacy top-tab layout with a clean **Vertical Navigation Sidebar**.  
+A custom **GDI+ rendering engine** has been introduced to improve typography clarity and eliminate long-standing layout clipping issues in complex configuration views.
+
+### ❌ Before
+
+- **Legacy Top-Tab Layout**  
+  Limited scalability and outdated visual structure
+- **Z-Order Conflicts**  
+  The **"APPLY SETTINGS"** button was frequently obscured by expanding tab containers (`Dock=Fill`)
+- **GDI+ Rendering Crashes**  
+  `System.ArgumentException` triggered by invalid `Rectangle` → `PointF` casting during custom draw operations
+- **Layout Clipping Issues**  
+  The **"Show Password"** button in the Integrations tab exceeded container bounds and became unclickable
+- **Vertical Text Rotation**  
+  Left-aligned native tabs forced 90° text rotation, reducing readability
+
+### ✅ After
+- **Vertical Sidebar Navigation**  
+  Fixed-width left sidebar using custom `OwnerDrawFixed` logic with horizontal text rendering
+- **Dedicated Footer Dock**  
+  Bottom-docked action panel with `BringToFront()` logic, ensuring **Save / Reset** buttons remain visible and anchored
+- **Type-Safe Rendering**  
+  Resolved GDI+ casting errors by explicitly using `System.Drawing.RectangleF` for text bounds
+- **Optimized UI Density**  
+  Refactored SMTP / Integrations layouts to fit all controls within 500px width constraints
+- **Enhanced Typography**  
+  Enforced **bold font weights** across navigation elements to improve hierarchy and readability
+
+
+
 ## [7.3.6] - 2026-01-31
 ### 🐛 Patch: Settings Persistence & Event Scope Resolution
 

@@ -65,32 +65,70 @@ $btnRestore.Add_Click({
     
     if ($ofd.ShowDialog() -eq "OK") {
         try {
+            # 1. อ่านไฟล์ Backup
             $jsonContent = Get-Content $ofd.FileName -Raw -Encoding UTF8
             $newConf = $jsonContent | ConvertFrom-Json
             
             if (-not $newConf.PSObject.Properties["AccentColor"]) { throw "Invalid Format" }
             
-            # Restore ลง Settings
+            # 2. บันทึกลงไฟล์จริง (Overwrite config.json)
             $configDir = Join-Path $AppRoot "Settings"
             if (-not (Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force | Out-Null }
             Set-Content -Path (Join-Path $configDir "config.json") -Value $jsonContent -Encoding UTF8
 
-            # --- [IMPORTANT] Update UI Elements ---
-            # ต้องอ้างถึงตัวแปรแบบ $script: ที่เราสร้างไว้ในไฟล์ Tab ก่อนหน้า
+            # -------------------------------------------------------------
+            # [จุดสำคัญ] APPLY ค่าเข้าสู่ระบบทันที (เลียนแบบปุ่ม Apply)
+            # -------------------------------------------------------------
+            
+            # 3.1 อัปเดตตัวแปร Global ของแอป (เพื่อให้หน้า Main เปลี่ยนตาม)
+            $script:AppConfig = $newConf
+            
+            # 3.2 อัปเดตตัวแปร $conf ของหน้า Settings (เพื่อให้ปุ่ม Apply รู้จักค่าใหม่)
+            # (เนื่องจาก $conf เป็นตัวแปร local ของ Show-SettingsWindow เราอาจเข้าถึงยาก 
+            #  แต่วิธีที่ดีที่สุดคืออัปเดต UI Controls ให้ตรงกับค่าใหม่ครับ)
+
+            # --- Map ค่าจาก Backup กลับลงไปในช่องกรอกต่างๆ (UI Refresh) ---
+            # General
             $script:chkDebug.Checked     = $newConf.DebugConsole
+            $script:trackOp.Value        = [int]($newConf.Opacity * 100)
             $script:txtBackup.Text       = $newConf.BackupPath
+            if ($newConf.PSObject.Properties["EnableAutoBackup"]) {
+                $script:chkEnableBk.Checked = $newConf.EnableAutoBackup
+            }
+            $script:chkFileLog.Checked   = $newConf.EnableFileLog
+            $script:chkSound.Checked     = $newConf.EnableSound
+            
+            # CSV Separator Check
+            if ($newConf.CsvSeparator -eq ";") { 
+                if ($script:cmbCsvSep) { $script:cmbCsvSep.SelectedIndex = 1 }
+            } else { 
+                if ($script:cmbCsvSep) { $script:cmbCsvSep.SelectedIndex = 0 }
+            }
+
+            # Integrations
             $script:txtWebhook.Text      = $newConf.WebhookUrl
             $script:chkAutoSend.Checked  = $newConf.AutoSendDiscord
-            $script:chkFileLog.Checked   = $newConf.EnableFileLog
-            
-            # Opacity
-            $script:trackOp.Value        = [int]($newConf.Opacity * 100)
-            if ($script:form) { $script:form.Opacity = $newConf.Opacity }
-            
-            # Apply Theme (เรียกฟังก์ชันหลัก)
+
+            # Email / Notification
+            if ($newConf.PSObject.Properties["NotificationEmail"]) { $script:txtEmail.Text = $newConf.NotificationEmail }
+            if ($newConf.PSObject.Properties["AutoSendEmail"])     { $script:chkAutoEmail.Checked = $newConf.AutoSendEmail }
+            if ($newConf.PSObject.Properties["SmtpServer"])        { $script:txtSmtpHost.Text = $newConf.SmtpServer }
+            if ($newConf.PSObject.Properties["SmtpPort"])          { $script:txtPort.Text = [string]$newConf.SmtpPort }
+            if ($newConf.PSObject.Properties["SenderEmail"])       { $script:txtSender.Text = $newConf.SenderEmail }
+            # Password มักไม่แสดง หรือแสดงก็ใส่ไป
+            if ($newConf.PSObject.Properties["SenderPassword"])    { $script:txtPass.Text = $newConf.SenderPassword }
+
+            # -------------------------------------------------------------
+            # 4. เรียกใช้ Function เปลี่ยนธีมทันที
+            # -------------------------------------------------------------
             Apply-Theme -NewHex $newConf.AccentColor -NewOpacity $newConf.Opacity
             
-            [System.Windows.Forms.MessageBox]::Show("Settings restored!", "Success", 0, 64)
+            # อัปเดตตัวแปรสีชั่วคราวด้วย (เผื่อคนกดเลือกสีต่อ)
+            $script:TempHexColor = $newConf.AccentColor
+
+            # 5. แจ้งเตือนเสร็จสิ้น (ไม่ต้องปิดหน้าต่าง)
+            [System.Windows.Forms.MessageBox]::Show("Configuration Restored & Applied Successfully!", "Success", 0, 64)
+
         } catch { 
             [System.Windows.Forms.MessageBox]::Show("Error: $($_.Exception.Message)", "Error", 0, 16) 
         }

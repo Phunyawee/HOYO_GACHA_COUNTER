@@ -1,13 +1,10 @@
 # =============================================================================
 # FILE: SettingChild\03_TabIntegrations.ps1
 # DESCRIPTION: ตั้งค่าการเชื่อมต่อภายนอก (Discord Webhook, Email Notification, SMTP)
-# DEPENDENCIES: 
-#   - Function: New-Tab
-#   - Variable: $conf
 # =============================================================================
 
 $script:tDis = New-Tab "Integrations"
-$script:tDis.AutoScroll = $true # เผื่อจอเล็กจะได้เลื่อนได้
+$script:tDis.AutoScroll = $true 
 
 # -----------------------------------------------------------
 # Section 1: Discord Webhook
@@ -45,7 +42,7 @@ $grpDisc.Controls.Add($script:chkAutoSend)
 
 
 # -----------------------------------------------------------
-# Section 2: Email Recipient (ผู้รับ)
+# Section 2: Email Recipient
 # -----------------------------------------------------------
 $grpMail = New-Object System.Windows.Forms.GroupBox
 $grpMail.Text = " Email Notification (To) "
@@ -75,7 +72,7 @@ $grpMail.Controls.Add($script:txtEmail)
 
 $script:chkAutoEmail = New-Object System.Windows.Forms.CheckBox
 $script:chkAutoEmail.Text = "Auto-Send"
-$script:chkAutoEmail.Location = "340, 45"
+$script:chkAutoEmail.Location = "340, 45" # ปรับตำแหน่งให้ตรงกับช่องกรอก
 $script:chkAutoEmail.AutoSize = $true
 $script:chkAutoEmail.ForeColor = "White"
 
@@ -86,7 +83,7 @@ $grpMail.Controls.Add($script:chkAutoEmail)
 
 
 # -----------------------------------------------------------
-# Section 3: SMTP Sender Config (ผู้ส่ง - Advanced)
+# Section 3: SMTP Sender Config (Advanced)
 # -----------------------------------------------------------
 $grpSmtp = New-Object System.Windows.Forms.GroupBox
 $grpSmtp.Text = " SMTP Sender Config (Advanced) "
@@ -108,12 +105,7 @@ $script:txtSmtpHost.Width = 300
 $script:txtSmtpHost.BackColor = [System.Drawing.Color]::FromArgb(50,50,50)
 $script:txtSmtpHost.ForeColor = "White"
 $script:txtSmtpHost.BorderStyle = "FixedSingle"
-# Default Value
-if ($conf.PSObject.Properties["SmtpServer"]) { 
-    $script:txtSmtpHost.Text = $conf.SmtpServer 
-} else { 
-    $script:txtSmtpHost.Text = "smtp.gmail.com" 
-}
+if ($conf.PSObject.Properties["SmtpServer"]) { $script:txtSmtpHost.Text = $conf.SmtpServer } else { $script:txtSmtpHost.Text = "smtp.gmail.com" }
 $grpSmtp.Controls.Add($script:txtSmtpHost)
 
 # [Port]
@@ -129,12 +121,7 @@ $script:txtPort.Width = 60
 $script:txtPort.BackColor = [System.Drawing.Color]::FromArgb(50,50,50)
 $script:txtPort.ForeColor = "White"
 $script:txtPort.BorderStyle = "FixedSingle"
-
-if ($conf.PSObject.Properties["SmtpPort"]) { 
-    $script:txtPort.Text = $conf.SmtpPort 
-} else { 
-    $script:txtPort.Text = "587" 
-}
+if ($conf.PSObject.Properties["SmtpPort"]) { $script:txtPort.Text = $conf.SmtpPort } else { $script:txtPort.Text = "587" }
 $grpSmtp.Controls.Add($script:txtPort)
 
 # [Sender Email]
@@ -150,10 +137,7 @@ $script:txtSender.Width = 220
 $script:txtSender.BackColor = [System.Drawing.Color]::FromArgb(50,50,50)
 $script:txtSender.ForeColor = "White"
 $script:txtSender.BorderStyle = "FixedSingle"
-
-if ($conf.PSObject.Properties["SenderEmail"]) { 
-    $script:txtSender.Text = $conf.SenderEmail 
-}
+if ($conf.PSObject.Properties["SenderEmail"]) { $script:txtSender.Text = $conf.SenderEmail }
 $grpSmtp.Controls.Add($script:txtSender)
 
 # [App Password]
@@ -163,23 +147,24 @@ $lblPass.Location = "260, 80"
 $lblPass.AutoSize = $true
 $grpSmtp.Controls.Add($lblPass)
 
+# [FIXED] ลดความกว้างช่อง Password ลง เพื่อให้มีที่เหลือใส่ปุ่ม Show
 $script:txtPass = New-Object System.Windows.Forms.TextBox
 $script:txtPass.Location = "260, 100"
-$script:txtPass.Width = 200
+$script:txtPass.Width = 165  # ลดจาก 200 เหลือ 165
 $script:txtPass.BackColor = [System.Drawing.Color]::FromArgb(50,50,50)
 $script:txtPass.ForeColor = "White"
 $script:txtPass.BorderStyle = "FixedSingle"
-$script:txtPass.UseSystemPasswordChar = $true # ซ่อนรหัสผ่านเป็นจุดๆ
+$script:txtPass.UseSystemPasswordChar = $true
 
 if ($conf.PSObject.Properties["SenderPassword"]) { 
     $script:txtPass.Text = $conf.SenderPassword 
 }
 $grpSmtp.Controls.Add($script:txtPass)
 
-# [Checkbox Show Password]
+# [FIXED] ขยับ Checkbox เข้ามาซ้ายสุดเท่าที่ทำได้ (เริ่มที่ 435)
 $chkShowPass = New-Object System.Windows.Forms.CheckBox
 $chkShowPass.Text = "Show"
-$chkShowPass.Location = "470, 100"
+$chkShowPass.Location = "435, 100" # ขยับจาก 470 มา 435
 $chkShowPass.AutoSize = $true
 $chkShowPass.ForeColor = "DimGray"
 $chkShowPass.Add_CheckedChanged({ 
