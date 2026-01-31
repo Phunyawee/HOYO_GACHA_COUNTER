@@ -1,6 +1,28 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.3.6] - 2026-01-31
+### 🐛 Patch: Settings Persistence & Event Scope Resolution
+
+This release focuses on stabilizing settings persistence by resolving a variable scope issue within the Appearance settings workflow.  
+The update eliminates silent execution failures and ensures all UI-driven preference changes are correctly propagated and saved.
+
+#### ❌ Before
+- Changes made in the **Appearance** tab (Theme, Color, Opacity) were not persisted to the global configuration
+- Event handlers relied on **detached ScriptBlocks**, causing variable scope leakage
+- UI updates appeared successful, but configuration state was not updated
+- Failures occurred silently with no visible errors
+
+#### ✅ After
+- Event listeners refactored to use **embedded logic**
+- Enforced **script-level scope (`$script:`)** across all dynamic UI controls
+- UI state changes now propagate correctly to global settings in real time
+- Appearance preferences:
+  - Apply instantly
+  - Persist reliably
+  - Remain consistent after restart
+
+
 
 ## [7.3.5] - 2026-01-30
 ### 🧹 Patch: Help Menu Standardization & Architectural Unity
