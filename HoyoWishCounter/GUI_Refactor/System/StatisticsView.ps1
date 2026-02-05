@@ -7,7 +7,7 @@ $script:CurrentChartData = @()
 
 function Update-FilteredView {
     # ถ้ายังไม่มีข้อมูลดิบ ให้จบไป
-    if ($null -eq $script:LastFetchedData -or $script:LastFetchedData.Count -eq 0) { return }
+    if ($null -eq $script:LastFetchedData) { $script:LastFetchedData = @() }
 
     $conf = Get-GameConfig $script:CurrentGame
     

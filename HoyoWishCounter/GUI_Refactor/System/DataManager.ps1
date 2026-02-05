@@ -105,20 +105,48 @@ function Update-InfinityDatabase {
 function Load-LocalHistory {
     param([string]$GameName)
 
-    # 1. Reset ค่าเก่าทิ้งก่อนเสมอ (กันข้อมูลตีกัน)
+    WriteGUI-Log "Attempting to load local history for $GameName..." "Cyan"
+
+    # ========================================================
+    # [FIX] HARD RESET STATE (ล้างทุกอย่างให้เกลี้ยงก่อนเสมอ)
+    # ========================================================
+    # 1. Clear Data Variables
     $script:LastFetchedData = @()
     $script:FilteredData = @()
-    $chart.Series.Clear()
+
+    Reset-LogWindow
+    
+    # 2. Clear Visual Elements (Pity Bar & Chart)
+    if ($script:chart) { 
+        $script:chart.Series.Clear() 
+        $script:chart.Titles.Clear()
+        $script:chart.Legends.Clear()
+        $script:chart.Visible = $false # ซ่อนไปก่อนเลย
+        $script:lblNoData.Visible = $true
+    }
+    
     $script:pnlPityFill.Width = 0
-    $script:lblPityTitle.Text = "No Data Loaded"
+    $script:lblPityTitle.Text = "Waiting for data..."
     $script:lblPityTitle.ForeColor = "Gray"
     
-    # ปิดปุ่มต่างๆ ก่อน
+    # 3. [สำคัญมาก] Clear Stats Labels (ตัวการที่ทำให้เลขค้าง)
+    # ต้องเคลียร์ให้เป็นค่า Default ทันที อย่ารอโหลดไฟล์
+    if ($script:lblStat1)     { $script:lblStat1.Text = "Total Pulls: 0" }
+    if ($script:lblStatAvg)   { $script:lblStatAvg.Text = "Avg: -"; $script:lblStatAvg.ForeColor = "White" }
+    if ($script:lblStatCost)  { $script:lblStatCost.Text = "Est. Cost: 0" }
+    if ($script:lblExtremes)  { $script:lblExtremes.Text = "Max: -  Min: -" }
+    if ($script:lblLuckGrade) { $script:lblLuckGrade.Text = "Grade: -"; $script:lblLuckGrade.ForeColor = "DimGray" }
+    
+    # 4. Disable Buttons
     $grpFilter.Enabled = $false
     $btnExport.Enabled = $false
     $btnExport.BackColor = "DimGray"
     $script:itemForecast.Enabled = $false
     $script:itemTable.Enabled = $false
+    $script:itemJson.Enabled = $false
+    
+    # ========================================================
+
     
     # หา path หลักของโปรแกรมก่อน (ถ้า App.ps1 ส่งมาให้ก็ใช้ ถ้าไม่ก็ถอยหลังไป 1 ขั้น)
     $RootBase = if ($script:AppRoot) { $script:AppRoot } else { (Join-Path $PSScriptRoot "..") }

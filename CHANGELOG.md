@@ -1,6 +1,25 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.6.1] - 2026-02-05
+### 🧹 UI Polish & Integrity Patch: The "Ghost Data" Exorcism
+This update focuses on visual consistency and closes a critical logic loophole in the cross-game import system. We have rewritten the state management layer to ensure the dashboard reflects the *absolute truth* of the current context.
+
+#### 🚫 Ghost Data Elimination (UI State Hygiene)
+- **Atomic UI Reset**: Resolved a persistence issue where statistics, charts, and logs from a previous session (e.g., Genshin) would "linger" on the screen when switching to a game profile with no history (e.g., HSR/ZZZ).
+- **Pre-Load Hard Clear**: The `Load-LocalHistory` module now enforces a rigorous "Clean Slate" protocol—wiping all Pity counters, Charts, and Text Logs *milliseconds before* disk access.
+- **Result**: Switching tabs now guarantees a 100% accurate visual state, eliminating confusion caused by stale data.
+
+#### 🧠 Heuristic Game Detection (The HSR/ZZZ Fix)
+- **Content-Aware Validation**: Addressed a critical edge case where *Honkai: Star Rail* and *Zenless Zone Zero* share identical Gacha IDs (1, 11, 12).
+- **Deep Item Scanning**: The JSON Importer no longer relies solely on IDs. It now analyzes internal item signatures (distinguishing "Light Cones" vs. "W-Engines" vs. "Bangboos") to definitively identify the source game.
+- **Corruption Prevention**: Attempting to import an HSR file into the ZZZ tab (or vice versa) now triggers a **Hard Block**, preventing database corruption before it happens.
+
+#### ⚙️ Engine Refinements
+- **Graceful Empty State**: Refactored `Update-FilteredView` to handle zero-record datasets gracefully, ensuring the "No Data" placeholders render correctly instead of aborting the pipeline prematurely.
+
+
+
 ## [7.6.0] - 2026-02-05
 ### 🛡️ Core Architecture: The "Infinity Database" & Data Guard Protocol
 This major update introduces the **"Infinity Database" engine**, a complete backend overhaul designed to ensure absolute data integrity and longevity.
