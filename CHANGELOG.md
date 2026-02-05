@@ -1,6 +1,28 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.6.0] - 2026-02-05
+### 🛡️ Core Architecture: The "Infinity Database" & Data Guard Protocol
+This major update introduces the **"Infinity Database" engine**, a complete backend overhaul designed to ensure absolute data integrity and longevity.
+We have moved beyond simple file overwrites to a **Smart Merging System**, implementing a "military-grade" validation layer that actively protects your wish history from corruption and cross-contamination.
+
+- **Smart Merge Engine (Deduplication Core)**:
+    - Implemented a high-performance **O(1) Hash Lookup** algorithm to instantly analyze and merge imported data.
+    - The system now intelligently fuses new records with existing history while automatically discarding duplicates, allowing you to back up and restore without fear of redundant data.
+
+- **Deep Content Inspection (Type-Safe Importing)**:
+    - Replaced superficial ID checks with a **Deep Context Scanner**. The system now analyzes internal item signatures (detecting "Light Cones" vs. "W-Engines") to enforce strict Game Mode isolation.
+    - *Result:* It is now impossible to accidentally corrupt a *Zenless Zone Zero* database with *Honkai: Star Rail* files, even if they share similar Gacha IDs.
+
+- **UID Sentinel System**:
+    - A new security layer that actively monitors Account IDs during data operations.
+    - If an imported file contains a UID different from the active session, the system triggers a **Critical Mismatch Alert**, preventing accidental merging of different user accounts into a single timeline.
+
+- **Non-Intrusive Silent Validation**:
+    - The `Load-LocalHistory` module now performs background integrity checks when switching tabs. Invalid or mismatched data is handled gracefully in the background without disrupting the UI flow or triggering repetitive pop-ups.
+
+
+
 ## [7.5.1] - 2026-01-31
 ### 🎨 UX/UI Refactor: Optimized Three-Pane Dashboard Layout
 This patch addresses usability constraints in the Log Inspector by transitioning to a **High-Efficiency Three-Column Workspace**.

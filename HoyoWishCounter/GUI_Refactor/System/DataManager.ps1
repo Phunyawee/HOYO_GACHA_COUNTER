@@ -1,3 +1,4 @@
+#root/system/DataManager.ps1
 function Update-InfinityDatabase {
     param(
         [array]$FreshData,       # ข้อมูลสด 6 เดือนที่เพิ่งดึงมา
@@ -157,6 +158,29 @@ function Load-LocalHistory {
             
             # (กันเหนียว) ถ้า ZZZ ชอบส่งมาเป็น int ก็จะถูกแก้ตรงนี้
         }
+
+        # =======================================================
+        # [NEW] SILENT VALIDATION (ดักแบบเงียบ)
+        # =======================================================
+        if ($loadedData.Count -gt 0) {
+            $sampleType = "$($loadedData[0].gacha_type)".Trim()
+            $isMismatch = $false
+
+            # ใช้ Logic เดียวกับ Import แต่ไม่เด้ง Popup
+            if ($GameName -eq "Genshin" -and $sampleType -match "^(1|2|3|5|11|12)$") { $isMismatch = $true }
+            elseif ($GameName -ne "Genshin" -and $sampleType -match "^(100|200|301|302|400)$") { $isMismatch = $true }
+
+            if ($isMismatch) {
+                WriteGUI-Log "[WARNING] Local DB content does not match '$GameName'." "Orange"
+                WriteGUI-Log "Skipping load to prevent errors." "DimGray"
+                
+                # ไม่โหลดข้อมูลเข้า $script:LastFetchedData (ปล่อยให้เป็นค่าว่าง)
+                # อัปเดต Title Bar ให้รู้ว่าโหลดไม่สำเร็จ
+                $form.Text = "Universal Hoyo Wish Counter v$script:AppVersion | Invalid Data for $GameName"
+                return 
+            }
+        }
+        # =======================================================
 
         # --- ถ้าผ่านมาถึงตรงนี้ แปลว่าข้อมูลสมบูรณ์ ---
         
