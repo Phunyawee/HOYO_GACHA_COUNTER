@@ -26,6 +26,10 @@ This project extends functionality based on data, logic, and visual assets from 
   - **Game Icons:** [HoYoLab Article](https://www.hoyolab.com/article/35337701)
   - **Bangboo Assets:** [Zenless Zone Zero Wiki (Fandom)](https://zenless-zone-zero.fandom.com/wiki/Bangboo)
 
+## 🛠️ Technical Standards
+- **UIGF (Uniform Interchange Gacha Format)**
+  - **Source:** [UIGF-org/UIGF-Standard](https://uigf.org/en/standards/)
+  - **Usage:** Reference for standardized JSON schema and universal Gacha Type IDs definition.
 
 ### 🎨 Assets & Resources
 *   **Icons & UI:** Designed using standard Windows Forms assets.
