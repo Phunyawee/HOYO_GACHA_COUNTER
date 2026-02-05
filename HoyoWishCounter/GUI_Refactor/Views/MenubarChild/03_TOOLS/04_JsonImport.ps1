@@ -31,27 +31,60 @@ $script:itemImportJson.Add_Click({
         
         if ($importedData -isnot [System.Array]) { $importedData = @($importedData) }
 
-        # =======================================================
-        # [FIXED] DEEP GAME DETECTION (แยก HSR/ZZZ ให้ออก)
-        # =======================================================
-        # เราจะสุ่มตรวจ 50 ตัวแรก เพื่อหา Keyword เฉพาะของแต่ละเกม
-        # เพราะดูแค่ ID (gacha_type) ไม่ได้แล้ว HSR กับ ZZZ ใช้เลข 1,2 เหมือนกัน
-        
+         # [UPGRADED] INTELLIGENT GAME DETECTION (Banner-Based)
+        $gameCandidates = @("Genshin", "HSR", "ZZZ")
+        $bannerMap = @{} 
+
+        # 1. อ่าน Config สร้าง Map (Banner Name -> Game)
+        foreach ($g in $gameCandidates) {
+            $cfg = Get-GameConfig -GameName $g
+            if ($cfg -and $cfg.Banners) {
+                foreach ($b in $cfg.Banners) {
+                    if ($b.Name -eq "Standard") { continue } # ข้าม Standard เพราะชื่อซ้ำ
+                    $bannerMap[$b.Name] = $g
+                }
+            }
+        }
+
         $sampleSet = $importedData | Select-Object -First 50
         $detectedGame = "Unknown"
         
-        # 1. เช็ค Genshin (Gacha Type เกิน 100 หรือมี Weapon)
-        $hasGenshinSign = $sampleSet | Where-Object { [int]$_.gacha_type -gt 90 -or $_.item_type -eq "Weapon" }
-        if ($hasGenshinSign) { $detectedGame = "Genshin" }
+        foreach ($row in $sampleSet) {
+            # Check 1: ดูจาก _BannerName (แม่นยำสุด)
+            if ($row.PSObject.Properties.Match("_BannerName").Count -gt 0) {
+                $bn = $row._BannerName
+                
+                if ($bannerMap.ContainsKey($bn)) {
+                    $detectedGame = $bannerMap[$bn]; break
+                }
+                # กรณีชื่อ Standard ซ้ำกัน (Genshin vs ZZZ)
+                if ($bn -eq "Standard") {
+                    if ($row.item_type -match "W-Engine|Bangboo|Agent") { $detectedGame = "ZZZ"; break }
+                    if ($row.gacha_type -eq "200") { $detectedGame = "Genshin"; break }
+                    if ($row.gacha_type -eq "1") { $detectedGame = "ZZZ"; break }
+                }
+            }
 
-        # 2. เช็ค HSR (ต้องมี Light Cone)
-        # HSR จะไม่มี Gacha Type หลักร้อย และต้องมี Light Cone
-        $hasHSRSign = $sampleSet | Where-Object { $_.item_type -eq "Light Cone" }
-        if ($hasHSRSign) { $detectedGame = "HSR" }
+            # Check 2: ดูจาก item_type / gacha_type (สำรอง)
+            if ($detectedGame -eq "Unknown") {
+                if ($row.item_type -eq "Light Cone" -or $row.gacha_type -in @("11","12")) {
+                    $detectedGame = "HSR"; break
+                }
+                if ($row.item_type -match "W-Engine|Bangboo" -or $row.item_type -eq "Agent") {
+                    $detectedGame = "ZZZ"; break
+                }
+                if ([int]$row.gacha_type -gt 90 -or $row.uid.ToString().Length -eq 9) { 
+                    $detectedGame = "Genshin"; break
+                }
+            }
+        }
 
-        # 3. เช็ค ZZZ (ต้องมี W-Engine, Bangboo หรือ Agent)
-        $hasZZZSign = $sampleSet | Where-Object { $_.item_type -match "W-Engine|Bangboo|Agent" }
-        if ($hasZZZSign) { $detectedGame = "ZZZ" }
+        # Check 3: ถ้ายังไม่เจอ ให้เดาจาก Type ตัวแรกสุด
+        if ($detectedGame -eq "Unknown" -and $importedData.Count -gt 0) {
+            $firstType = [int]$importedData[0].gacha_type
+            if ($firstType -eq 11 -or $firstType -eq 12) { $detectedGame = "HSR" }
+            elseif ($firstType -gt 90) { $detectedGame = "Genshin" }
+        }
 
         # --- VALIDATION RESULT ---
         if ($detectedGame -ne "Unknown" -and $detectedGame -ne $script:CurrentGame) {

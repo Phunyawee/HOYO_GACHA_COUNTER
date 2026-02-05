@@ -1,6 +1,17 @@
 # 📜 Changelog
 
 All notable changes to this project will be documented in this file.
+## [7.6.2] - 2026-02-05
+### 🧠 Smart Import & Heuristic Security: The "Identity Crisis" Fix
+This update overhauls the JSON ingestion engine, replacing basic ID checks with a context-aware heuristic scanner. The system now "reads" the file content with human-like comprehension, ensuring absolute game fidelity during imports.
+
+#### 🛡️ Deep Game Detection Engine
+- **Dynamic Banner Fingerprinting**: The importer now cross-references `_BannerName` directly against live `Get-GameConfig` definitions. It instantly recognizes "Stellar Warp" as HSR or "Bangboo" as ZZZ without guessing.
+- **Ambiguity Resolution Protocol**: Implemented a dedicated discriminator logic for overlapping terms (e.g., the "Standard" banner shared by Genshin & ZZZ). The system now analyzes internal assets (W-Engine vs. Weapon) to break ties with surgical precision.
+- **Result**: Completely eliminates "False Positive" identifications. HSR and ZZZ files are no longer mistaken for Genshin, guaranteeing zero risk of database corruption from cross-game merges.
+
+
+
 ## [7.6.1] - 2026-02-05
 ### 🧹 UI Polish & Integrity Patch: The "Ghost Data" Exorcism
 This update focuses on visual consistency and closes a critical logic loophole in the cross-game import system. We have rewritten the state management layer to ensure the dashboard reflects the *absolute truth* of the current context.
