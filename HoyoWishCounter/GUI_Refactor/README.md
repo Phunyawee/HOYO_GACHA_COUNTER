@@ -51,7 +51,7 @@ Built entirely with **PowerShell** and **.NET WinForms**, this tool runs locally
 
 1.  **Download** the source code files (keep all `.ps1` files in the same folder).
 2.  **Right-Click** on `App.ps1`.
-3.  Select **"Run with PowerShell"**.
+3.  Select **"Run with PowerShell"** or dubble click `Start_GUI.bat`.
 
 > **Note:** If the script closes immediately, try running PowerShell as Administrator and execute:
 > `Set-ExecutionPolicy RemoteSigned`
