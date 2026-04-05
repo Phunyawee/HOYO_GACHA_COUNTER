@@ -5,6 +5,7 @@ secrets.json
 *.key
 auth.dat
 config*
+!ConfigManager.ps1 
 # 2. ไฟล์ขยะของ Windows และ Mac (เผื่อคนอื่นมาเปิด)
 Thumbs.db
 .DS_Store
