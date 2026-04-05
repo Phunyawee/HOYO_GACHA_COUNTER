@@ -7,8 +7,7 @@
 # 1. รายชื่อไฟล์ในโฟลเดอร์ System
 $SystemComponents = @(
      "..\Tools\LogFileGenerator.ps1",
-     "..\Tools\LogGenerator.ps1", 
-     "..\Engine\ConfigManager.ps1", 
+     "..\Tools\LogGenerator.ps1",
     "UIHelpers.ps1",
     "UIStyle.ps1",
     "ThemeManager.ps1",
