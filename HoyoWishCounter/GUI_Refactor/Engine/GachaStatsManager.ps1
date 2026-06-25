@@ -21,7 +21,7 @@ function Get-GachaStatus {
             $StandardPool = @("Diluc", "Jean", "Mona", "Qiqi", "Keqing", "Tighnari", "Dehya") 
         }
         "HSR" { 
-            $StandardPool = @("Himeko", "Welt", "Bronya", "Gepard", "Clara", "Yanqing", "Bailu") 
+            $StandardPool = @("Himeko", "Welt", "Bronya", "Gepard", "Clara", "Yanqing", "Bailu","Selee","Blade") 
         }
         "ZZZ" { 
             $StandardPool = @("Grace", "Rina", "Koleda", "Nekomata", "Soldier 11", "Lycaon") 

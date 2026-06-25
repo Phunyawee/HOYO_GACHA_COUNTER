@@ -189,7 +189,7 @@ function Update-FilteredView {
             $isStandardChar = $false
             switch ($script:CurrentGame) {
                 "Genshin" { if ($h.Name -match "^(Diluc|Jean|Mona|Qiqi|Keqing|Tighnari|Dehya)$") { $isStandardChar = $true } }
-                "HSR"     { if ($h.Name -match "^(Himeko|Welt|Bronya|Gepard|Clara|Yanqing|Bailu)$") { $isStandardChar = $true } }
+                "HSR"     { if ($h.Name -match "^(Himeko|Welt|Bronya|Gepard|Clara|Yanqing|Bailu|Selee|Blade)$") { $isStandardChar = $true } }
                 "ZZZ"     { if ($h.Name -match "^(Grace|Rina|Koleda|Nekomata|Soldier 11|Lycaon)$") { $isStandardChar = $true } }
             }
             $isNotEventBanner = ($h.Banner -match "Standard|Novice|Weapon|Light Cone|W-Engine|Bangboo")
